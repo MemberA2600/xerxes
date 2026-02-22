@@ -1,0 +1,130 @@
+///////////////////////////////////////////////////
+//
+// THIS FILE SHOULD NOT BE EDITED USING A TEXT
+// EDITOR OR 3RD PARTY RESOURCE EDITOR, EXCEPT
+// WHEN SPECIFICALLY INSTRUCTED
+//
+///////////////////////////////////////////////////
+//
+// Winteracter resource script
+//
+// Modified : 22/febr./2026 09:07:40
+//
+///////////////////////////////////////////////////
+//
+// Number of resources
+//
+//*WN* NMENU       1
+//*WN* NITEM       17
+//*WN* NDIALOG     1
+//*WN* NFIELD      2
+//*WN* NTOOLBAR    0
+//*WN* NTOOLTIP    0
+//*WN* NIMAGE      1
+//*WN* NIDENTIFIER 31
+//*WN* NINCLUDE    0
+//*WN* NOPTROW     0
+///////////////////////////////////////////////////
+//
+// Include files
+//
+#include "winparam.h"
+
+///////////////////////////////////////////////////
+//
+// Parameter Definitions
+//
+#define IDM_MAIN      30001
+#define ID_SCREENSIZE 40001
+#define IDF_DEBUGTXT   1001
+#define IDD_DEBUGMSG    102
+#define ID_DEBUGOK     1002
+#define ID_AUTO       40002
+#define ID_320x240    40003
+#define ID_640x480    40004
+#define ID_800x600    40005
+#define ID_1024x768   40006
+#define ID_1152x864   40007
+#define ID_1280x960   40008
+#define ID_1400x1050  40009
+#define ID_1600x1200  40010
+#define ID_2048x1536  40011
+#define ID_SPEED      40012
+#define ID_SPEED1     40013
+#define ID_SPEED2     40014
+#define ID_SPEED3     40015
+#define ID_SPEED4     40016
+#define ID_SPEED5     40017
+
+///////////////////////////////////////////////////
+//
+// Dialogs
+//
+IDD_DEBUGMSG DIALOG 0,0,273,57
+STYLE WS_POPUP | WS_BORDER | WS_DLGFRAME | WS_SYSMENU | DS_3DLOOK | DS_MODALFRAME
+FONT 8, "MS Shell Dlg"
+CAPTION "Debug Info"
+BEGIN
+  CONTROL "",IDF_DEBUGTXT,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,12,8,248,20
+  CONTROL "OK",ID_DEBUGOK,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_DEFPUSHBUTTON | BS_TEXT,112,36,40,14
+END
+
+///////////////////////////////////////////////////
+//
+// Menus
+//
+IDM_MAIN MENU
+BEGIN
+  POPUP "Resolution"
+  BEGIN
+    MENUITEM "Auto",ID_AUTO
+    MENUITEM "320x240",ID_320x240
+    MENUITEM "640x480",ID_640x480
+    MENUITEM "800x600",ID_800x600
+    MENUITEM "1024x768",ID_1024x768
+    MENUITEM "1152x864",ID_1152x864
+    MENUITEM "1280x960",ID_1280x960
+    MENUITEM "1400x1050",ID_1400x1050
+    MENUITEM "1600x1200",ID_1600x1200
+    MENUITEM "2048x1536",ID_2048x1536
+  END
+  POPUP "Screen Refresh"
+  BEGIN
+    MENUITEM "Lightning",ID_SPEED1
+    MENUITEM "Rocket",ID_SPEED2
+    MENUITEM "Cheetah",ID_SPEED3
+    MENUITEM "Hare",ID_SPEED4
+    MENUITEM "Snail",ID_SPEED5
+  END
+END
+
+IDM_MAIN RCDATA
+BEGIN
+ID_SCREENSIZE,1,0,
+ID_SPEED,2,0,
+0
+END
+
+///////////////////////////////////////////////////
+//
+// Icons
+//
+icon1 ICON DISCARDABLE "program.ico"
+
+///////////////////////////////////////////////////
+//
+// Winteracter Visual Tool Settings
+//
+//*WI* BASEMENU    30001
+//*WI* BASEITEM    40001
+//*WI* BASEDIALOG  101
+//*WI* BASEFIELD   1001
+//*WI* BASETOOLBAR 30101
+//*WI* BASEBUTTON  40101
+//*WI* BASEIMAGE   2001
+//*WI* F90MODULE   1
+//*WI* FORTSAVE    1
+//*WI* FILENAME    resid.f90
+//*WI* FMODNAME    RESID
+//*WI* LASTTYPE    1
+//*WI* LASTRES     1
