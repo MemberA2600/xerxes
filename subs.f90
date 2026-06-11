@@ -10,17 +10,17 @@ MODULE subs
 
       PRIVATE
       PUBLIC            :: getScreenSize, autoSizeScreen, setResolutionMenu, &
-                           getWindowDim, setScreenSize, timer, setSpeed
+                           getWindowDim, setScreenSize, timer, speed, setSpeed
 
       CHARACTER(20)     :: msgString
-      INTEGER(KIND = 1) :: timer
+      INTEGER(KIND = 1) :: speed, timer
 
       CONTAINS  
 
-      SUBROUTINE setSpeed(speed)
-           INTEGER(KIND = 1) :: speed
-           timer = 16 * speed
-           CALL WMessageTimer(timer,IREPEAT=Enabled)  
+      SUBROUTINE setSpeed(s)
+           INTEGER(KIND = 1) :: s
+           speed = s
+           timer = s 
 
            !write(msgString, '("Speed: ",I0)') timer
            !call displayDebug(msgString)  

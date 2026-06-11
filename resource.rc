@@ -8,7 +8,7 @@
 //
 // Winteracter resource script
 //
-// Modified : 22/febr./2026 09:07:40
+// Modified : 22/febr./2026 20:02:49
 //
 ///////////////////////////////////////////////////
 //
@@ -126,5 +126,5 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FORTSAVE    1
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
-//*WI* LASTTYPE    1
-//*WI* LASTRES     1
+//*WI* LASTTYPE    100
+//*WI* LASTRES     0

@@ -14,6 +14,7 @@
       USE colors
       USE engineConstants  
       USE screen
+      USE playSound
 
       IMPLICIT NONE
 !
@@ -24,6 +25,8 @@
       INTEGER(KIND=2), DIMENSION (2) :: scr
       LOGICAL, PARAMETER             :: editMode = .TRUE.
       CHARACTER(20)                  :: msgString
+
+      !INTEGER                        :: testMe
 
 !
 ! Initialise Winteracter
@@ -44,7 +47,10 @@
       call autoSizeScreen()  
       call initScreenBuff(1)  
 
-      !write(msgString, '(I0, "|", I0)') scr(1), scr(2)       
+      !testMe = 0
+      !testMe = testC(2,1)
+          
+      !write(msgString, '("Test: ", I0)') testMe       
       !call displayDebug(msgString)     
 
       call WMEssageEnable(BorderSelect, Enabled)
@@ -55,8 +61,11 @@
       CALL IGrAreaClear() 
       CALL IGrPlotMode(' ')  
       call setSpeed(1)
-      CALL WMessageTimer(timer,IREPEAT=Enabled)  
+      CALL WMessageTimer(1000/MFPS,IREPEAT=Enabled)  
       call WindowClear(RGB=RGB_BLACK)
+
+      call playsoundInit()  
+
 !
 ! Main message loop
 !
@@ -66,11 +75,17 @@
 
         SELECT CASE (ITYPE)
           CASE (TimerExpired) 
-            CALL setResolutionMenu() 
-            CALL buffer2Real()
+            if (timer < 1) then
+                CALL setResolutionMenu() 
+                CALL buffer2Real() 
+                timer = speed
+            else
+                timer = timer - 1
+            end if 
 
           CASE (BorderSelect,Expose,Resize)
             call buffer2Real()
+            timer = speed
 
           CASE (MenuSelect)              ! Menu item selected
             SELECT CASE (MESSAGE%VALUE1)

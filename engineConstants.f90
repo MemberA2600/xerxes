@@ -15,9 +15,10 @@ MODULE engineConstants
                 2048, 1536  &  ! QXGA
                 /), shape(standards), order=(/2,1/))
 
-   !INTEGER(KIND=4), PARAMETER  :: screenSizeStarter      = 40002 
-    INTEGER(KIND=1), PARAMETER  :: maxNumberOfScreenSizes = 9
-    INTEGER(kind=2)             :: wOfScreenBuffer        = 2048, &
-                                   hOfScreenBuffer        = 1536  
+    INTEGER(KIND=1), PARAMETER    :: maxNumberOfScreenSizes = 9
+    INTEGER(kind=2)               :: wOfScreenBuffer        = 2048, &
+                                     hOfScreenBuffer        = 1536  
+    INTEGER(KIND = 1), PARAMETER  :: MFPS = 120             ! Maximum frames per second
+
 
 END MODULE engineConstants
