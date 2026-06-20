@@ -15,6 +15,8 @@ MODULE debugWindow
       CHARACTER(LEN = *), intent(in)   :: txt
       
       CALL WDialogLoad(IDD_DEBUGMSG)
+      CALL WDialogSelect(IDD_DEBUGMSG)
+
       CALL WDialogPutString(IDF_DEBUGTXT, txt) 
       CALL WDialogShow(ITYPE=Modal)  
       CALL WDialogUnLoad()

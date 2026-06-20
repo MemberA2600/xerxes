@@ -8,20 +8,20 @@
 //
 // Winteracter resource script
 //
-// Modified : 22/febr./2026 20:02:49
+// Modified : 19/jún./2026 20:57:11
 //
 ///////////////////////////////////////////////////
 //
 // Number of resources
 //
 //*WN* NMENU       1
-//*WN* NITEM       17
-//*WN* NDIALOG     1
-//*WN* NFIELD      2
+//*WN* NITEM       19
+//*WN* NDIALOG     2
+//*WN* NFIELD      5
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
-//*WN* NIDENTIFIER 31
+//*WN* NIDENTIFIER 37
 //*WN* NINCLUDE    0
 //*WN* NOPTROW     0
 ///////////////////////////////////////////////////
@@ -34,27 +34,33 @@
 //
 // Parameter Definitions
 //
-#define IDM_MAIN      30001
-#define ID_SCREENSIZE 40001
-#define IDF_DEBUGTXT   1001
-#define IDD_DEBUGMSG    102
-#define ID_DEBUGOK     1002
-#define ID_AUTO       40002
-#define ID_320x240    40003
-#define ID_640x480    40004
-#define ID_800x600    40005
-#define ID_1024x768   40006
-#define ID_1152x864   40007
-#define ID_1280x960   40008
-#define ID_1400x1050  40009
-#define ID_1600x1200  40010
-#define ID_2048x1536  40011
-#define ID_SPEED      40012
-#define ID_SPEED1     40013
-#define ID_SPEED2     40014
-#define ID_SPEED3     40015
-#define ID_SPEED4     40016
-#define ID_SPEED5     40017
+#define IDM_MAIN        30001
+#define ID_SCREENSIZE   40001
+#define IDF_DEBUGTXT     1001
+#define IDD_DEBUGMSG      102
+#define ID_DEBUGOK       1002
+#define ID_AUTO         40002
+#define ID_320x240      40003
+#define ID_640x480      40004
+#define ID_800x600      40005
+#define ID_1024x768     40006
+#define ID_1152x864     40007
+#define ID_1280x960     40008
+#define ID_1400x1050    40009
+#define ID_1600x1200    40010
+#define ID_2048x1536    40011
+#define ID_SPEED        40012
+#define ID_SPEED1       40013
+#define ID_SPEED2       40014
+#define ID_SPEED3       40015
+#define ID_SPEED4       40016
+#define ID_SPEED5       40017
+#define ID_DEV          40018
+#define ID_BEEP         40019
+#define IDD_GENBEEP       101
+#define ID_GENBEEP_GEN   1003
+#define ID_GENBEEP_SAVE  1004
+#define ID_GENBEEP_PLAY  1005
 
 ///////////////////////////////////////////////////
 //
@@ -67,6 +73,16 @@ CAPTION "Debug Info"
 BEGIN
   CONTROL "",IDF_DEBUGTXT,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,12,8,248,20
   CONTROL "OK",ID_DEBUGOK,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_DEFPUSHBUTTON | BS_TEXT,112,36,40,14
+END
+
+IDD_GENBEEP DIALOG 0,0,173,92
+STYLE WS_POPUP | WS_BORDER | WS_DLGFRAME | WS_SYSMENU | DS_3DLOOK | DS_MODALFRAME
+FONT 8, "MS Shell Dlg"
+CAPTION "Beep Generator"
+BEGIN
+  CONTROL "Generate Beep",ID_GENBEEP_GEN,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,32,10,110,20
+  CONTROL "Save Beep",ID_GENBEEP_SAVE,"BUTTON",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,32,61,110,20
+  CONTROL "Play Beep",ID_GENBEEP_PLAY,"BUTTON",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,32,35,110,20
 END
 
 ///////////////////////////////////////////////////
@@ -96,12 +112,17 @@ BEGIN
     MENUITEM "Hare",ID_SPEED4
     MENUITEM "Snail",ID_SPEED5
   END
+  POPUP "Development"
+  BEGIN
+    MENUITEM "Beep Generator",ID_BEEP,GRAYED
+  END
 END
 
 IDM_MAIN RCDATA
 BEGIN
 ID_SCREENSIZE,1,0,
 ID_SPEED,2,0,
+ID_DEV,3,0,
 0
 END
 

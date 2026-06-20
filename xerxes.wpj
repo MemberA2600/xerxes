@@ -8,14 +8,17 @@ ESAME 1
 EXE   xerxes.exe
 MAXF  1000
 FILE    3 xerxes.f90
-FILE    7 playsound.f90
+FILE    7 beepmachine.f90
+FILE    7 subs.f90
+FILE    7 winapis.f90
 FILE    7 screen.f90
 FILE    7 engineconstants.f90
 FILE    3 resource.rc
 FILE    7 debugwindow.f90
-FILE    7 subs.f90
 FILE    7 colors.f90
 FILE    5 resid.f90
+FILE    7 dataloader.f90
+FILE    7 waveplayer.f90
 FCREL -c
 OPREL -O2
 LNREL -subsystem:windows -machine:x86 -IMPLIB:Kernel32

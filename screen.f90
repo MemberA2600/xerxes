@@ -175,7 +175,7 @@ MODULE screen
         INTEGER(kind=4)  :: layerIndex, lineIndex, pixelIndex, srcLineIndex, srcPixelIndex          
         INTEGER          :: counter 
 
-        call testPattern3()
+        ! call testPattern3()
 
         five2One = -1 
 

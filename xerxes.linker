@@ -1,11 +1,14 @@
 "d:\winteracter\projects\xerxes\xerxes.obj"
-"d:\winteracter\projects\xerxes\playsound.obj"
+"d:\winteracter\projects\xerxes\beepmachine.obj"
+"d:\winteracter\projects\xerxes\subs.obj"
+"d:\winteracter\projects\xerxes\winapis.obj"
 "d:\winteracter\projects\xerxes\screen.obj"
 "d:\winteracter\projects\xerxes\engineconstants.obj"
 "d:\winteracter\projects\xerxes\resource.res"
 "d:\winteracter\projects\xerxes\debugwindow.obj"
-"d:\winteracter\projects\xerxes\subs.obj"
 "d:\winteracter\projects\xerxes\colors.obj"
+"d:\winteracter\projects\xerxes\dataloader.obj"
+"d:\winteracter\projects\xerxes\waveplayer.obj"
 -out:"xerxes.exe"
 -subsystem:windows
 -machine:x86

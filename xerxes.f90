@@ -14,7 +14,12 @@
       USE colors
       USE engineConstants  
       USE screen
-      USE playSound
+      USE winAPIs
+      USE BEEPMACHINE
+      USE DATALOADER
+      USE KERNEL32
+      USE WINMM
+      USE wavePlayer  
 
       IMPLICIT NONE
 !
@@ -25,9 +30,10 @@
       INTEGER(KIND=2), DIMENSION (2) :: scr
       LOGICAL, PARAMETER             :: editMode = .TRUE.
       CHARACTER(20)                  :: msgString
+      INTEGER                        :: intDummy, beepF
 
       !INTEGER                        :: testMe
-
+      !type(CounterTimer)             :: tester  
 !
 ! Initialise Winteracter
 !
@@ -64,7 +70,24 @@
       CALL WMessageTimer(1000/MFPS,IREPEAT=Enabled)  
       call WindowClear(RGB=RGB_BLACK)
 
-      call playsoundInit()  
+      !call tester%timerStart(1000000)  
+      !do while (tester%timerEnded() .EQV. .FALSE.)
+         ! nothing to do
+      !end do  
+      !call BeepInit()
+      !call getFolder("beeps", "xxb")  
+      call random_seed() 
+      if (editMode .EQV. .FALSE.) call WMenuSetState(ID_DEV, ItemEnabled, 0)  
+
+      do beepF = 400, 1000, 200  
+         intDummy = Beep(beepF, 110)
+      end do
+
+      call initWavChannels()
+      !call testSine()  
+      !call stopChannel(1) 
+      !call loadWaveFile(1)  
+      !call loadWaveFile(1)  
 
 !
 ! Main message loop
@@ -95,13 +118,21 @@
                     call setScreenSize(MESSAGE%VALUE1) 
               CASE (ID_SPEED1:ID_SPEED5)  
                     call setSpeed(MESSAGE%VALUE1 - ID_SPEED) 
-                   
-            END SELECT
+              CASE (ID_BEEP)              
+                    call genBeep()     
+
+            END SELECT 
+
+
           CASE (CloseRequest)            ! Close window (e.g. Alt/F4)
-            EXIT     
+            EXIT   
 
         END SELECT
+        !call playChannels()
+
       END DO
       CALL WindowClose()                 ! Remove program window
+      !CALL playsoundClose()
+
       STOP
       END PROGRAM XERXES
