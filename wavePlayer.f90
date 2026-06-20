@@ -15,7 +15,7 @@ MODULE wavePlayer
     implicit none
 
     PRIVATE
-    PUBLIC :: initWavChannels, testSine, stopChannel, loadWaveFile
+    PUBLIC :: initWavChannels, testSine, stopChannel, loadWaveFile, testingTIAWavOnly
 
     integer, parameter :: RATE = 44100
     integer, parameter :: NUMBER_OF_EFFECTS = 4
@@ -179,6 +179,18 @@ MODULE wavePlayer
 
         end if    
 
+    end subroutine
+
+    subroutine testingTIAWavOnly(d, cNum)
+        integer(2), dimension(:), allocatable :: d            
+        integer                               :: cNum
+
+        if (cNum /= 0) then 
+            call effects(cNum)%addWave(d)
+            call effects(cNum)%playWav()
+        else
+            call addWaveToChannel(d)
+        end if
     end subroutine
 
     subroutine addWave(this, d)

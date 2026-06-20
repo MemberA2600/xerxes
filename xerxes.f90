@@ -20,6 +20,7 @@
       USE KERNEL32
       USE WINMM
       USE wavePlayer  
+      USE TIA
 
       IMPLICIT NONE
 !
@@ -88,7 +89,8 @@
       !call stopChannel(1) 
       !call loadWaveFile(1)  
       !call loadWaveFile(1)  
-
+      !call TIA_test(7, 12, 7, 20000)
+  
 !
 ! Main message loop
 !
