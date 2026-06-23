@@ -8,7 +8,7 @@
 //
 // Winteracter resource script
 //
-// Modified : 19/jún./2026 20:57:11
+// Modified : 23/jún./2026 17:43:41
 //
 ///////////////////////////////////////////////////
 //
@@ -16,12 +16,12 @@
 //
 //*WN* NMENU       1
 //*WN* NITEM       19
-//*WN* NDIALOG     2
-//*WN* NFIELD      5
+//*WN* NDIALOG     3
+//*WN* NFIELD      12
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
-//*WN* NIDENTIFIER 37
+//*WN* NIDENTIFIER 45
 //*WN* NINCLUDE    0
 //*WN* NOPTROW     0
 ///////////////////////////////////////////////////
@@ -56,11 +56,19 @@
 #define ID_SPEED4       40016
 #define ID_SPEED5       40017
 #define ID_DEV          40018
-#define ID_BEEP         40019
+#define ID_TIA_Noiser   40019
 #define IDD_GENBEEP       101
 #define ID_GENBEEP_GEN   1003
 #define ID_GENBEEP_SAVE  1004
 #define ID_GENBEEP_PLAY  1005
+#define ID_TIAINPUT      1006
+#define IDD_TIA           104
+#define ID_TIAName       1007
+#define ID_TIAErase      1011
+#define ID_TIASave       1012
+#define ID_TIAPlay       1013
+#define ID_TIALoad       1014
+#define IDF_STRING4      1016
 
 ///////////////////////////////////////////////////
 //
@@ -83,6 +91,27 @@ BEGIN
   CONTROL "Generate Beep",ID_GENBEEP_GEN,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,32,10,110,20
   CONTROL "Save Beep",ID_GENBEEP_SAVE,"BUTTON",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,32,61,110,20
   CONTROL "Play Beep",ID_GENBEEP_PLAY,"BUTTON",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,32,35,110,20
+END
+
+IDD_TIA DIALOG 0,0,189,142
+STYLE WS_POPUP | WS_BORDER | WS_DLGFRAME | WS_SYSMENU | DS_3DLOOK | DS_MODALFRAME
+FONT 8, "MS Shell Dlg"
+CAPTION "TIA Noise Maker"
+BEGIN
+  CONTROL "Erase",ID_TIAErase,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_DEFPUSHBUTTON | BS_TEXT,6,122,40,14
+  CONTROL "Load",ID_TIALoad,"BUTTON",WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,50,122,40,14
+  CONTROL "Save",ID_TIASave,"BUTTON",WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,94,122,40,14
+  CONTROL "Play",ID_TIAPlay,"BUTTON",WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,138,121,40,14
+  CONTROL "Puking Ears",ID_TIAName,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_LEFT,7,101,169,14
+  CONTROL "String",IDF_STRING4,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_LEFT,266,172,40,14
+  CONTROL "",ID_TIAINPUT,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_VSCROLL | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_MULTILINE | ES_WANTRETURN,9,7,168,90
+END
+
+IDD_TIA RCDATA
+BEGIN
+"[Lengths] \n"
+"1007 25 \n"
+,0
 END
 
 ///////////////////////////////////////////////////
@@ -114,7 +143,7 @@ BEGIN
   END
   POPUP "Development"
   BEGIN
-    MENUITEM "Beep Generator",ID_BEEP,GRAYED
+    MENUITEM "TIA Noise Maker",ID_TIA_Noiser
   END
 END
 
@@ -147,5 +176,5 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FORTSAVE    1
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
-//*WI* LASTTYPE    100
-//*WI* LASTRES     0
+//*WI* LASTTYPE    2
+//*WI* LASTRES     3

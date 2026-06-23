@@ -11,7 +11,7 @@ MODULE wavePlayer
     USE subs
     USE KERNEL32
     use WINMM
-    use dataloader
+    use dataloader 
     implicit none
 
     PRIVATE

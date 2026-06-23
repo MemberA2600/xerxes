@@ -14,7 +14,8 @@ MODULE subs
       PRIVATE
       PUBLIC            :: getScreenSize, autoSizeScreen, setResolutionMenu, &
                            getWindowDim, setScreenSize, timer, speed, setSpeed, &
-                           randInt, getTime, FileDialog                                                         
+                           randInt, getTime, FileDialog, countCharInString, &
+                           getNextPoz
 
       CHARACTER(20)     :: msgString
       INTEGER(KIND = 1) :: speed, timer
@@ -195,5 +196,36 @@ MODULE subs
           r  = mod(abs(xx), high - low + 1) + low  
 
      end function
+
+    function countCharInString(text, ch) result(c)
+        character(*)             :: text
+        character                :: ch
+        integer                  :: ind, c
+
+        c = 0
+
+        do ind = 1, len_trim(text), 1
+           if (text(ind:ind) == ch) c = c + 1 
+        end do
+
+     end function
+
+    function getNextPoz(text, ch, startPoz) result(newPoz)
+        character(*)             :: text
+        character                :: ch
+        integer                  :: startPoz
+        integer                  :: newPoz
+        integer                  :: ind        
+
+        newPoz = -1
+
+        do ind = startPoz, len_trim(text), 1
+           if (text(ind:ind) == ch) then        
+               newPoz = ind 
+               return
+           end if                  
+        end do
+
+    end function 
 
 END MODULE subs

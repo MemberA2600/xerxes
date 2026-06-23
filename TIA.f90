@@ -8,11 +8,14 @@ MODULE TIA
     USE debugWindow
     USE dataLoader
     USE waveplayer
+    USE WINTERACTER
+    USE RESID
+    USE subs
 
     implicit none
 
     private
-    public :: createTIASfx, playTIASfx, TIASfx
+    public :: TiaMaker
 
     type :: state_t
         integer :: offset, count, f
@@ -20,6 +23,8 @@ MODULE TIA
         logical :: last
     end type state_t
 
+    
+    
     integer, parameter :: infrequency = 31440 ! NTSC TIA
     integer, parameter :: outfrequency= 44100 ! wav
     integer, parameter :: channels    = 1     ! mono
@@ -387,6 +392,128 @@ MODULE TIA
         deallocate(out, stat = stat)
         if (stat /= 0) call  displayDebug("Failed to deallocate TIA-test-out!")
 
+    end subroutine
+
+    !
+    !  Tia Maker Window
+    !
+
+    subroutine TIAMaker()
+       INTEGER                                 :: ITYPE
+       TYPE(WIN_MESSAGE)                       :: MESSAGE
+       !character(10)                  :: msgString
+       integer                                 :: c 
+
+
+       CALL WDialogLoad(IDD_TIA)
+
+       do
+          CALL WDialogSelect(IDD_TIA)
+          CALL WDialogShow(ITYPE=Modal)     
+    
+          if (WinfoDialog(CurrentDialog) == IDD_TIA) then 
+              SELECT CASE (WinfoDialog(ExitButton))  
+                  CASE(ExitField) 
+                     EXIT
+                  CASE(ID_TIAErase)
+                     CALL WDialogPutString(ID_TIAInput, "")   
+                  CASE(ID_TIALoad)
+                     call TiaLoad()
+                  CASE(ID_TIASave)
+                     call TiaSave()
+                  CASE(ID_TIAPlay)
+                     call TiaPlay()
+                  END SELECT
+              end if
+       end do 
+
+       CALL WDialogUnLoad()
+
+    END SUBROUTINE
+
+    subroutine TiaLoad()
+
+    end subroutine
+
+    subroutine inputBox2Data(d)
+        integer, parameter                                   :: text_len = 1500
+        character(text_len)                                  :: text
+        integer(2), dimension(:), allocatable, intent(inout) :: d
+        integer                                              :: stat, fromPoz, toPoz, ind, length, ind2    
+        character                                            :: ch   
+        character(10)                                        :: segment     
+
+        if (allocated(d)) then
+            deallocate(d, stat = stat)
+            if (stat /= 0) call displayDebug("Failed to deallocate temp for grabbing text to data!")
+        end if
+
+        call WDialogGetString(ID_TIAInput, text)
+            
+        length = countCharInString(text, ",") + countCharInString(text, char(10)) + 1
+
+        !write(segment, "('Fuck: ', I0)") length 
+        !call displayDebug(segment)   
+
+        allocate(d(length), stat = stat)
+        if (stat /= 0) call displayDebug("Failed to allocate temp for grabbing text to data!")
+
+        fromPoz = 1
+        toPoz   = 1
+        ind     = 0
+        ind2    = 0
+
+        do while(ind <= length)
+           ind  = ind  + 1
+           ind2 = ind2 + 1
+    
+           if (ind > 4) ind = 1 
+           ch = ","
+           if (ind == 4) ch = char(10)
+                     
+           toPoz = getNextPoz(text, ch, fromPoz)
+
+           if (toPoz == -1) then 
+               toPoz = len_trim(text)
+           else
+               toPoz = toPoz -1
+               if (ind == 4) toPoz = toPoz - 1  
+           end if  
+
+           !write(segment, "(I0, '|', I0)") fromPoz, toPoz 
+           !call displayDebug(segment)   
+        
+           segment = trim(text(fromPoz:toPoz))
+           !call displayDebug("|" // segment // "|") 
+           read(segment, "(I3)") d(ind2)
+
+           if (toPoz == len_trim(text)) exit
+
+           fromPoz = toPoz + 2 
+           if (ind == 4) fromPoz = fromPoz + 1   
+        end do 
+
+    end subroutine
+
+    subroutine TiaSave()
+        integer(2), dimension(:), allocatable :: d
+
+        call inputBox2Data(d)
+
+    end subroutine
+
+    subroutine TiaPlay()
+        TYPE(Tiasfx)                          :: myTia 
+        integer                               :: stat
+        integer(2), dimension(:), allocatable :: d
+
+        call inputBox2Data(d)
+        call myTia%createTIASfx("", d)
+        call myTia%playTIASfx(  1)
+        call myTia%initTIASfx(  0, "")       
+
+        deallocate(d, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to deallocate temp for play TIA on Editor!")
     end subroutine
 
 END MODULE TIA

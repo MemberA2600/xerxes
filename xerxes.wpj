@@ -8,7 +8,6 @@ ESAME 1
 EXE   xerxes.exe
 MAXF  1000
 FILE    3 xerxes.f90
-FILE    7 beepmachine.f90
 FILE    7 subs.f90
 FILE    7 winapis.f90
 FILE    7 screen.f90

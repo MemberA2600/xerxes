@@ -15,7 +15,6 @@
       USE engineConstants  
       USE screen
       USE winAPIs
-      USE BEEPMACHINE
       USE DATALOADER
       USE KERNEL32
       USE WINMM
@@ -80,10 +79,9 @@
       end do
 
       call initWavChannels()
-      !call TIA_test(7, 12, 7, 20000)
   
       !allocate(tiaTestData(28), stat = stat)  
-
+      !  
       !tiaTestData = (/ &
       !               7, 6, 6, 3, &    
       !               7, 6, 5, 4, &  
@@ -93,7 +91,7 @@
       !               7, 6, 8, 2, &  
       !               7, 6, 9, 4  &  
       !               /)      
-
+      !
       !call tester%createTIASfx("Putty", tiaTestData)   
       !call tester%playTIASfx(1)        
 
@@ -128,8 +126,8 @@
                     call setScreenSize(MESSAGE%VALUE1) 
               CASE (ID_SPEED1:ID_SPEED5)  
                     call setSpeed(MESSAGE%VALUE1 - ID_SPEED) 
-              CASE (ID_BEEP)              
-                    call genBeep()     
+              CASE (ID_TIA_Noiser)              
+                    call tiaMaker()     
 
             END SELECT 
 

@@ -4,7 +4,6 @@ MODULE dataLoader
       USE RESID
       USE debugWindow
       USE winAPIs
-      USE BEEPMACHINE
       use IFPORT
   
       PRIVATE
