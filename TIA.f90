@@ -12,7 +12,7 @@ MODULE TIA
     implicit none
 
     private
-    public :: TIA_test
+    public :: createTIASfx, playTIASfx, TIASfx
 
     type :: state_t
         integer :: offset, count, f
@@ -65,7 +65,155 @@ MODULE TIA
                                             3,2,2,4,1,2,6,10,-1 ]
 
     integer, parameter :: divisors(16) = [ 1, 1, 15, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 1 ]
+
+    Type TIATone
+         integer(1) :: Vol, Chan, Freq, Length
+    end type
+
+    type TIASfx
+         Type(TIATone), dimension(:), allocatable :: tones
+         integer(2)                               :: length
+         character(25)                            :: name
+
+         contains   
+         
+         procedure :: initTIASfx   => initTIASfx   
+         procedure :: createTIASfx => createTIASfx   
+         procedure :: playTIASfx   => playTIASfx   
+    end type
+
     contains
+
+    ! TIASfx
+
+    subroutine initTIASfx(this, L, N)   
+        class(TIASfx), intent(inout) :: this
+        integer(2)                   :: L 
+        integer(2)                   :: stat
+        character(*)                 :: N
+
+        if (allocated(this%tones)) then
+            deallocate(this%tones, stat = stat)
+            if (stat /= 0) call displayDebug("Failed to deallocate tones!")
+        end if 
+
+        this%length = L
+        this%name   = N
+
+        if (this%length > 0) then
+            allocate(this%tones(this%length), stat = stat)
+            if (stat /= 0) call displayDebug("Failed to allocate tones!")
+        end if
+
+    end subroutine    
+
+    subroutine createTIASfx(this, N, bytes)
+        class(TIASfx), intent(inout)          :: this
+        character(*)                          :: N
+        integer(2), dimension(:), allocatable :: bytes
+        integer(2)                            :: ind, stat, ind2 
+        character(40)                         :: test
+
+        if (mod(size(bytes), 4) /= 0) call displayDebug("Number of bytes is not dividable by 4!")
+
+        this%length = size(bytes) / 4         
+        call this%initTIASfx(this%length, N)
+    
+        ind2 = 0        
+        do ind  = 1, size(bytes), 4
+           ind2 = ind2 + 1 
+           
+           this%tones(ind2)%Vol    = bytes(ind)   
+           this%tones(ind2)%Chan   = bytes(ind +1)   
+           this%tones(ind2)%Freq   = bytes(ind +2)  
+           this%tones(ind2)%Length = bytes(ind +3)          
+
+           !write(test, "('Test: ', I0, ' ', I0)") ind, ind2
+           !call displayDebug(test) 
+        end do
+
+    end subroutine
+   
+    subroutine playTIASfx(this, chan)
+        class(TIASfx), intent(inout)          :: this
+        integer(2)                            :: chan 
+        integer(2)                            :: ind, stat 
+        integer(2), dimension(:), allocatable :: temp, full, fullcopy
+        logical                               :: copy
+        integer                               :: ind2, newsize, adder
+        character(40)                         :: test
+
+        do ind = 1, this%length, 1
+           if (allocated(temp) .EQV. .TRUE.) then
+               deallocate(temp, stat = stat)
+               if (stat /= 0) call displayDebug("Failed to deallocate temp for play TIA!")
+           end if 
+
+           !write(test, "(I0, ' | ', I0, ' | ', I0, '|', I0)") &
+           !this%tones(ind)%Vol, this%tones(ind)%Chan, &
+           !this%tones(ind)%Freq, this%tones(ind)%Length 
+
+           !call displayDebug(test) 
+
+           call TIA_gen(this%tones(ind)%Vol, this%tones(ind)%Chan, &
+                        this%tones(ind)%Freq, this%tones(ind)%Length * 200, temp) 
+
+           copy = .FALSE. 
+
+           if (allocated(full) .EQV. .TRUE.) then
+               copy = .TRUE.
+                
+               if(allocated(fullcopy) .EQV. .TRUE.) then
+                  deallocate(fullcopy, stat = stat)  
+                  if (stat /= 0) call displayDebug("Failed to deallocate fullcopy for play TIA!")
+               end if 
+
+               allocate(fullcopy(size(full)), stat = stat)  
+               if (stat /= 0) call displayDebug("Failed to allocate fullcopy for play TIA!")
+
+               do ind2 = 1, size(full), 1
+                  fullcopy(ind2) = full(ind2) 
+               end do  
+
+               deallocate(full, stat = stat)  
+               if (stat /= 0) call displayDebug("Failed to deallocate full for play TIA!")
+  
+               newsize = size(full) + size(temp)
+           else
+               newsize = size(temp) 
+           end if 
+
+           allocate(full(newsize), stat = stat)  
+           if (stat /= 0) call displayDebug("Failed to allocate full for play TIA!")
+ 
+           if (copy .EQV. .TRUE.) then
+               do ind2 = 1, size(fullcopy), 1   
+                  full(ind2) = fullcopy(ind2)   
+               end do      
+
+               adder = size(fullcopy) + 1
+
+               deallocate(fullcopy, stat = stat)  
+               if (stat /= 0) call displayDebug("Failed to deallocate fullcopy-2 for play TIA!")
+            else
+               adder = 0 
+            end if                
+
+            do ind2 = 1, size(temp), 1
+               full(ind2 + adder) = temp(ind2)       
+            end do
+
+        end do
+
+        call TIA2Wav(full, chan)
+        
+        deallocate(full, stat = stat)  
+        if (stat /= 0) call displayDebug("Failed to deallocate full-2 for play TIA!")
+
+    end subroutine
+
+
+    ! Basic TIA stuff    
 
     subroutine TIA_init(s)
         type(state_t), intent(out) :: s
@@ -234,7 +382,7 @@ MODULE TIA
         integer :: stat
 
         call TIA_gen(V, C, F, L, out)
-        call testingTIAWavOnly(out, 1)
+        call TIA2Wav(out, 1)
 
         deallocate(out, stat = stat)
         if (stat /= 0) call  displayDebug("Failed to deallocate TIA-test-out!")

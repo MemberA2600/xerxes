@@ -15,7 +15,7 @@ MODULE wavePlayer
     implicit none
 
     PRIVATE
-    PUBLIC :: initWavChannels, testSine, stopChannel, loadWaveFile, testingTIAWavOnly
+    PUBLIC :: initWavChannels, stopChannel, TIA2Wav
 
     integer, parameter :: RATE = 44100
     integer, parameter :: NUMBER_OF_EFFECTS = 4
@@ -109,7 +109,7 @@ MODULE wavePlayer
         TYPE(WaveFile)        :: wfile
         integer(2), dimension(:), allocatable :: d
         integer               :: s, ind, offset, stat
-        character(40)         :: test
+        !character(40)         :: test
         integer               :: cNum
 
         fname = FileDialog("", .FALSE., "wave") 
@@ -181,7 +181,7 @@ MODULE wavePlayer
 
     end subroutine
 
-    subroutine testingTIAWavOnly(d, cNum)
+    subroutine TIA2Wav(d, cNum)
         integer(2), dimension(:), allocatable :: d            
         integer                               :: cNum
 
@@ -210,6 +210,8 @@ MODULE wavePlayer
         class(WaveChannel), intent(inout) :: this             
         integer                           :: s, rc
 
+        if (this%headerSet .EQV. .TRUE.) call this%destroyHeader()
+
         this%playing             = .FALSE.
         this%L                   = s
 
@@ -217,8 +219,6 @@ MODULE wavePlayer
             deallocate(this%buffer, stat = rc)
             if (rc /= 0) call displayDebug("Failed to deallocate buffer!")
         end if
-
-        if (this%headerSet .EQV. .TRUE.) call this%destroyHeader()
 
         if (this%L > 0) then
             allocate(this%buffer(this%L), stat = rc)
@@ -230,7 +230,18 @@ MODULE wavePlayer
     subroutine destroyHeader(this)
         class(WaveChannel), intent(inout) :: this             
         integer(2)                        :: rc
+        character(25)                     :: test
        
+        do while (this%playing       .EQV. .TRUE. .AND. &
+                  this%canPlayNext() .EQV. .FALSE. )
+                  !
+        end do
+
+        do while (iand(this%hdr%dwFlags, WHDR_DONE) == 0)
+           write(test, "('Flags: ', B0)") this%hdr%dwFlags
+           call displayDebug(test)   
+        end do
+
         rc = waveOutUnprepareHeader( &
                 this%hWave, this%hdr, sizeof(this%hdr))
     
@@ -282,8 +293,8 @@ MODULE wavePlayer
         ! Format
         character(40)        :: test
         integer              :: ind
-    
-        if (this%playing .EQV. .TRUE.) return 
+
+        if (this%headerSet .EQV. .TRUE.) call this%destroyHeader()
 
         !do ind = 1, size(this%buffer), 1
         !    write(test, "(Z0)") this%buffer(ind)
@@ -343,10 +354,6 @@ MODULE wavePlayer
                 this%hWave, this%hdr, sizeof(this%hdr))
        
         if (rc /= MMSYSERR_NOERROR) call displayDebug("Failed to write out wave buffer!")   
-
-        !do while (iand(this%hdr%dwFlags, WHDR_DONE) == 0)
-        !    call Sleep(10)
-        !end do
 
     end subroutine
 

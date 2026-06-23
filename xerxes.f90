@@ -31,10 +31,10 @@
       INTEGER(KIND=2), DIMENSION (2) :: scr
       LOGICAL, PARAMETER             :: editMode = .TRUE.
       CHARACTER(20)                  :: msgString
-      INTEGER                        :: intDummy, beepF
+      INTEGER                        :: intDummy, beepF, stat
 
-      !INTEGER                        :: testMe
-      !type(CounterTimer)             :: tester  
+      !INTEGER(2), dimension(:), allocatable :: tiaTestData  
+      !TYPE(TIASfx)                          :: tester  
 !
 ! Initialise Winteracter
 !
@@ -71,11 +71,6 @@
       CALL WMessageTimer(1000/MFPS,IREPEAT=Enabled)  
       call WindowClear(RGB=RGB_BLACK)
 
-      !call tester%timerStart(1000000)  
-      !do while (tester%timerEnded() .EQV. .FALSE.)
-         ! nothing to do
-      !end do  
-      !call BeepInit()
       !call getFolder("beeps", "xxb")  
       call random_seed() 
       if (editMode .EQV. .FALSE.) call WMenuSetState(ID_DEV, ItemEnabled, 0)  
@@ -85,12 +80,25 @@
       end do
 
       call initWavChannels()
-      !call testSine()  
-      !call stopChannel(1) 
-      !call loadWaveFile(1)  
-      !call loadWaveFile(1)  
       !call TIA_test(7, 12, 7, 20000)
   
+      !allocate(tiaTestData(28), stat = stat)  
+
+      !tiaTestData = (/ &
+      !               7, 6, 6, 3, &    
+      !               7, 6, 5, 4, &  
+      !               7, 6, 4, 5, &  
+      !               7, 6, 3, 4, &  
+      !               7, 6, 7, 3, &  
+      !               7, 6, 8, 2, &  
+      !               7, 6, 9, 4  &  
+      !               /)      
+
+      !call tester%createTIASfx("Putty", tiaTestData)   
+      !call tester%playTIASfx(1)        
+
+      !call TIA_test(6, 6, 4, 5000)
+      !call TIA_test(6, 6, 3, 5000)
 !
 ! Main message loop
 !

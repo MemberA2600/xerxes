@@ -66,7 +66,7 @@ MODULE winAPIs
         class(CounterTimer), intent(inout) :: this    
         LOGICAL                            :: ended 
         integer(8)                         :: now
-        !character(100)                     :: text 
+        character(100)                     :: text 
         
         now = getTime()
 
