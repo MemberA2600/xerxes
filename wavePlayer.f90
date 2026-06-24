@@ -120,10 +120,7 @@ MODULE wavePlayer
             if (s > 0) then
                 offset = 1
                 call read4CharFromBin(d, s, offset, wfile%riff)  
-                !call  displayDebug("Test: " // trim(wfile%riff))
                 call readIntFromBin(d, s, offset, wfile%fileSize, 4)  
-                !write(test, "(I0)") wfile%fileSize
-                !call  displayDebug("Test: " // trim(test))
                 call read4CharFromBin(d, s, offset, wfile%wave)  
                 call read4CharFromBin(d, s, offset, wfile%fmt)  
                 call readIntFromBin(d, s, offset, wfile%fmtChunkSize, 4)  
@@ -156,12 +153,6 @@ MODULE wavePlayer
 
                 deallocate(d, stat = stat)
                 if (stat /= 0) call  displayDebug("Failed to deallocate original array!")
-
-                !allocate(d(size(wfile%bytes) / 2), stat = stat)
-                !if (stat /= 0) call  displayDebug("Failed to allocate half array!")
-                
-                !write(test, "(I0, ' | ', I0)") wfile%datSize, size(wfile%bytes)
-                !call displayDebug("Sizes: " // trim(test)) 
 
                 call copyBytesHalf(wfile%bytes, d)
 

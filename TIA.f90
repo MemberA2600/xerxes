@@ -11,6 +11,7 @@ MODULE TIA
     USE WINTERACTER
     USE RESID
     USE subs
+    USE engineConstants
 
     implicit none
 
@@ -23,7 +24,7 @@ MODULE TIA
         logical :: last
     end type state_t
 
-    
+    integer, parameter :: text_len = 1500
     
     integer, parameter :: infrequency = 31440 ! NTSC TIA
     integer, parameter :: outfrequency= 44100 ! wav
@@ -78,13 +79,23 @@ MODULE TIA
     type TIASfx
          Type(TIATone), dimension(:), allocatable :: tones
          integer(2)                               :: length
-         character(25)                            :: name
+         character(NAME_MAX_LEN)                  :: name
 
          contains   
          
          procedure :: initTIASfx   => initTIASfx   
          procedure :: createTIASfx => createTIASfx   
          procedure :: playTIASfx   => playTIASfx   
+    end type
+
+    character(4), parameter :: TIA_FILE_TYPE = 'TIA '
+
+    type TIAheader
+        character(4)                          :: fileTyp
+        integer(1)                            :: nameLen
+        character(NAME_MAX_LEN)               :: name
+        integer(1)                            :: numOfTones
+
     end type
 
     contains
@@ -117,7 +128,6 @@ MODULE TIA
         character(*)                          :: N
         integer(2), dimension(:), allocatable :: bytes
         integer(2)                            :: ind, stat, ind2 
-        character(40)                         :: test
 
         if (mod(size(bytes), 4) /= 0) call displayDebug("Number of bytes is not dividable by 4!")
 
@@ -133,8 +143,6 @@ MODULE TIA
            this%tones(ind2)%Freq   = bytes(ind +2)  
            this%tones(ind2)%Length = bytes(ind +3)          
 
-           !write(test, "('Test: ', I0, ' ', I0)") ind, ind2
-           !call displayDebug(test) 
         end do
 
     end subroutine
@@ -153,12 +161,6 @@ MODULE TIA
                deallocate(temp, stat = stat)
                if (stat /= 0) call displayDebug("Failed to deallocate temp for play TIA!")
            end if 
-
-           !write(test, "(I0, ' | ', I0, ' | ', I0, '|', I0)") &
-           !this%tones(ind)%Vol, this%tones(ind)%Chan, &
-           !this%tones(ind)%Freq, this%tones(ind)%Length 
-
-           !call displayDebug(test) 
 
            call TIA_gen(this%tones(ind)%Vol, this%tones(ind)%Chan, &
                         this%tones(ind)%Freq, this%tones(ind)%Length * 200, temp) 
@@ -432,11 +434,63 @@ MODULE TIA
     END SUBROUTINE
 
     subroutine TiaLoad()
+        character(MAX_PATH_LEN)                :: fname
+        integer(2), dimension(:), allocatable  :: d, temp
+        integer(4)                             :: siz, ind, offset, stat, dataLen, V, C, F, L
+        type(TIAHeader)                        :: header
+        character(text_len)                    :: txt
+        character(80)                          :: line
+
+        fname = FileDialog("tia\", .FALSE., "xxt ")    
+        if (fname == "") return
+
+        call loadBinary(fname, d, siz)
+        offset = 1
+        call read4CharFromBin(d, siz, offset, header%fileTyp)  
+    
+        if (header%fileTyp /= TIA_FILE_TYPE) then
+            call displayDebug("This is not a valid TIA file!")
+            return
+        end if    
+    
+        header%nameLen = d(offset)
+        offset         = offset + 1
+
+        call copyBytes(d, temp, offset, offset + header%nameLen - 1, header%nameLen) 
+        offset = offset + header%nameLen
+
+        call bin2Char(header%name, temp, header%nameLen, .TRUE.) 
+
+        header%numOfTones = d(offset)
+        offset            = offset + 1
+
+        call copyBytes(d, temp, offset, offset + (header%numOfTones * 4) - 1, header%numOfTones * 4) 
+        
+        txt = ""
+
+        do ind = 1, header%numOfTones* 4, 4
+           V = temp(ind    ) 
+           C = temp(ind + 1)             
+           F = temp(ind + 2) 
+           L = temp(ind + 3) 
+
+           line = "" 
+           write(line, "(I0, ',', I0, ',', I0, ',', I0)") V,C,F,L,achar(13) // achar(10)
+           txt = trim(txt) // trim(line)
+        end do 
+ 
+        deallocate(temp, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to deallocate temp for TIA load!")
+
+        deallocate(d, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to deallocate the full for TIA load!")
+
+        call WDialogPutString(ID_TIAName , header%name)
+        call WDialogPutString(ID_TIAInput, txt)
 
     end subroutine
 
     subroutine inputBox2Data(d)
-        integer, parameter                                   :: text_len = 1500
         character(text_len)                                  :: text
         integer(2), dimension(:), allocatable, intent(inout) :: d
         integer                                              :: stat, fromPoz, toPoz, ind, length, ind2    
@@ -451,9 +505,6 @@ MODULE TIA
         call WDialogGetString(ID_TIAInput, text)
             
         length = countCharInString(text, ",") + countCharInString(text, char(10)) + 1
-
-        !write(segment, "('Fuck: ', I0)") length 
-        !call displayDebug(segment)   
 
         allocate(d(length), stat = stat)
         if (stat /= 0) call displayDebug("Failed to allocate temp for grabbing text to data!")
@@ -479,12 +530,8 @@ MODULE TIA
                toPoz = toPoz -1
                if (ind == 4) toPoz = toPoz - 1  
            end if  
-
-           !write(segment, "(I0, '|', I0)") fromPoz, toPoz 
-           !call displayDebug(segment)   
-        
+       
            segment = trim(text(fromPoz:toPoz))
-           !call displayDebug("|" // segment // "|") 
            read(segment, "(I3)") d(ind2)
 
            if (toPoz == len_trim(text)) exit
@@ -496,9 +543,41 @@ MODULE TIA
     end subroutine
 
     subroutine TiaSave()
-        integer(2), dimension(:), allocatable :: d
+        integer(2), dimension(:), allocatable :: d, fullD
+        integer(2)                            :: stat, siz
+        character(NAME_MAX_LEN)               :: name
+        type(TIAHeader)                       :: header
+        character(MAX_PATH_LEN)               :: fname
+
+        fname = FileDialog("tia\", .TRUE., "xxt ")    
+        if (fname == "") return
 
         call inputBox2Data(d)
+        call WDialogGetString(ID_TIAName, name)
+
+        header%fileTyp    = TIA_FILE_TYPE
+        header%nameLen    = len_trim(name)
+        header%name       = trim(name)    
+        header%numOfTones = size(d) / 4
+
+        siz = 4 + 1 + header%nameLen + 1 + (header%numOfTones * 4)
+        allocate (fullD(siz), stat = stat)        
+        if (stat /= 0) call displayDebug("Failed to allocate full for save TIA on Editor!")
+
+        call writeChars2Bin(fullD, header%fileTyp, 1, 4)
+        fullD(5) = header%nameLen 
+        call writeChars2Bin(fullD, header%name, 6, header%nameLen)
+
+        fullD(6 + header%nameLen) = header%numOfTones
+
+        call writeBytes2Bin(d, fullD, 7 + header%nameLen)
+        call writeBin2File(fname, fulld, .TRUE.)
+
+        deallocate(d, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to deallocate temp for save TIA on Editor!")
+
+        !deallocate(fullD, stat = stat)
+        !if (stat /= 0) call displayDebug("Failed to deallocate full for save TIA on Editor!")
 
     end subroutine
 

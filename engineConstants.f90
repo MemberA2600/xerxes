@@ -19,6 +19,8 @@ MODULE engineConstants
     INTEGER(kind=2)               :: wOfScreenBuffer        = 2048, &
                                      hOfScreenBuffer        = 1536  
     INTEGER(KIND = 1), PARAMETER  :: MFPS = 120             ! Maximum frames per second
+    INTEGER, PARAMETER            :: MAX_PATH_LEN = 255
+    integer, parameter            :: NAME_MAX_LEN = 25
 
 
 END MODULE engineConstants

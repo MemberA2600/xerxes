@@ -24,16 +24,20 @@ MODULE subs
 
       function FileDialog(dir, sav, typ) result(fname)
             character(*)                            :: dir
-            character(255)                          :: fname  
+            character(MAX_PATH_LEN)                 :: fname  
             logical                                 :: sav
             integer                                 :: iflags, ind             
-            character(25), dimension(1,3)           :: typeList         
+            character(25), dimension(2,3)           :: typeList         
             character(4)                            :: typ
             character(40)                           :: title, ftyp 
 
             typeList(1,1) = "wave"
             typelist(1,2) = "Wave Files (*wav)|*.wav|"
             typelist(1,3) = "Windows Wave File"
+
+            typeList(2,1) = "xxt "
+            typelist(2,2) = "TIA Files (*xxt)|*.xxt|"
+            typelist(2,3) = "Xerxes TIA File"
 
             iflags = 8 + 32
 

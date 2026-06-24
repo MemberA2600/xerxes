@@ -31,6 +31,7 @@
       LOGICAL, PARAMETER             :: editMode = .TRUE.
       CHARACTER(20)                  :: msgString
       INTEGER                        :: intDummy, beepF, stat
+      !CHARACTER(255)                 :: fname  
 
       !INTEGER(2), dimension(:), allocatable :: tiaTestData  
       !TYPE(TIASfx)                          :: tester  
@@ -97,6 +98,7 @@
 
       !call TIA_test(6, 6, 4, 5000)
       !call TIA_test(6, 6, 3, 5000)
+
 !
 ! Main message loop
 !
