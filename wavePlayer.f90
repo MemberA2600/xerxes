@@ -15,7 +15,7 @@ MODULE wavePlayer
     implicit none
 
     PRIVATE
-    PUBLIC :: initWavChannels, stopChannel, TIA2Wav
+    PUBLIC :: initWavChannels, stopChannel, TIA2Wav, soundChannelLoop
 
     integer, parameter :: RATE = 44100
     integer, parameter :: NUMBER_OF_EFFECTS = 4
@@ -28,7 +28,7 @@ MODULE wavePlayer
         type(T_WAVEHDR)      :: hdr 
     
         integer(HANDLE)      :: hWave
-        logical              :: playing, headerSet
+        logical              :: playing, headerSet, toneWaiting
         type(CounterTimer)   :: timer
         
         contains 
@@ -59,14 +59,30 @@ MODULE wavePlayer
     !  Main Player Stuff
     ! 
 
+    subroutine soundChannelLoop()
+        integer         :: ind
+
+        do ind = 1, NUMBER_OF_EFFECTS, 1
+           if (effects(ind)%playing       .EQV. .FALSE.) then
+               if (effects(ind)%toneWaiting   .EQV. .TRUE.) then     
+                   call effects(ind)%playWav() 
+                   exit 
+               end if 
+           end if 
+        end do    
+
+    end subroutine
+
     subroutine addWaveToChannel(d)
         integer(2), dimension(:), allocatable :: d
         integer         :: ind
 
         do ind = 1, NUMBER_OF_EFFECTS, 1
-           if (effects(ind)%canPlayNext() .EQV. .TRUE.) then            
-               call effects(ind)%addWave(d) 
-               exit 
+           if (effects(ind)%canPlayNext("1") .EQV. .TRUE.) then
+               if (effects(ind)%toneWaiting   .EQV. .FALSE.) then            
+                   call effects(ind)%addWave(d) 
+                   exit 
+               end if 
            end if 
         end do    
 
@@ -96,10 +112,12 @@ MODULE wavePlayer
     !   WaveChannel stuff
     !
 
-    function canPlayNext(this) result(rc)
-        class(WaveChannel), intent(inout) :: this             
+    function canPlayNext(this, c) result(rc)
+        class(WaveChannel), intent(inout) :: this
+        character                         :: c             
         logical rc
 
+        !call displayDebug(c)
         rc = this%timer%TimerEnded()
  
     end function
@@ -195,6 +213,8 @@ MODULE wavePlayer
            this%buffer(ind) = d(ind)
         end do
 
+        this%toneWaiting         = .TRUE.
+
     end subroutine
 
     subroutine initChannel(this, s)
@@ -205,6 +225,7 @@ MODULE wavePlayer
 
         this%playing             = .FALSE.
         this%L                   = s
+        this%toneWaiting         = .FALSE.
 
         if (allocated(this%buffer)) then 
             deallocate(this%buffer, stat = rc)
@@ -222,15 +243,10 @@ MODULE wavePlayer
         class(WaveChannel), intent(inout) :: this             
         integer(2)                        :: rc
         character(25)                     :: test
-       
-        do while (this%playing       .EQV. .TRUE. .AND. &
-                  this%canPlayNext() .EQV. .FALSE. )
-                  !
-        end do
 
-        do while (iand(this%hdr%dwFlags, WHDR_DONE) == 0)
-           write(test, "('Flags: ', B0)") this%hdr%dwFlags
-           call displayDebug(test)   
+        do 
+           if (this%playing .EQV. .FALSE. .AND. this%canPlayNext("2") .EQV. .TRUE. &
+              .AND. iand(this%hdr%dwFlags, WHDR_DONE) == 1) exit  
         end do
 
         rc = waveOutUnprepareHeader( &
@@ -241,7 +257,9 @@ MODULE wavePlayer
         rc = waveOutClose(this%hWave)
 
         if (rc /= MMSYSERR_NOERROR) call displayDebug("Failed to close wave out!")   
-        this%headerSet = .FALSE.
+        this%headerSet           = .FALSE.
+        this%toneWaiting         = .FALSE.
+        this%playing             = .FALSE.
 
     end subroutine
 
@@ -263,7 +281,7 @@ MODULE wavePlayer
         integer     :: i
         real(8)     :: t
 
-        if (this%canPlayNext() .EQV. .FALSE.) return
+        if (this%canPlayNext("3") .EQV. .FALSE.) return
 
         call this%initChannel(RATE)
 
@@ -291,7 +309,7 @@ MODULE wavePlayer
         !    write(test, "(Z0)") this%buffer(ind)
         !    call  displayDebug("Test: " // trim(test))
         !end do
-
+        this%toneWaiting         = .FALSE.
         this%playing             = .TRUE.
 
         this%fmt%wFormatTag      = WAVE_FORMAT_PCM
@@ -345,6 +363,7 @@ MODULE wavePlayer
                 this%hWave, this%hdr, sizeof(this%hdr))
        
         if (rc /= MMSYSERR_NOERROR) call displayDebug("Failed to write out wave buffer!")   
+        this%playing             = .FALSE.
 
     end subroutine
 

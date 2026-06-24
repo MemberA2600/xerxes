@@ -20,6 +20,7 @@
       USE WINMM
       USE wavePlayer  
       USE TIA
+      USE folderParser
 
       IMPLICIT NONE
 !
@@ -54,15 +55,7 @@
       call autoSizeScreen()  
       call initScreenBuff(1)  
 
-      !testMe = 0
-      !testMe = testC(2,1)
-          
-      !write(msgString, '("Test: ", I0)') testMe       
-      !call displayDebug(msgString)     
-
       call WMEssageEnable(BorderSelect, Enabled)
-
-      !call WindowOutStatusBar(1, 'Hörcsögfarm!')  
 
       CALL IGrArea(0.0,0.0,1.0,1.0)
       CALL IGrAreaClear() 
@@ -80,24 +73,8 @@
       end do
 
       call initWavChannels()
-  
-      !allocate(tiaTestData(28), stat = stat)  
-      !  
-      !tiaTestData = (/ &
-      !               7, 6, 6, 3, &    
-      !               7, 6, 5, 4, &  
-      !               7, 6, 4, 5, &  
-      !               7, 6, 3, 4, &  
-      !               7, 6, 7, 3, &  
-      !               7, 6, 8, 2, &  
-      !               7, 6, 9, 4  &  
-      !               /)      
-      !
-      !call tester%createTIASfx("Putty", tiaTestData)   
-      !call tester%playTIASfx(1)        
-
-      !call TIA_test(6, 6, 4, 5000)
-      !call TIA_test(6, 6, 3, 5000)
+      call getFolder("tia", "xxt")
+      !call playTIAbyName("Cicafos", 0)  
 
 !
 ! Main message loop
@@ -138,11 +115,12 @@
             EXIT   
 
         END SELECT
+        CALL soundChannelLoop()
+
         !call playChannels()
 
       END DO
       CALL WindowClose()                 ! Remove program window
-      !CALL playsoundClose()
 
       STOP
       END PROGRAM XERXES

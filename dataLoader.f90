@@ -7,35 +7,14 @@ MODULE dataLoader
       use IFPORT
       use engineConstants  
 
+      IMPLICIT NONE  
+
       PRIVATE
-      PUBLIC :: getFolder, loadbinary, read4CharFromBin, readIntFromBin, copyBytes, copyBytesHalf, &
+      PUBLIC :: loadbinary, read4CharFromBin, readIntFromBin, copyBytes, copyBytesHalf, &
                 writeChars2Bin, writeBytes2Bin, writeBin2File, bin2Char 
 
       CONTAINS
       
-      subroutine getFolder(folder, extension)
-          character(*)                  :: folder, extension  
-          TYPE(FILE$INFO)               :: DIR_INFO
-          INTEGER(KIND=INT_PTR_KIND( )) :: hndl
-          INTEGER                       :: NN,n,i
-          character(MAX_PATH_LEN)       :: dirName
-            
-          !call displayDebug("Search data: " // trim(folder) // '\*.' // (trim(extension)))       
-
-          N = 0
-          hndl = FILE$FIRST
-          DO 
-             NN = GETFILEINFOQQ(trim(folder) // '\*.' // (trim(extension)),DIR_INFO, hndl)
-	        IF(hndl.eq.FILE$LAST.or.hndl.eq.FILE$ERROR.or.NN.eq.0)exit
-             N = N + 1
-		   
-             test = ""
-             write(dirName,'(I2,2x,A15,2x,I6)')N,dir_info%name,dir_info%length
-             call displayDebug(dirName)
-          END DO
-
-      end subroutine       
-
       subroutine writeBin2File(filename, d2, dealloc)
          character(*), intent(in)             :: filename
          integer(1), allocatable              :: d (:)
@@ -65,7 +44,6 @@ MODULE dataLoader
 
         if (ios /= 0) then
             call displayDebug("Failed to open binary file for write!") 
-            s = 0
             return
         end if
 
@@ -112,7 +90,6 @@ MODULE dataLoader
     
         if (ios /= 0) then
             call displayDebug("Failed to open binary file for read!") 
-            s = 0
             return
         end if
     
@@ -283,6 +260,7 @@ MODULE dataLoader
          character(NAME_MAX_LEN), intent(inout)  :: c 
          integer(2), allocatable                 :: d (:)
          integer(2)                              :: ind, stat
+         integer(2)                              :: limit
 
          c = ""
 

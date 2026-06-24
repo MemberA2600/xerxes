@@ -70,8 +70,9 @@ MODULE winAPIs
         
         now = getTime()
 
-        !write(text, "(A, I0, A, I0, A, I0)") "Start: ", this%started, " | Now: ", now, &
-        !                                     " | Diff: ", this%diffCheck 
+        !write(text, "('Start: ', I0, ' |Now: ', I0, ' |Diff: ', I0, ' |Wait: ', I0, ' | OK:', L)") &
+        !              this%started, now, this%diffCheck, this%diffCheck - (now - this%started), &
+        !              (now - this%started) > this%diffCheck 
         !call displayDebug(text) 
         
         ended = (now - this%started) > this%diffCheck

@@ -16,7 +16,7 @@ MODULE TIA
     implicit none
 
     private
-    public :: TiaMaker
+    public :: TiaMaker, initTiaList, loadTIAFile, playTIAbyName
 
     type :: state_t
         integer :: offset, count, f
@@ -89,6 +89,7 @@ MODULE TIA
     end type
 
     character(4), parameter :: TIA_FILE_TYPE = 'TIA '
+    TYPE(TIASfx), dimension(:), allocatable   :: tiaList
 
     type TIAheader
         character(4)                          :: fileTyp
@@ -101,6 +102,49 @@ MODULE TIA
     contains
 
     ! TIASfx
+
+    subroutine playTIAbyName(name, chan)
+        character(*)                          :: name
+        integer(2)                            :: chan
+        integer(2)                            :: ind
+        
+        do ind = 1, size(tiaList), 1
+           if (tiaList(ind)%name == name) then
+               call tiaList(ind)%playTiaSFX(chan) 
+               exit
+           end if  
+        end do
+
+    end subroutine
+    
+    subroutine initTiaList(n)
+        integer(2)                   :: n
+        integer(2)                   :: stat
+
+        allocate(tiaList(n), stat = stat)
+        if (stat /= 0) call displayDebug("Failed to allocate list of TiaSFX!")
+
+    end subroutine
+
+    subroutine loadTIAFile(N, fname)
+        character(*)                           :: fname
+        integer(2)                             :: N
+        integer(2), dimension(:), allocatable  :: d, temp
+        integer(4)                             :: siz, stat
+        type(TIAHeader)                        :: header
+
+        call loadBinary("tia\" // fname, d, siz)
+        call makeTiaHeader(d, temp, header, siz)
+
+        call tiaList(N)%createTIASfx(header%name, temp)     
+
+        deallocate(temp, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to deallocate temp for TIA load!")
+
+        deallocate(d, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to deallocate the full for TIA load!")
+
+    end subroutine
 
     subroutine initTIASfx(this, L, N)   
         class(TIASfx), intent(inout) :: this
@@ -115,6 +159,7 @@ MODULE TIA
 
         this%length = L
         this%name   = N
+        
 
         if (this%length > 0) then
             allocate(this%tones(this%length), stat = stat)
@@ -436,15 +481,51 @@ MODULE TIA
     subroutine TiaLoad()
         character(MAX_PATH_LEN)                :: fname
         integer(2), dimension(:), allocatable  :: d, temp
-        integer(4)                             :: siz, ind, offset, stat, dataLen, V, C, F, L
+        integer(4)                             :: siz
+        integer(2)                             :: ind, V, C, F, L, stat
         type(TIAHeader)                        :: header
         character(text_len)                    :: txt
         character(80)                          :: line
+
+        character(40)                          :: test 
 
         fname = FileDialog("tia\", .FALSE., "xxt ")    
         if (fname == "") return
 
         call loadBinary(fname, d, siz)
+        call makeTiaHeader(d, temp, header, siz)
+        
+        txt = ""
+
+        do ind = 1, header%numOfTones* 4, 4
+           V = temp(ind    ) 
+           C = temp(ind + 1)             
+           F = temp(ind + 2) 
+           L = temp(ind + 3) 
+
+           line = "" 
+           write(line, "(I0, ',', I0, ',', I0, ',', I0)") V,C,F,L
+           if (ind /= header%numOfTones* 4 - 3) line = trim(line) // achar(13) // achar(10)
+           txt = trim(txt) // trim(line)
+        end do 
+
+        deallocate(temp, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to deallocate temp for TIA load!")
+
+        deallocate(d, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to deallocate the full for TIA load!")
+
+        call WDialogPutString(ID_TIAName , header%name)
+        call WDialogPutString(ID_TIAInput, txt)
+
+    end subroutine
+
+    subroutine makeTiaHeader(d, temp, header, siz)
+        integer(2), dimension(:), allocatable, intent(inout)  :: d, temp
+        integer(4), intent(inout)                             :: siz
+        integer(4)                                            :: offset, stat, dataLen
+        type(TIAHeader), intent(inout)                        :: header
+
         offset = 1
         call read4CharFromBin(d, siz, offset, header%fileTyp)  
     
@@ -465,28 +546,6 @@ MODULE TIA
         offset            = offset + 1
 
         call copyBytes(d, temp, offset, offset + (header%numOfTones * 4) - 1, header%numOfTones * 4) 
-        
-        txt = ""
-
-        do ind = 1, header%numOfTones* 4, 4
-           V = temp(ind    ) 
-           C = temp(ind + 1)             
-           F = temp(ind + 2) 
-           L = temp(ind + 3) 
-
-           line = "" 
-           write(line, "(I0, ',', I0, ',', I0, ',', I0)") V,C,F,L,achar(13) // achar(10)
-           txt = trim(txt) // trim(line)
-        end do 
- 
-        deallocate(temp, stat = stat)
-        if (stat /= 0) call displayDebug("Failed to deallocate temp for TIA load!")
-
-        deallocate(d, stat = stat)
-        if (stat /= 0) call displayDebug("Failed to deallocate the full for TIA load!")
-
-        call WDialogPutString(ID_TIAName , header%name)
-        call WDialogPutString(ID_TIAInput, txt)
 
     end subroutine
 
