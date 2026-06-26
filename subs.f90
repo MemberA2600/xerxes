@@ -15,7 +15,7 @@ MODULE subs
       PUBLIC            :: getScreenSize, autoSizeScreen, setResolutionMenu, &
                            getWindowDim, setScreenSize, timer, speed, setSpeed, &
                            randInt, getTime, FileDialog, countCharInString, &
-                           getNextPoz
+                           getNextPoz, dFile
 
       CHARACTER(20)     :: msgString
       INTEGER(KIND = 1) :: speed, timer
@@ -27,17 +27,21 @@ MODULE subs
             character(MAX_PATH_LEN)                 :: fname  
             logical                                 :: sav
             integer                                 :: iflags, ind             
-            character(25), dimension(2,3)           :: typeList         
+            character(25), dimension(3,3)           :: typeList         
             character(4)                            :: typ
             character(40)                           :: title, ftyp 
 
-            typeList(1,1) = "wave"
-            typelist(1,2) = "Wave Files (*wav)|*.wav|"
-            typelist(1,3) = "Windows Wave File"
+            typeList(1,1) = 'wave'
+            typelist(1,2) = 'Wave Files|*.wav|'
+            typelist(1,3) = 'Windows Wave File'
 
-            typeList(2,1) = "xxt "
-            typelist(2,2) = "TIA Files (*xxt)|*.xxt|"
-            typelist(2,3) = "Xerxes TIA File"
+            typeList(2,1) = 'xxt '
+            typelist(2,2) = 'TIA Files|*.xxt|'
+            typelist(2,3) = 'Xerxes TIA File'
+
+            typeList(3,1) = 'vgm '
+            typelist(3,2) = 'VGM Files|*.vgm;*.vgz|'
+            typelist(3,3) = 'Video Game Music'
 
             iflags = 8 + 32
 
@@ -51,7 +55,6 @@ MODULE subs
             end if
             
             do ind = 1, size(typeList, 1), 1
-            
                if (typeList(ind,1) == typ) then 
                    title = trim(title) // " " // typelist(ind,3)
                    ftyp  = typelist(ind,2)
@@ -66,6 +69,20 @@ MODULE subs
             if (WinFoDialog(4) /= CommonOK) fname = ""  
 
       end function    
+
+      subroutine dFile(fname)
+            character(MAX_PATH_LEN)                 :: fname  
+            integer                                 :: ios, unit
+
+            unit = 19
+
+            open(unit=unit, file=fname  , &
+                 status='old', action='readwrite', iostat=ios)
+
+            if (ios == 0) then
+                close(unit, status='delete')
+            end if
+      end subroutine 
 
       SUBROUTINE setSpeed(s)
            INTEGER(KIND = 1) :: s

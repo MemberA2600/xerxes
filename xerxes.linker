@@ -10,6 +10,7 @@
 "d:\winteracter\projects\xerxes\folderparser.obj"
 "d:\winteracter\projects\xerxes\tia.obj"
 "d:\winteracter\projects\xerxes\waveplayer.obj"
+"d:\winteracter\projects\xerxes\vgm.obj"
 -out:"xerxes.exe"
 -subsystem:windows
 -machine:x86

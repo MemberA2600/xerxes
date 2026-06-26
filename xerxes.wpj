@@ -20,6 +20,7 @@ FILE    7 dataloader.f90
 FILE    7 folderparser.f90
 FILE    7 tia.f90
 FILE    7 waveplayer.f90
+FILE    7 vgm.f90
 FCREL -c
 OPREL -O2
 LNREL -subsystem:windows -machine:x86 -IMPLIB:Kernel32

@@ -21,6 +21,7 @@
       USE wavePlayer  
       USE TIA
       USE folderParser
+      USE vgm  
 
       IMPLICIT NONE
 !
@@ -64,7 +65,6 @@
       CALL WMessageTimer(1000/MFPS,IREPEAT=Enabled)  
       call WindowClear(RGB=RGB_BLACK)
 
-      !call getFolder("beeps", "xxb")  
       call random_seed() 
       if (editMode .EQV. .FALSE.) call WMenuSetState(ID_DEV, ItemEnabled, 0)  
 
@@ -75,6 +75,7 @@
       call initWavChannels()
       call getFolder("tia", "xxt")
       !call playTIAbyName("Cicafos", 0)  
+      call openVGM()  
 
 !
 ! Main message loop
@@ -115,9 +116,11 @@
             EXIT   
 
         END SELECT
+        if (editMode .EQV. .FALSE.) then 
+            call WMenuSetState(ID_DEV, ItemEnabled, 0)  
+            !call runGameLogic()
+        end if
         CALL soundChannelLoop()
-
-        !call playChannels()
 
       END DO
       CALL WindowClose()                 ! Remove program window

@@ -123,8 +123,8 @@ MODULE wavePlayer
     end function
 
     subroutine loadWaveFile(cNum)
-        character(255)        :: fname
-        TYPE(WaveFile)        :: wfile
+        character(MAX_PATH_LEN) :: fname
+        TYPE(WaveFile)          :: wfile
         integer(2), dimension(:), allocatable :: d
         integer               :: s, ind, offset, stat
         !character(40)         :: test
