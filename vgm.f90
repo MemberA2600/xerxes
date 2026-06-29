@@ -16,25 +16,20 @@ MODULE vgm
 
     type vgmHeader
          character(4) :: filetyp
-         integer(2)   :: version    , SN76489sfW      , SN76489flags, AY8910Typ  , AY8910flags, &
-                         YM2203Flags, YM2608Flags     , volMod      , reserv1    , loopBase   , &
-                         loopMod    , MSM6258Flags    , K054539Flags, C140Typ    , reserv2    , &
-                         ES5503amout, ES5505amount    , C352ClockDiv  
-         integer(4)   :: SN76489FB    
+         integer(2)   :: version    , SN76489sfW      , SN76489flags
+         integer(4)   :: SN76489FB  , volMod          , loopBase    , loopMod
          integer(8)   :: eofOffset  , SN76489         , YM2413      , GD3Offset  , totalWaits , &
                          loopOffset , totalLoopSamples, rate        , YM2612     , YM2151     , &
                          dataOffset , PCMClock        , PCMiReg     , RF5C68     , YM2203     , &
-                         YM2608     , YM2610                        , YM3812     , YM3526     , & 
-                         Y8950      , YMF262          , YMF278B     , YMF271     , YMZ280B    , &
-                         RF5C164    , PWM             , AY8910      , DGM        , APU        , &
-                         MultiPCM   , uPD7759         , MSM6258     , MSM6295    , K051649    , &
-                         K054539    , HuC6280         , C140        , K053260    , Pokey      , &
-                         QSound     , SCSP            , extraHead   , WonderSwan , VSU        , &
-                         SAA1099    , ES5503          , ES5505      , X1_010     , C352       , &
-                         GA20       , Mikey  
+                         YM2608     , YM2610          , YM3812      , YM3526     , Y8950      , &
+                         YMF262     , YMF278B         , YMF271      , YMZ280B    , RF5C164    , &    
+                         PWM        , AY8910          , AY8910Flags 
+    !    
+    ! We need only the GD3 and data offsets, and the three OPL chips (YM3526, YM3812, YMF262)
+    !
     end type
 
-    type(vgmHeader)      :: vhead
+    type(vgmHeader), allocatable :: vhead
 
     contains
 
@@ -43,13 +38,11 @@ MODULE vgm
         integer(4)                            :: s, offset
         integer(2), dimension(:), allocatable :: d
         logical, intent(out)                  :: error
-        integer(8)                            :: stopByte, GD3Index
         integer(2), dimension(:), allocatable :: v
         character(8)                          :: v2                           
         character(2)                          :: vChar
         integer                               :: temp
-        character(40)                         :: test
-
+ 
         error  = .FALSE.
         offset = 1
         call read4CharFromBin(d, s, offset, vhead%filetyp)  
@@ -63,8 +56,6 @@ MODULE vgm
         call readIntFromBin(d, s, offset, temp, 4)
         vhead%eofOffset = temp
   
-        stopByte = vhead%eofOffset + 4
-
         call copyBytes(d, v, offset, offset + 4, 4)
 
         do ind = 4, 1, -1 
@@ -77,9 +68,14 @@ MODULE vgm
         read(v2, "(I8)") temp   
         vhead%version = temp
 
-        !test = ""
-        !write(test, "(I4)") vhead%version  
-        !call displayDebug("version: " // test)
+        deallocate(v, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to not fail! - 1")
+
+        if (vhead%version < 151) then
+            call displayDebug("Incompatible VGM version! Must be at least 1.51!") 
+            error = .TRUE.
+            return
+        end if  
 
         offset = offset + 4
 
@@ -90,21 +86,100 @@ MODULE vgm
         vhead%YM2413  = temp
 
         call readIntFromBin(d, s, offset, temp, 4)
-
         vhead%GD3Offset = temp
 
-        if (vhead%GD3Offset) > 0 then
-            GD3Index = vhead%GD3Offset + 20
-        else
-            GD3Index = 0  
-        end if
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%totalWaits = temp
+        
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%loopOffset = temp
+        
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%totalLoopSamples = temp
 
-        !test = ""
-        !write(test, "(Z0)") GD3Index
-        !call displayDebug("Offset: " // test)
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%rate = temp
 
-        deallocate(v, stat = stat)
-        if (stat /= 0) call displayDebug("Failed to not fail! - 1")
+        call readIntFromBin(d, s, offset, temp, 2)
+        vhead%SN76489FB = temp
+
+        call readIntFromBin(d, s, offset, temp, 1)
+        vhead%SN76489sfW = temp
+
+        call readIntFromBin(d, s, offset, temp, 1)
+        vhead%SN76489flags = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%YM2612 = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%YM2151 = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%dataOffset = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%PCMClock = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%PCMIReg = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%RF5C68  = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%YM2203  = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%YM2608  = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%YM2610  = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%YM3812  = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%YM3526  = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%Y8950   = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%YMF262  = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%YMF278B = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%YMF271  = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%YMZ280B = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%RF5C164 = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%PWM     = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%AY8910  = temp
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        vhead%AY8910Flags = temp
+
+        call readIntFromBin(d, s, offset, temp, 1)
+        vhead%volMod = temp
+
+        call readIntFromBin(d, s, offset, temp, 1)
+        ! skip one
+
+        call readIntFromBin(d, s, offset, temp, 1)
+        vhead%loopBase = temp
+
+        call readIntFromBin(d, s, offset, temp, 1)
+        vhead%loopMod = temp
 
     end subroutine
 
@@ -112,8 +187,11 @@ MODULE vgm
         character(MAX_PATH_LEN)               :: fname, CMDMSG
         integer(2)                            :: lt, ind, ind2, RC, stat
         integer(2), dimension(:), allocatable :: d
-        integer(4)                            :: s
+        integer(4)                            :: s, volMod, numOfLoops, loopMod
         logical                               :: del, error
+        integer(8)                            :: stopByte, GD3Index, loopIndex, dataIndex
+        character(40)                         :: test
+        integer(1)                            :: temp1
 
         fname   = FileDialog("", .FALSE., "vgm ") 
         lT = len_trim(fname)
@@ -147,7 +225,43 @@ MODULE vgm
 
         call loadBinary(fname, d, s)
 
+        allocate(vhead, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to allocate VGM header!") 
+
         call buildVGMHeader(d, s, error)
+
+        if (error .EQV. .FALSE.) then
+            stopByte = vhead%eofOffset + 4
+    
+            if (vhead%GD3Offset > 0) then
+                GD3Index = vhead%GD3Offset + 20
+            else
+                GD3Index = 0  
+            end if
+    
+            if (vhead%loopOffset > 0) then
+                loopIndex = vhead%loopOffset + 28
+            else
+                loopIndex = 0  
+            end if
+    
+            dataIndex= vhead%dataOffset + 52
+    
+            temp1 = f2bitsTo1Bit(vhead%volMod)
+            if (temp1 == -63) temp1 = -64 
+
+            volMod = 2 ** (temp1 / 32)            
+
+            !test = ""
+            !write(test, "(I0)") volMod 
+            !call displayDebug(test)
+
+        end if
+
+        ! NEXT STEP: Get the song's name from VGM
+
+        deallocate(vhead, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to deallocate VGM header!") 
 
         deallocate(d, stat = stat)
         if (stat /= 0) call  displayDebug("Failed to deallocate bytes of VGM!")

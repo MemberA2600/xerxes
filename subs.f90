@@ -15,7 +15,7 @@ MODULE subs
       PUBLIC            :: getScreenSize, autoSizeScreen, setResolutionMenu, &
                            getWindowDim, setScreenSize, timer, speed, setSpeed, &
                            randInt, getTime, FileDialog, countCharInString, &
-                           getNextPoz, dFile
+                           getNextPoz, dFile, f2bitsTo1Bit
 
       CHARACTER(20)     :: msgString
       INTEGER(KIND = 1) :: speed, timer
@@ -248,5 +248,18 @@ MODULE subs
         end do
 
     end function 
+
+    function f2bitsTo1Bit(v2bits) result (v1bit)
+        
+        INTEGER(2) :: v2bits
+        INTEGER(1) :: v1bit
+
+        if (v2bits >= 128) then
+            v1bit = v2bits  - 256
+        else
+            v1bit = v2bits 
+        end if
+
+    end function
 
 END MODULE subs
