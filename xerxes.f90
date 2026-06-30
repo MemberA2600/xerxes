@@ -75,6 +75,7 @@
       call initWavChannels()
       call getFolder("tia", "xxt")
       !call playTIAbyName("Cicafos", 0)  
+      
       call openVGM()  
 
 !

@@ -22,5 +22,4 @@ MODULE engineConstants
     INTEGER, PARAMETER            :: MAX_PATH_LEN = 255
     integer, parameter            :: NAME_MAX_LEN = 25
 
-
 END MODULE engineConstants

@@ -15,7 +15,7 @@ MODULE subs
       PUBLIC            :: getScreenSize, autoSizeScreen, setResolutionMenu, &
                            getWindowDim, setScreenSize, timer, speed, setSpeed, &
                            randInt, getTime, FileDialog, countCharInString, &
-                           getNextPoz, dFile, f2bitsTo1Bit
+                           getNextPoz, dFile, f2bitsTo1Bit, getNullTermString
 
       CHARACTER(20)     :: msgString
       INTEGER(KIND = 1) :: speed, timer
@@ -261,5 +261,30 @@ MODULE subs
         end if
 
     end function
+
+    subroutine getNullTermString(s, d, offset, siz)
+
+        integer(2), dimension(:), allocatable    :: d
+        integer(4), intent(inout)                :: offset
+        integer(4)                               :: siz, ind, num
+        character(:), allocatable, intent(inout) :: s
+        character(40)                            :: test
+
+        !write(test, "(Z0, ' | ', Z0)") offset, siz
+
+        !call displayDebug(test)       
+
+        do ind = offset, siz, 2
+           offset = offset + 2 
+           if (d(ind) == 0 .AND. d(ind + 1) == 0) then
+               exit 
+           end if 
+        
+           num = d(ind) + d(ind + 1) * 256 
+           
+           s = s // char(num) 
+        end do
+    end subroutine
+
 
 END MODULE subs

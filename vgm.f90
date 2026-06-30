@@ -3,11 +3,11 @@ MODULE vgm
     USE, INTRINSIC :: ISO_C_BINDING
     USE debugWindow
     USE dataLoader
-    USE waveplayer
     USE WINTERACTER
     USE RESID
     USE subs
     USE engineConstants
+    USE adlib
 
     implicit none
 
@@ -30,6 +30,14 @@ MODULE vgm
     end type
 
     type(vgmHeader), allocatable :: vhead
+
+    type gd3Tags
+
+         character(:), allocatable :: title, game, system, author
+                                        
+    end type
+
+    type(gd3Tags) :: gd3
 
     contains
 
@@ -181,19 +189,33 @@ MODULE vgm
         call readIntFromBin(d, s, offset, temp, 1)
         vhead%loopMod = temp
 
+        if (vhead%YM3812 == 0 .AND. vhead%YM3526 == 0 .AND. vhead%YMF262 == 0) then
+            call displayDebug("VGM has no OPL, OPL2 or OPL3!")
+            error = .TRUE.
+        end if
+
     end subroutine
 
     subroutine openVGM()
         character(MAX_PATH_LEN)               :: fname, CMDMSG
         integer(2)                            :: lt, ind, ind2, RC, stat
-        integer(2), dimension(:), allocatable :: d
+        integer(2), dimension(:), allocatable :: d, songBytes
         integer(4)                            :: s, volMod, numOfLoops, loopMod
         logical                               :: del, error
         integer(8)                            :: stopByte, GD3Index, loopIndex, dataIndex
-        character(40)                         :: test
+        !character(40)                         :: test
         integer(1)                            :: temp1
+        character(MAX_PATH_LEN)               :: nameFinal
+        character(255)                        :: adlibName, inBrackets        
+
+        gd3%title    = "" 
+        gd3%game     = ""
+        gd3%system   = "" 
+        gd3%author   = ""
 
         fname   = FileDialog("", .FALSE., "vgm ") 
+        if (fname == "") return
+
         lT = len_trim(fname)
 
         del = .FALSE.
@@ -253,21 +275,266 @@ MODULE vgm
             volMod = 2 ** (temp1 / 32)            
 
             !test = ""
-            !write(test, "(I0)") volMod 
+            !write(test, "(Z0)") GD3Index 
             !call displayDebug(test)
+            call fillGD3(d, GD3Index, error, s)
 
         end if
 
-        ! NEXT STEP: Get the song's name from VGM
+        if (error .EQV. .FALSE.) then
+            adlibName = ""
+    
+            if (gd3%author /= "") adlibName = gd3%author   
+               
+            if (gd3%title /= "") then
+                if (adlibName /= "") then 
+                    adlibName = trim(adlibName) // ": " // gd3%title 
+                else
+                    adlibName = gd3%title     
+                end if
+            end if
+    
+            inBrackets = ""
+            if (gd3%game /= "") inBrackets = gd3%game
+    
+            if (gd3%system /= "") then
+                if (inBrackets /= "") then 
+                    inBrackets = trim(inBrackets) // " | " // gd3%system
+                else
+                    inBrackets = gd3%system     
+                end if
+            end if
+    
+            if (adlibName == "") then
+                adlibname = inBrackets
+            else
+                if (inBrackets /= "") then
+                    adlibName = trim(adlibName) // " (" // trim(inBrackets) // ")"
+                end if
+            end if
 
-        deallocate(vhead, stat = stat)
-        if (stat /= 0) call displayDebug("Failed to deallocate VGM header!") 
+            call vgmBytesToAdlibBytes(d, songBytes, dataIndex, GD3Index)
 
-        deallocate(d, stat = stat)
-        if (stat /= 0) call  displayDebug("Failed to deallocate bytes of VGM!")
+        end if
+
+        if (allocated(vhead) .EQV. .TRUE.) then
+            deallocate(vhead, stat = stat)
+            if (stat /= 0) call displayDebug("Failed to deallocate VGM header!") 
+        end if
+
+        if (allocated(d) .EQV. .TRUE.) then
+            deallocate(d, stat = stat)
+            if (stat /= 0) call  displayDebug("Failed to deallocate bytes of VGM!")
+        end if
+        
+        if (allocated(songBytes) .EQV. .TRUE.) then
+            deallocate(songBytes, stat = stat)
+            if (stat /= 0) call  displayDebug("Failed to deallocate songBytes of VGM!")
+        end if
+
+        if (allocated(gd3%title) .EQV. .TRUE.) then
+            deallocate(gd3%title , stat = stat)
+            deallocate(gd3%game  , stat = stat)
+            deallocate(gd3%system, stat = stat)
+            deallocate(gd3%author, stat = stat)
+        end if
 
         !if (del .EQV. .TRUE.) call dFile(fname)
 
     end subroutine
+
+    subroutine fillGD3(d, GD3Index, error, s)
+        integer(2), dimension(:), allocatable :: d
+        integer(8)                            :: GD3Index 
+        integer(4)                            :: offset
+        character(4)                          :: gd3HeaderName
+        logical, intent(inout)                :: error
+        integer(2), dimension(:), allocatable :: v
+        character(8)                          :: v2                           
+        character(2)                          :: vChar
+        integer                               :: temp
+        integer(2)                            :: ind, version, stat 
+        integer(4)                            :: s
+        !character(40)                         :: test
+        character(:), allocatable             :: waste
+
+        offset = GD3Index + 1
+        waste  = ""
+
+        call read4CharFromBin(d, s, offset, gd3HeaderName)  
+
+        if (gd3HeaderName /= "Gd3 ") then 
+            error = .TRUE.
+            call displayDebug("Corrupted GD3 Header! It MUST be Gd3!")   
+            return
+        end if        
+ 
+        call copyBytes(d, v, offset, offset + 4, 4)
+
+        do ind = 4, 1, -1 
+           write(vChar, "(Z2)") v(ind)
+           if (vChar(1:1) == " ") vChar(1:1) = "0" 
+  
+           v2(9 - (ind * 2) : 10 - (ind * 2)) = vChar  
+        end do
+
+        read(v2, "(I8)") temp   
+        version = temp
+
+        offset  = offset + 4
+
+        if (version /= 100) then 
+            error = .TRUE.
+            call displayDebug("Corrupted GD3 Version! It MUST be 1.00!")   
+            return
+        end if      
+
+        call readIntFromBin(d, s, offset, temp, 4)
+        
+        !write(test, "(I0)") temp
+        !call displayDebug(test) 
+
+        call getNullTermString(gd3%title , d, offset, s)
+        call getNullTermString(waste     , d, offset, s)
+        call getNullTermString(gd3%game  , d, offset, s)
+        call getNullTermString(waste     , d, offset, s)
+        call getNullTermString(gd3%system, d, offset, s)
+        call getNullTermString(waste     , d, offset, s)
+        call getNullTermString(gd3%author, d, offset, s)
+
+        deallocate(waste, stat = stat)
+
+    end subroutine 
+
+    subroutine vgmBytesToAdlibBytes(d, songBytes, dataIndex, GD3Index)
+        integer(8)                                           :: GD3Index, dataIndex
+        integer(2), dimension(:), allocatable                :: d
+        integer(2), dimension(:), allocatable, intent(inout) :: songBytes
+        integer(8)                                           :: ind, counter, waitTime
+        integer(1)                                           :: ind2, stat
+
+        integer(2), dimension(7)                             :: command_codes = &
+        (/ Z'61', Z'62', Z'63', Z'66', Z'5A', Z'5B', Z'5E' /)       
+        integer(1), dimension(7)                             :: command_indexAdd = &
+        (/ 3, 1, 1, 0, 3, 3, 3 /)       
+        
+        logical                                              :: found = .FALSE.
+        character(40)                                        :: test
+        character(2)                                         :: command
+         
+        !write(test, "(Z0, ' | ', Z0)" ) dataIndex, GD3Index
+        !call displayDebug(test)
+        ind     = dataIndex + 1
+        counter = 0    
+
+        do while (ind <= GD3Index .AND. d(ind) /= Z'66')
+           !write(test, "(Z0, ' | ', I0)") ind, d(ind)
+           !call displayDebug(test)
+
+           do ind2 = 1, size(command_codes), 1 
+              found = .FALSE.  
+              !write(test, "(Z0, ' | ', Z0)") d(ind), command_codes(ind2)
+              !call displayDebug(test)
+
+              if (command_codes(ind2) == d(ind)) then                 
+                  found = .TRUE.  
+
+                  select case(command_codes(ind2))  
+                  case(Z'66')  
+                       counter = counter + 0
+                  case(Z'62')                      
+                       counter = counter + 3  
+                  case(Z'63')                      
+                       counter = counter + 3                    
+                  case(Z'61') 
+                       waitTime = d(ind + 1) + (d(ind + 2) * 256)  
+
+                       if (waitTime > 255) then
+                           counter = counter + 3                    
+                       else
+                           counter = counter + 2                    
+                       end if 
+
+                  case default
+                       counter = counter + 2 
+                  end select
+
+                  exit
+
+              end if
+
+           end do
+
+           if (found .EQV. .FALSE.) then 
+               write(command,  "(Z2)") d(ind)
+               if (command(1:1) == " ") command(1:1) = "0"  
+
+               call displayDebug("Invalid Command (" // command // ") parsed in VGM data!") 
+               return
+           else  
+               ind = ind + command_indexAdd(ind2)
+           end if
+        end do
+
+        allocate(songBytes(counter), stat = stat)
+        if (stat /= 0) call displayDebug("Failed to allocate songBytes!")
+
+        ind     = dataIndex + 1
+        counter = 1
+
+        ! 
+        ! Normally, we just write the chip commands and values, but there are specials:
+        ! $F6 : Wait 255+  samples
+        ! $F7 : Wait 1-255 samples
+        !
+
+        do while (ind <= GD3Index .AND. d(ind) /= Z'66')
+           do ind2 = 1, size(command_codes), 1 
+
+              if (command_codes(ind2) == d(ind)) then                 
+                  select case(command_codes(ind2))  
+                  case(Z'66')  
+                       counter = counter + 0
+                  case(Z'62')                      
+                       songBytes(counter    ) = Z'F6'
+                       songBytes(counter + 1) = Z'DF'
+                       songBytes(counter + 2) = Z'02'
+
+                       counter = counter + 3  
+                  case(Z'63')          
+                       songBytes(counter    ) = Z'F6'
+                       songBytes(counter + 1) = Z'72'
+                       songBytes(counter + 2) = Z'03'
+            
+                       counter = counter + 3                    
+                  case(Z'61') 
+                       waitTime = d(ind + 1) + (d(ind + 2) * 256)  
+
+                       if (waitTime > 255) then
+                           counter = counter + 3  
+                           songBytes(counter    ) = Z'F6'
+                           songBytes(counter + 1) = d(ind + 1)
+                           songBytes(counter + 2) = d(ind + 2)
+
+                       else
+                           if (waitTime > 0) then
+                               counter = counter + 2     
+                               songBytes(counter    ) = Z'F7'
+                               songBytes(counter + 1) = d(ind + 1)  
+                           end if
+                       end if 
+
+                  case default
+                       songBytes(counter    ) = d(ind + 1) 
+                       songBytes(counter + 1) = d(ind + 2) 
+                       counter = counter + 2 
+                  end select
+                  ind = ind + command_indexAdd(ind2)
+                  exit
+              end if
+           end do
+        end do
+
+    end subroutine 
 
 END MODULE vgm
