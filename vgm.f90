@@ -37,7 +37,7 @@ MODULE vgm
                                         
     end type
 
-    type(gd3Tags) :: gd3
+    type(gd3Tags)                :: gd3
 
     contains
 
@@ -189,8 +189,8 @@ MODULE vgm
         call readIntFromBin(d, s, offset, temp, 1)
         vhead%loopMod = temp
 
-        if (vhead%YM3812 == 0 .AND. vhead%YM3526 == 0 .AND. vhead%YMF262 == 0) then
-            call displayDebug("VGM has no OPL, OPL2 or OPL3!")
+        if (vhead%YM3812 == 0 .AND. vhead%YM3526 == 0) then
+            call displayDebug("VGM has no OPL or OPL2!")
             error = .TRUE.
         end if
 
@@ -207,6 +207,7 @@ MODULE vgm
         integer(1)                            :: temp1
         character(MAX_PATH_LEN)               :: nameFinal
         character(255)                        :: adlibName, inBrackets        
+        integer(8)                            :: reads, byteNum, loopByte  
 
         gd3%title    = "" 
         gd3%game     = ""
@@ -313,7 +314,11 @@ MODULE vgm
                 end if
             end if
 
-            call vgmBytesToAdlibBytes(d, songBytes, dataIndex, GD3Index)
+            call vgmBytesToAdlibBytes(d, songBytes, dataIndex, GD3Index, &
+                                      reads, byteNum, loopIndex, loopByte)
+
+            call initAdlibData()    
+            call fillAdlibData(adlibName, songBytes, reads, byteNum, loopByte) 
 
         end if
 
@@ -406,26 +411,43 @@ MODULE vgm
 
     end subroutine 
 
-    subroutine vgmBytesToAdlibBytes(d, songBytes, dataIndex, GD3Index)
-        integer(8)                                           :: GD3Index, dataIndex
+    subroutine vgmBytesToAdlibBytes(d, songBytes, dataIndex, GD3Index, &
+                                    reads, byteNum, loopIndex, loopByte)
+        integer(8)                                           :: GD3Index, dataIndex, loopIndex
         integer(2), dimension(:), allocatable                :: d
         integer(2), dimension(:), allocatable, intent(inout) :: songBytes
-        integer(8)                                           :: ind, counter, waitTime
+        integer(8)                                           :: ind, counter, waitTime, loopInd
         integer(1)                                           :: ind2, stat
+        integer(8), intent(out)                              :: reads, byteNum, loopByte      
 
-        integer(2), dimension(7)                             :: command_codes = &
-        (/ Z'61', Z'62', Z'63', Z'66', Z'5A', Z'5B', Z'5E' /)       
-        integer(1), dimension(7)                             :: command_indexAdd = &
-        (/ 3, 1, 1, 0, 3, 3, 3 /)       
+        integer(2), dimension(22)                             :: command_codes = &
+        (/ Z'61', Z'62', Z'63', Z'66', Z'5A', Z'5B', &
+           Z'70', Z'71', Z'72', Z'73', Z'74', Z'75', Z'76', Z'77', &
+           Z'78', Z'79', Z'7A', Z'7B', Z'7C', Z'7D', Z'7E', Z'7F'  &
+        /)       
+        integer(1), dimension(6)                             :: command_indexAdd = &
+        (/ 3, 1, 1, 0, 3, 3 /)
+      
         
-        logical                                              :: found = .FALSE.
+        logical                                              :: found = .FALSE., minus
         character(40)                                        :: test
         character(2)                                         :: command
-         
+        logical, parameter                                   :: debug = .FALSE.         
+
+        if (debug .EQV. .TRUE.) open(unit = 21       , file = 'vmg_adlib_info.txt', &
+                                     status='replace', action='write')
+
         !write(test, "(Z0, ' | ', Z0)" ) dataIndex, GD3Index
         !call displayDebug(test)
         ind     = dataIndex + 1
-        counter = 0    
+        If (loopIndex /= 0) then
+            loopInd = loopIndex - dataIndex + 1      
+        else
+            loopInd = 0
+        end if    
+
+        counter  = 0    
+        loopByte = 0     
 
         do while (ind <= GD3Index .AND. d(ind) /= Z'66')
            !write(test, "(Z0, ' | ', I0)") ind, d(ind)
@@ -454,9 +476,14 @@ MODULE vgm
                        else
                            counter = counter + 2                    
                        end if 
-
                   case default
                        counter = counter + 2 
+
+                       select case(command_codes(ind2))   
+                       case(Z'A0':Z'BF')
+                            if (d(ind + 1) == 0) counter = counter - 1
+                       end select  
+
                   end select
 
                   exit
@@ -472,7 +499,11 @@ MODULE vgm
                call displayDebug("Invalid Command (" // command // ") parsed in VGM data!") 
                return
            else  
-               ind = ind + command_indexAdd(ind2)
+               if (ind2 < 7) then   
+                   ind = ind + command_indexAdd(ind2)
+               else
+                   ind = ind + 1  
+               end if 
            end if
         end do
 
@@ -480,60 +511,146 @@ MODULE vgm
         if (stat /= 0) call displayDebug("Failed to allocate songBytes!")
 
         ind     = dataIndex + 1
+        byteNum = counter 
+
         counter = 1
 
         ! 
         ! Normally, we just write the chip commands and values, but there are specials:
-        ! $F6 : Wait 255+  samples
-        ! $F7 : Wait 1-255 samples
+        ! $05 : Wait 255+  samples
+        ! $06 : Wait 1-255 samples
+        ! $A0 : If the value to write is 0, change "register" to $10 and write no 0.
+        ! $B0 : If the value to write is 0, change "register" to $D0 and write no 0.
         !
 
+        reads   = 0
         do while (ind <= GD3Index .AND. d(ind) /= Z'66')
            do ind2 = 1, size(command_codes), 1 
 
-              if (command_codes(ind2) == d(ind)) then                 
+              if (command_codes(ind2) == d(ind)) then 
+                  reads = reads + 1  
+                  if (ind >= loopInd .AND. loopInd /= 0 .AND. loopByte == 0) loopByte = ind
+                
+                  minus = .FALSE.
+
                   select case(command_codes(ind2))  
                   case(Z'66')  
+                       if (debug .EQV. .TRUE.) &
+                           write(21, '(A)') "EndByte (0x66) found!!" 
                        counter = counter + 0
                   case(Z'62')                      
-                       songBytes(counter    ) = Z'F6'
+                       songBytes(counter    ) = Z'05'
                        songBytes(counter + 1) = Z'DF'
                        songBytes(counter + 2) = Z'02'
 
+                       if (debug .EQV. .TRUE.) &
+                           write(21, '(A)') "62 >> 05 df 02" 
+
                        counter = counter + 3  
                   case(Z'63')          
-                       songBytes(counter    ) = Z'F6'
+                       songBytes(counter    ) = Z'05'
                        songBytes(counter + 1) = Z'72'
                        songBytes(counter + 2) = Z'03'
             
+                       if (debug .EQV. .TRUE.) &
+                           write(21, '(A)') "63 >> 05 72 03" 
+
                        counter = counter + 3                    
                   case(Z'61') 
                        waitTime = d(ind + 1) + (d(ind + 2) * 256)  
 
                        if (waitTime > 255) then
-                           counter = counter + 3  
-                           songBytes(counter    ) = Z'F6'
+                           songBytes(counter    ) = Z'05'
                            songBytes(counter + 1) = d(ind + 1)
                            songBytes(counter + 2) = d(ind + 2)
+    
+                           if (debug .EQV. .TRUE.) &
+                               write(21, '("61 ", Z2.2, " ", Z2.2, " >> 05 ", Z2.2, " ", Z2.2)') &
+                                     d(ind + 1), d(ind + 2), &
+                                     d(ind + 1), d(ind + 2)
+
+                           counter = counter + 3  
 
                        else
                            if (waitTime > 0) then
-                               counter = counter + 2     
-                               songBytes(counter    ) = Z'F7'
+                               songBytes(counter    ) = Z'06'
                                songBytes(counter + 1) = d(ind + 1)  
+
+                           if (debug .EQV. .TRUE.) &
+                               write(21, '("61 ", Z2.2, " ", Z2.2,  " >> 06 ", Z2.2)') &
+                                            d(ind + 1), d(ind + 2), &
+                                            d(ind + 1)
+
+                               counter = counter + 2     
                            end if
                        end if 
+                  case(Z'70':Z'7F') 
+                       songBytes(counter    ) = Z'06' 
+                       songBytes(counter + 1) = d(ind) - Z'69' 
 
+                       if (debug .EQV. .TRUE.) &
+                               write(21, "(Z2.2, ' >> 06 ', Z2.2)") &
+                                     command_codes(ind2), songBytes(counter + 1)
+
+                       counter = counter + 2                         
                   case default
-                       songBytes(counter    ) = d(ind + 1) 
-                       songBytes(counter + 1) = d(ind + 2) 
-                       counter = counter + 2 
+                       select case(d(ind+1))   
+                       case(Z'A0':Z'BF')
+                            if (d(ind + 2) == 0) minus = .TRUE.
+                       !case default     
+                       !     write(test, '("SZAR: ", Z2.2)') command_codes(ind2)
+                       !     call displayDebug(test)
+                       end select  
+
+                       if (minus .EQV. .FALSE.) then 
+                           songBytes(counter    ) = d(ind + 1) 
+                           songBytes(counter + 1) = d(ind + 2) 
+
+                           if (debug .EQV. .TRUE.) &
+                               write(21, "(Z2.2, ' ', Z2.2, ' ', Z2.2, ' >> ', Z2.2, ' ', Z2.2)") &
+                                     command_codes(ind2), d(ind + 1), d(ind + 2), &  
+                                                          d(ind + 1), d(ind + 2)
+
+                           counter = counter + 2 
+                       else 
+                           !
+                           !  AX 00 >> 1X, BX 00 >> DX 
+                           !      
+
+                           select case(d(ind + 1))   
+                           case(Z'A0':Z'AF')
+                               songBytes(counter) = d(ind + 1) - Z'90'
+                           case(Z'B0':Z'BF')                        
+                               songBytes(counter) = d(ind + 1) + Z'20'    
+                           !case default     
+                           !     write(test, '("SZAR: ", Z2.2)') command_codes(ind2)
+                           !     call displayDebug(test)    
+                           end select  
+
+                           if (debug .EQV. .TRUE.) &
+                               write(21, "(Z2.2, ' ', Z2.2, ' ', Z2.2, ' >> ', Z2.2)") &
+                                     command_codes(ind2), d(ind + 1), d(ind + 2), &  
+                                                          songBytes(counter)
+
+                           counter = counter + 1 
+                       end if
                   end select
-                  ind = ind + command_indexAdd(ind2)
+                    
+                  if (ind2 < 7) then  
+                      ind = ind + command_indexAdd(ind2)
+                  else  
+                      ind = ind + 1
+                  end if     
+
                   exit
               end if
            end do
         end do
+
+        if (debug .EQV. .TRUE.) then
+            write(21, '("Reads: ", I0, " Bytes: ", I0)') reads, byteNum
+            close(unit = 21)
+        end if    
 
     end subroutine 
 

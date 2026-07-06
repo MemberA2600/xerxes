@@ -103,7 +103,11 @@ MODULE dataLoader
         if (stat /= 0) call displayDebug("Failed to allocate binary size = 2!")      
 
         do ind = 1, s, 1
-           d2(ind) = d(ind) 
+           if (d(ind) >= 0) then 
+               d2(ind) = d(ind) 
+           else
+               d2(ind) = d(ind) + 256
+           end if  
         end do 
 
         deallocate(d, stat = stat)
