@@ -11,7 +11,11 @@ MODULE winAPIs
     USE subs
 
     PRIVATE
-    PUBLIC :: CounterTimer, TimerEnded, TimerRestart, asyncBeep, beepPlaying
+    PUBLIC :: CounterTimer, TimerEnded, TimerRestart, asyncBeep, &
+              beepPlaying, AppendSamples, AppendOne, AppendOne2, AppendOne4
+
+    integer, parameter :: i32 = selected_int_kind(9)
+    integer, parameter :: i64 = selected_int_kind(18)
 
     !
     ! Internal Timer Type
@@ -151,5 +155,105 @@ MODULE winAPIs
             end if   
         end if
     end subroutine asyncBeep
+
+    subroutine AppendSamples(filename, data)
+    
+        implicit none
+    
+        character(*), intent(in) :: filename
+        integer(2), intent(in)   :: data(:)
+    
+        integer :: unit
+    
+        unit = 49
+    
+        open( &
+            unit=unit, &
+            file=filename, &
+            access='stream', &
+            form='unformatted', &
+            status='unknown', &
+            position='append')
+    
+        write(unit) data
+    
+        close(unit)
+    
+    end subroutine
+
+    subroutine AppendOne(filename, data)
+    
+        implicit none
+    
+        character(*), intent(in) :: filename
+        integer(1), intent(in)   :: data
+    
+        integer :: unit
+    
+        unit = 49
+    
+        open( &
+            unit=unit, &
+            file=filename, &
+            access='stream', &
+            form='unformatted', &
+            status='unknown', &
+            position='append')
+    
+        write(unit) data
+    
+        close(unit)
+    
+    end subroutine
+
+    subroutine AppendOne2(filename, data)
+    
+        implicit none
+    
+        character(*), intent(in) :: filename
+        integer(2), intent(in)   :: data
+    
+        integer :: unit
+    
+        unit = 49
+    
+        open( &
+            unit=unit, &
+            file=filename, &
+            access='stream', &
+            form='unformatted', &
+            status='unknown', &
+            position='append')
+    
+        write(unit) data
+    
+        close(unit)
+    
+    end subroutine
+
+    subroutine AppendOne4(filename, data)
+    
+        implicit none
+    
+        character(*), intent(in) :: filename
+        integer(i32), intent(in)   :: data
+    
+        integer :: unit
+    
+        unit = 49
+    
+        open( &
+            unit=unit, &
+            file=filename, &
+            access='stream', &
+            form='unformatted', &
+            status='unknown', &
+            position='append')
+    
+        write(unit) data
+    
+        close(unit)
+    
+    end subroutine
 
 END MODULE winAPIs

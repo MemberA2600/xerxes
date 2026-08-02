@@ -23,6 +23,7 @@ MODULE engineConstants
     integer, parameter            :: NAME_MAX_LEN = 25
 
     real(8), parameter            :: pi = 3.141592653589793238462643383279502884197
+    integer(4), parameter         :: chunkSize = 32768
 
 
 END MODULE engineConstants

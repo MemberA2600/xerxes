@@ -81,8 +81,8 @@
       
       !call playTIAbyName("Cicafos", 0)  
 
-      !call openVGM()  
-      call loadWaveFile(-1)  
+      call openVGM()  
+      !call loadWaveFile(-1)  
 !
 ! Main message loop
 !
@@ -127,6 +127,7 @@
             !call runGameLogic()
         end if
         CALL soundChannelLoop()
+        CALL musicLoop()
 
       END DO
       CALL WindowClose()                 ! Remove program window
