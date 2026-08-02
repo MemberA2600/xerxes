@@ -319,6 +319,7 @@ MODULE vgm
 
             call initAdlibData()    
             call fillAdlibData(adlibName, songBytes, reads, byteNum, loopByte) 
+            call testPlay()
 
         end if
 
@@ -344,7 +345,7 @@ MODULE vgm
             deallocate(gd3%author, stat = stat)
         end if
 
-        !if (del .EQV. .TRUE.) call dFile(fname)
+        if (del .EQV. .TRUE.) call dFile(fname)
 
     end subroutine
 
@@ -420,7 +421,7 @@ MODULE vgm
         integer(1)                                           :: ind2, stat
         integer(8), intent(out)                              :: reads, byteNum, loopByte      
 
-        integer(2), dimension(22)                             :: command_codes = &
+        integer(2), dimension(22)                            :: command_codes = &
         (/ Z'61', Z'62', Z'63', Z'66', Z'5A', Z'5B', &
            Z'70', Z'71', Z'72', Z'73', Z'74', Z'75', Z'76', Z'77', &
            Z'78', Z'79', Z'7A', Z'7B', Z'7C', Z'7D', Z'7E', Z'7F'  &
@@ -529,7 +530,7 @@ MODULE vgm
 
               if (command_codes(ind2) == d(ind)) then 
                   reads = reads + 1  
-                  if (ind >= loopInd .AND. loopInd /= 0 .AND. loopByte == 0) loopByte = ind
+                  if (ind >= loopInd .AND. loopInd /= 0 .AND. loopByte == 0) loopByte = ind - 1
                 
                   minus = .FALSE.
 
@@ -635,12 +636,14 @@ MODULE vgm
                            counter = counter + 1 
                        end if
                   end select
-                    
+
                   if (ind2 < 7) then  
                       ind = ind + command_indexAdd(ind2)
                   else  
                       ind = ind + 1
                   end if     
+
+                  !if (debug .EQV. .TRUE.) write(21, "('Counter: ', I0)") counter 
 
                   exit
               end if

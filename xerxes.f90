@@ -30,7 +30,7 @@
       INTEGER                        :: ITYPE
       TYPE(WIN_MESSAGE)              :: MESSAGE
       INTEGER(KIND=2), DIMENSION (2) :: scr
-      LOGICAL, PARAMETER             :: editMode = .TRUE.
+      LOGICAL                        :: editMode
       CHARACTER(20)                  :: msgString
       INTEGER                        :: intDummy, beepF, stat
       !CHARACTER(255)                 :: fname  
@@ -40,6 +40,10 @@
 !
 ! Initialise Winteracter
 !
+
+      inquire(DIRECTORY="temp", exist=editMode)
+      if (editMode .EQV. .FALSE.) call WMenuSetState(ID_DEV, ItemEnabled, 0)  
+
       CALL WInitialise()
       CALL IGrColourModel(24,ColModelDef)
       CALL WBitmapAlloc(1)
@@ -74,10 +78,11 @@
 
       call initWavChannels()
       call getFolder("tia", "xxt")
-      !call playTIAbyName("Cicafos", 0)  
       
-      call openVGM()  
+      !call playTIAbyName("Cicafos", 0)  
 
+      !call openVGM()  
+      call loadWaveFile(-1)  
 !
 ! Main message loop
 !

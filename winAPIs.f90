@@ -23,6 +23,7 @@ MODULE winAPIs
         integer(8) :: started, diffCheck
 
         contains
+        procedure  :: timerInit    => timerInit
         procedure  :: timerStart   => timerStart
         procedure  :: timerEnded   => timerEnded
         procedure  :: TimerRestart => TimerRestart
@@ -46,6 +47,14 @@ MODULE winAPIs
     ! Timer functions
     ! 
 
+     subRoutine timerInit(this)
+        class(CounterTimer), intent(inout) :: this    
+
+        this%diffCheck = 0 
+        this%started   = 0 
+
+     end subRoutine   
+
      subRoutine timerStart(this, diffCheck)
         class(CounterTimer), intent(inout) :: this    
         integer(8)                         :: diffCheck
@@ -67,15 +76,19 @@ MODULE winAPIs
         LOGICAL                            :: ended 
         integer(8)                         :: now
         character(100)                     :: text 
-        
-        now = getTime()
+
+        if (this%diffCheck > 0) then         
+            now = getTime()
 
         !write(text, "('Start: ', I0, ' |Now: ', I0, ' |Diff: ', I0, ' |Wait: ', I0, ' | OK:', L)") &
         !              this%started, now, this%diffCheck, this%diffCheck - (now - this%started), &
         !              (now - this%started) > this%diffCheck 
         !call displayDebug(text) 
-        
-        ended = (now - this%started) > this%diffCheck
+
+            ended = (now - this%started) > this%diffCheck
+        else
+            ended = .TRUE.
+        end if    
 
      end function   
 
