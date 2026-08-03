@@ -35,8 +35,7 @@ MODULE adlib
     type(CounterTimer)                          :: counter
 
     integer(2), dimension(:), allocatable       :: outBufferFull
-    integer(8)                                  :: bufferIndex    
-    integer(8)                                  :: bufferSize
+    integer(8)                                  :: bufferIndex, bufferSize, waitMe
 
     contains
 
@@ -58,6 +57,9 @@ MODULE adlib
 
          !adlibMemory = 0
          call OPL3_Reset(ym3812, RATE)
+         bufferIndex = 0 
+         bufferSize  = 0 
+         waitMe      = 0
 
     end subroutine
 
@@ -106,6 +108,7 @@ MODULE adlib
         last          = 0
         bufferSize    = 0
         bufferIndex   = 1
+        waitMe        = 0
 
         if (allocated(outBufferFull)) then
             deallocate(outBufferFull, stat = rc)
@@ -116,7 +119,7 @@ MODULE adlib
         if (rc /= 0) call displayDebug("Failed to allocate full Adlib buffer!")
 
         outBufferFull = 0
-        bufferSize    = chunkSize / 2
+        bufferSize    = chunkSize
 
         call playMusicInit(outBufferFull, bufferSize, .TRUE.)
 
@@ -140,8 +143,8 @@ MODULE adlib
          
         outBufferFull(bufferIndex:lastIndex) = adlibD%outBuffer(1:size(adlibD%outBuffer))
         bufferIndex = bufferIndex + size(adlibD%outBuffer)
-
-        if (lastIndex > bufferSize) then
+   
+        if (lastIndex == bufferSize) then
             call wavFeedBuffer(outBufferFull, lastIndex)
             bufferIndex = 1
             call musicLoop()
@@ -151,10 +154,16 @@ MODULE adlib
 
     subroutine generateAdlib()
         implicit none
-        integer(8)          :: waitTime, numOfFrames
+        integer(8)          :: waitTime, numOfFrames, maxAllowed
         integer(1)          :: RC
 
-        if (adlibD%ind <= adlibD%numOfBytes) then
+        maxAllowed = bufferSize - bufferIndex + 1
+
+        !write(test, "('Left: ', I0)") maxAllowed
+        !call displayDebug(test)    
+
+        if (waitMe == 0) then
+            if (adlibD%ind <= adlibD%numOfBytes) then
                 adlibD%ind  = adlibD%ind + 1
                 waitTime    = 0
 
@@ -212,23 +221,54 @@ MODULE adlib
                    if (rc /= 0) call displayDebug("Failed to deallocate outBuffer of Adlib data! #2") 
                 end if
 
-                if (waitTime > 0) then 
+                if (waitTime > 0) then
                     !call counter%timerStart(waitTime)
                     
+                    if (waittime > maxAllowed) then
+                        waitMe   = waittime - maxAllowed
+                        waitTime = maxAllowed
+                    end if 
+
                     !write(test, "('Num of Frames: ', I0)") waitTime 
                     !call displayDebug(test)
 
-                    allocate(adlibD%outBuffer(waitTime), stat = rc)  
+                    allocate(adlibD%outBuffer(waitTime ), stat = rc)  
                     if (rc /= 0) call displayDebug("Failed to allocate outBuffer of Adlib data!")    
                     
-                    call OPL3_GenerateStreamMono(ym3812, adlibD%outBuffer, waitTime)
+                    call OPL3_GenerateStreamMono(ym3812, adlibD%outBuffer, waitTime )
                     call buffer2Buffer() 
 
                 end if
-        else
-            adlibD%ind = adlibD%loopByte
-        end if
-  
+            else
+                adlibD%ind = adlibD%loopByte
+            end if
+
+        else  
+
+            if (allocated(adlibD%outBuffer)) then
+                deallocate(adlibD%outBuffer, stat = rc)  
+                if (rc /= 0) call displayDebug("Failed to deallocate outBuffer of Adlib data! #3") 
+            end if
+
+            waitTime = waitMe
+            waitMe   = 0
+
+            if (waittime > maxAllowed) then
+                waitMe   = waittime - maxAllowed
+                waitTime = maxAllowed
+            end if 
+
+            !write(test, "('Num of Frames: ', I0)") waitTime 
+            !call displayDebug(test)
+
+            allocate(adlibD%outBuffer(waitTime ), stat = rc)  
+            if (rc /= 0) call displayDebug("Failed to allocate outBuffer of Adlib data! #2")    
+                    
+            call OPL3_GenerateStreamMono(ym3812, adlibD%outBuffer, waitTime )
+            call buffer2Buffer() 
+
+        end if 
+
     end subroutine
 
 END MODULE adlib
