@@ -319,7 +319,7 @@ MODULE vgm
 
             call initAdlibData()    
             call fillAdlibData(adlibName, songBytes, reads, byteNum, loopByte) 
-            call testPlay()
+            !call testPlay()
 
         end if
 

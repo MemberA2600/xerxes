@@ -22,6 +22,9 @@
       USE TIA
       USE folderParser
       USE vgm  
+      USE adlib  
+      USE threadMaster
+      use IFWIN
 
       IMPLICIT NONE
 !
@@ -33,6 +36,7 @@
       LOGICAL                        :: editMode
       CHARACTER(20)                  :: msgString
       INTEGER                        :: intDummy, beepF, stat
+        
       !CHARACTER(255)                 :: fname  
 
       !INTEGER(2), dimension(:), allocatable :: tiaTestData  
@@ -72,19 +76,28 @@
       call random_seed() 
       if (editMode .EQV. .FALSE.) call WMenuSetState(ID_DEV, ItemEnabled, 0)  
 
+      call initWavChannels()
+      call getFolder("tia", "xxt")
+!
+!   Start threads
+!
+
+      call initThreadList()
+      call addThread("soundChannelLoop", soundChannelLoopT)   
+      call addThread("playAdlib"       , playAdlibT       )   
+
       do beepF = 400, 1000, 200  
          intDummy = Beep(beepF, 110)
       end do
 
-      call initWavChannels()
-      call getFolder("tia", "xxt")
-      
-      !call playTIAbyName("Cicafos", 0)  
-
-      call openVGM()  
-      !call loadWaveFile(-1)  
 !
-! Main message loop
+!    Put tests here!  
+!
+      !call playTIAbyName("Cicafos", 0)  
+      call openVGM()  
+
+!
+!   Main message loop
 !
       DO                                 ! Loop until user terminates
 
@@ -117,7 +130,6 @@
 
             END SELECT 
 
-
           CASE (CloseRequest)            ! Close window (e.g. Alt/F4)
             EXIT   
 
@@ -126,11 +138,71 @@
             call WMenuSetState(ID_DEV, ItemEnabled, 0)  
             !call runGameLogic()
         end if
-        CALL soundChannelLoop()
-        CALL musicLoop()
+        !CALL soundChannelLoop()
+        !call playAdlib()
 
       END DO
       CALL WindowClose()                 ! Remove program window
 
+      call closeAllThreads()
+
       STOP
+
+      CONTAINS  
+
+      function soundChannelLoopT(lpParameter) result(rc)
+          use IFWIN
+
+          integer(LPVOID), value   :: lpParameter
+          integer                  :: rc
+          character(40), parameter :: name = "soundChannelLoop" 
+
+          !DEC$ ATTRIBUTES STDCALL :: soundChannelLoopT
+
+           do while (isThreadRunning(name) .EQV. .TRUE.)
+              call threadThings(name)  
+           end do
+
+           rc = 0
+        end function
+
+      function playAdlibT(lpParameter) result(rc)
+          use IFWIN
+
+          integer(LPVOID), value   :: lpParameter
+          integer                  :: rc
+          character(40), parameter :: name = "playAdlib" 
+
+          !DEC$ ATTRIBUTES STDCALL :: playAdlibT
+
+           do while (isThreadRunning(name) .EQV. .TRUE.)
+              call threadThings(name)  
+           end do
+
+           rc = 0
+        end function
+
+        subroutine threadThings(name)
+          character(*)              :: name 
+
+          if (getThreadCommand(name) == PAUSE_COMMAND) then
+              call pauseThread(name, .TRUE.)
+          end if
+
+          do while(isThreadPaused(name) .EQV. .TRUE.)
+             call sleep(1)
+             if (getThreadCommand(name) == UNPAUSE_COMMAND) then
+                 call pauseThread(name, .FALSE.)
+             end if   
+          end do   
+
+          select case(name)
+          case("soundChannelLoop")
+                call soundChannelLoop()
+          case("playAdlib")  
+                call playAdlib()
+          end select  
+
+        end subroutine
+
       END PROGRAM XERXES

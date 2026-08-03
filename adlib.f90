@@ -10,11 +10,12 @@ MODULE adlib
     USE winapis
     USE ifport
     USE opl3_mod
+    USE threadMaster
 
     implicit none
 
     private
-    public                                     :: initAdlibData, fillAdlibData, testPlay
+    public                                     :: initAdlibData, fillAdlibData, playAdlib
     character(40)                              :: test 
     logical                                    :: testDebug = .FALSE.
     integer(1), parameter                      :: minWait = 0 ! 27 on real hw
@@ -35,12 +36,26 @@ MODULE adlib
     type(CounterTimer)                          :: counter
 
     integer(2), dimension(:), allocatable       :: outBufferFull
-    integer(8)                                  :: bufferIndex, bufferSize, waitMe
+    integer(8)                                  :: bufferIndex, bufferSize, waitMe, last
 
     contains
 
+    subroutine pauseAdlib(s)
+         logical    :: s   
+         
+         call pauseThread("playAdlib", s)
+         if (s .EQV. .TRUE.) then
+             do while (isThreadPaused("playAdlib") .EQV. .FALSE.)
+                call sleep(1)    
+             end do
+         end if   
+
+    end subroutine
+
     subroutine initAdlibData()
          integer(2)           :: stat   
+
+         call pauseAdlib(.TRUE.)
 
          adlibD%header        = 'xxa '
          adlibD%nameLen       =  0
@@ -60,6 +75,7 @@ MODULE adlib
          bufferIndex = 0 
          bufferSize  = 0 
          waitMe      = 0
+         last        = 0
 
     end subroutine
 
@@ -99,39 +115,46 @@ MODULE adlib
              end do
          end if   
 
+         last          = 0
+         bufferSize    = 0
+         bufferIndex   = 1
+         waitMe        = 0
+
+         if (allocated(outBufferFull)) then
+             deallocate(outBufferFull, stat = stat)
+             if (stat /= 0) call displayDebug("Failed to deallocate full Adlib buffer!")
+         end if
+
+         allocate(outBufferFull(chunkSize), stat = stat)
+         if (stat /= 0) call displayDebug("Failed to allocate full Adlib buffer!")
+
+         outBufferFull = 0
+         bufferSize    = chunkSize
+         last          = 0
+         call playMusicInit(outBufferFull, bufferSize, .TRUE.)
+
+         call pauseAdlib(.FALSE.)
+
     end subroutine
 
-     subroutine testPlay
-        integer(8)      :: last
+    subroutine playAdlib()
         integer(1)      :: rc
 
-        last          = 0
-        bufferSize    = 0
-        bufferIndex   = 1
-        waitMe        = 0
-
-        if (allocated(outBufferFull)) then
-            deallocate(outBufferFull, stat = rc)
-            if (rc /= 0) call displayDebug("Failed to deallocate full Adlib buffer!")
+        if (adlibD%numOfBytes > 0) then
+            if (last <= adlibD%ind) then
+               call generateAdlib() 
+            else
+               adlibD%ind = adlibD%loopByte
+            end if 
+            last = adlibD%ind
+        else   
+            if (allocated(outBufferFull)) then
+                deallocate(outBufferFull, stat = rc)
+                if (rc /= 0) call displayDebug("Failed to deallocate full Adlib buffer! #3")
+            end if
         end if
+    end subroutine
 
-        allocate(outBufferFull(chunkSize), stat = rc)
-        if (rc /= 0) call displayDebug("Failed to allocate full Adlib buffer!")
-
-        outBufferFull = 0
-        bufferSize    = chunkSize
-
-        call playMusicInit(outBufferFull, bufferSize, .TRUE.)
-
-        do while (last <= adlibD%ind)
-           call generateAdlib() 
-           last = adlibD%ind
-        end do
-
-        deallocate(outBufferFull, stat = rc)
-        if (rc /= 0) call displayDebug("Failed to deallocate full Adlib buffer!")
-
-    end subroutine 
 
     subroutine buffer2Buffer()
         integer(8)                  :: lastIndex
@@ -170,12 +193,6 @@ MODULE adlib
                 test        = ""
 
                 select case(adlibD%songBytes(adlibD%ind))
-                case(Z'66')  
-                    ! EndByte    
-                      if (testDebug .EQV. .TRUE.) &  
-                      write(test, "(I8.8, '# Endbyte found!' )") adlibD%ind  
-
-                      adlibD%ind = adlibD%loopByte
                 case(Z'05')
                       waitTime   =  adlibD%songBytes(adlibD%ind + 1) + &
                                    (adlibD%songBytes(adlibD%ind + 2) * 256)  
@@ -271,4 +288,6 @@ MODULE adlib
 
     end subroutine
 
+    
+    
 END MODULE adlib
