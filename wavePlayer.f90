@@ -12,6 +12,7 @@ MODULE wavePlayer
     USE KERNEL32
     use WINMM
     use dataloader 
+    use threadMaster
 
     implicit none
 
@@ -149,6 +150,7 @@ MODULE wavePlayer
     end subroutine
 
     subroutine stopMusic()
+        call pauseWavePlayer(.TRUE.)
         if (musicstate() /= 0) call playMusicEnd()
 
         call music%stopPlaying()
@@ -345,6 +347,7 @@ MODULE wavePlayer
         integer(8)                            :: s
         logical                               :: m
 
+        call pauseWavePlayer(.TRUE.)
         call music%initChannel(0) 
 
         manualMode = m
@@ -675,6 +678,20 @@ MODULE wavePlayer
         end if
 
         this%playing             = .FALSE.
+
+    end subroutine
+
+    subroutine pauseWavePlayer(s)
+         logical    :: s   
+         
+         call pauseThread("playAdlib", s)
+         call pauseThread("playMusic", s)
+
+         if (s .EQV. .TRUE.) then
+             do while (isThreadPaused("playMusic") .EQV. .FALSE.)
+                call sleep(1)    
+             end do
+         end if   
 
     end subroutine
 
