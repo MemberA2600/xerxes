@@ -44,6 +44,8 @@ MODULE adlib
          logical    :: s   
          
          call pauseThread("playAdlib", s)
+         call pauseThread("playMusic", s)
+
          if (s .EQV. .TRUE.) then
              do while (isThreadPaused("playAdlib") .EQV. .FALSE.)
                 call sleep(1)    
@@ -170,7 +172,7 @@ MODULE adlib
         if (lastIndex == bufferSize) then
             call wavFeedBuffer(outBufferFull, lastIndex)
             bufferIndex = 1
-            call musicLoop()
+            !call musicLoop()
         end if
 
     end subroutine         

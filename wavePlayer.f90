@@ -17,15 +17,22 @@ MODULE wavePlayer
 
     PRIVATE
     PUBLIC :: initWavChannels, stopChannel, TIA2Wav, soundChannelLoop, loadWaveFile, &
-              stopMusic, musicLoop, playMusicInit, wavFeedBuffer
+              stopMusic, playMusicInit, wavFeedBuffer, playMusic
 
-    integer, parameter                    :: RATE = 44100
-    integer, parameter                    :: NUMBER_OF_EFFECTS = 4
-    integer(2), dimension(:), allocatable :: buff
-    integer(8)                            :: musicInd 
-    logical                               :: manualMode, bufferFed
+    integer, parameter                      :: RATE = 44100
+    integer, parameter                      :: NUMBER_OF_EFFECTS = 4
+    !integer(8)                             :: musicInd 
+    logical                                 :: manualMode 
 
-    logical                               :: musicChunkWaiting, musicLastChunk, musicFirstChunk
+    integer(1), parameter                   :: numOfBuffs = 20
+    logical, dimension(numOfBuffs)          :: bufferFed
+    integer(2), dimension(:,:), allocatable :: buff
+    integer, dimension(numOfBuffs)          :: buffLen     
+
+    integer(1)                              :: fillIndex, playIndex
+
+    logical                                 :: musicChunkWaiting, musicLastChunk, &
+                                               musicFirstChunk, letFirstPlay
 
     TYPE WaveChannel
         integer                               :: L     
@@ -119,22 +126,22 @@ MODULE wavePlayer
 
     end function
 
-    subroutine musicLoop()
-        if (manualMode .EQV. .FALSE.) then
-            select case(musicState())
-            case(2)
-                call playMusicEnd()
-            case(1)
-                call playMusic()
-                musicInd = musicInd + chunkSize
-            end select
-        else
-            if (bufferFed .EQV. .TRUE.) then
-                musicInd = 1
-                call playMusic()
-            end if
-        end if
-    end subroutine
+!    subroutine musicLoop()
+!        if (manualMode .EQV. .FALSE.) then
+!            select case(musicState())
+!            case(2)
+!                call playMusicEnd()
+!            case(1)
+!                call playMusic()
+!                musicInd = musicInd + chunkSize
+!            end select
+!        else
+            !if (bufferFed .EQV. .TRUE.) then
+            !    musicInd = 1
+            !    call playMusic()
+            !end if
+!        end if
+!    end subroutine
 
     subroutine stopChannel(n)
         integer :: n
@@ -148,7 +155,7 @@ MODULE wavePlayer
 
         musicChunkWaiting = .FALSE.
         musicLastChunk    = .FALSE.
-        musicInd          = 0
+       !musicInd          = 0
         musicFirstChunk   = .FALSE.
         bufferFed         = .FALSE.
 
@@ -231,8 +238,8 @@ MODULE wavePlayer
                 else
                     if (cNum == 0) then 
                         call addWaveToChannel(d)
-                    else
-                        call playMusicInit(d, 0, .FALSE.)
+                    !else
+                    !    call playMusicInit(d, 0, .FALSE.)
                         !call playMusic()
                         !call playMusicEnd()
 
@@ -251,17 +258,85 @@ MODULE wavePlayer
     subroutine wavFeedBuffer(d, s)
         integer(2), dimension(:), allocatable :: d            
         integer(8)                            :: s
+        integer(4)                            :: ind
+        !character(40)                         :: t
 
-        buff       = 0
-        buff(1:s)  = d(1:s)
-        music%L    = s
-         
-        !call AppendSamples("argh.raw", buff(1:music%L))  
+        fillIndex = fillIndex + 1
+        if (fillIndex > numOfBuffs) fillIndex = 1
 
-        bufferFed  = .TRUE.
+        do while (bufferFed(fillIndex) .EQV. .TRUE.)
+           call sleep(1) 
+        end do
+
+        !write(t, "('FillIndex: ', I0)") fillIndex
+        !call displayDebug(t)
+
+        do ind = 1, chunkSize, 1
+           buff(ind, fillIndex) = d(ind)
+        end do
+
+        !do ind = 1, chunkSize, 1
+        !   call AppendOne2("geci.raw", d(ind)) 
+        !end do
+        
+        buffLen( fillIndex)      = s
+        bufferFed(fillIndex)     = .TRUE. 
+
+        if (letFirstPlay .EQV. .FALSE.) then
+           if (fillIndex == numOfBuffs / 2) letFirstPlay = .TRUE.
+        end if
 
     end subroutine
 
+    subroutine playMusic()
+        integer(4)                           :: rc
+        !character(40)                        :: t
+
+        if (letFirstPlay .EQV. .FALSE.) return
+
+        playIndex = playIndex + 1
+        if (playIndex > numOfBuffs) playIndex = 1
+
+        do while(bufferFed(playIndex) .EQV. .FALSE.)
+           call sleep(1) 
+        end do
+
+        !if (musicFirstChunk .EQV. .FALSE.) then  
+        !    rc = WaitForSingleObject(music%hEvent, INFINITE) 
+        !    if (rc /= 0) call displayDebug("WaitForSingleObject failed!")        
+        !end if
+
+        music%hdr%dwBufferLength = buffLen(playIndex) * 2
+        musicLastChunk           = .TRUE. 
+        music%hdr%lpData         = loc(buff(1, playIndex))  
+
+        !write(t, "('PlayIndex: ', I0)") playIndex
+        !call displayDebug(t)
+
+        musicFirstChunk   = .FALSE.
+
+33      rc = waveOutWrite( &
+             music%hWave, music%hdr, sizeof(music%hdr))
+
+        if (rc /= MMSYSERR_NOERROR) then
+            if (rc == 33) then 
+               go to 33  
+            else 
+               call displayDebug("Failed to write out wave buffer!")   
+            end if 
+        end if 
+
+        rc = WaitForSingleObject(music%hEvent, INFINITE) 
+        if (rc /= 0) call displayDebug("WaitForSingleObject failed!")   
+
+        do 
+           if (iand(music%hdr%dwFlags, WHDR_DONE) == 1 .AND. &
+               iand(music%hdr%dwFlags, WHDR_INQUEUE) == 0) exit       
+        end do
+
+        bufferFed(playIndex) = .FALSE.
+
+    end subroutine
 
     subroutine playMusicInit(d, s, m)
         integer(2), dimension(:), allocatable :: d            
@@ -304,68 +379,75 @@ MODULE wavePlayer
             if (rc /= 0 ) call displaydebug("Failed to deallocate BUFF!")
         end if
 
-        allocate(buff(chunkSize), stat = rc) 
+        allocate(buff(chunkSize, numOfBuffs), stat = rc) 
         if (rc /= 0 ) call displaydebug("Failed to allocate BUFF!")
 
         musicChunkWaiting = .TRUE.
         musicLastChunk    = .FALSE. 
-        musicInd          = 1 
+        !musicInd          = 1 
         musicFirstChunk   = .TRUE.
+        letFirstPlay      = .FALSE.
+        fillIndex         = 0
+        playIndex         = 0
 
     end subroutine
 
-    subroutine playMusic()
-        integer(8)                            :: endInd, endInd2
-        character(40)                         :: t
-        integer(4)                            :: rc
+!    subroutine playMusic()
+!        integer(8)                            :: endInd, endInd2
+!        character(40)                         :: t
+!        integer(4)                            :: rc
+!
+!        if (bufferFed .EQV. .FALSE.) then 
+!            endInd = musicInd + chunkSize - 1 
+!            if (endInd > music%L) endInd = music%L
+!    
+!            if (endInd == music%L) then
+!                musicChunkWaiting = .FALSE.
+!                musicLastChunk    = .TRUE. 
+!            end if 
+!    
+!            endind2                   = endInd - musicInd + 1
+!            music%hdr%dwBufferLength  = endind2  * 2 
+!    
+!            buff             = 0 
+!            buff(1:endInd2)  = music%buffer(musicInd:endInd)           
+!        else
+!            music%hdr%dwBufferLength = music%L * 2
+!            musicChunkWaiting = .FALSE.
+!            musicLastChunk    = .TRUE. 
+!        end if
+!
+!        music%hdr%lpData = loc(buff)  
 
-        if (bufferFed .EQV. .FALSE.) then 
-            endInd = musicInd + chunkSize - 1 
-            if (endInd > music%L) endInd = music%L
-    
-            if (endInd == music%L) then
-                musicChunkWaiting = .FALSE.
-                musicLastChunk    = .TRUE. 
-            end if 
-    
-            endind2                   = endInd - musicInd + 1
-            music%hdr%dwBufferLength  = endind2  * 2 
-    
-            buff             = 0 
-            buff(1:endInd2)  = music%buffer(musicInd:endInd)           
-        else
-            music%hdr%dwBufferLength = music%L * 2
-            musicChunkWaiting = .FALSE.
-            musicLastChunk    = .TRUE. 
-        end if
+        !if (musicFirstChunk .EQV. .FALSE.) then  
+        !    rc = WaitForSingleObject(music%hEvent, INFINITE) 
+        !    if (rc /= 0) call displayDebug("WaitForSingleObject failed!")        
+        !end if
 
-        music%hdr%lpData = loc(buff)  
-        musicFirstChunk   = .FALSE.
-
-        !call AppendSamples("argh.raw", buff(1:music%L))  
-
-33      rc = waveOutWrite( &
-             music%hWave, music%hdr, sizeof(music%hdr))
-
-        if (rc /= MMSYSERR_NOERROR) then
-            if (rc == 33) then 
-               go to 33  
-            else 
-               call displayDebug("Failed to write out wave buffer!")   
-            end if 
-        end if 
-
-        rc = WaitForSingleObject(music%hEvent, INFINITE) 
-        if (rc /= 0) call displayDebug("WaitForSingleObject failed!")  
-    
-        do 
-           if (iand(music%hdr%dwFlags, WHDR_DONE) == 1 .AND. &
-               iand(music%hdr%dwFlags, WHDR_INQUEUE) == 0) exit       
-        end do
-
-        bufferFed = .FALSE.
-
-    end subroutine
+!        musicFirstChunk   = .FALSE.
+!
+!33      rc = waveOutWrite( &
+!             music%hWave, music%hdr, sizeof(music%hdr))
+!
+!        if (rc /= MMSYSERR_NOERROR) then
+!            if (rc == 33) then 
+!               go to 33  
+!            else 
+!               call displayDebug("Failed to write out wave buffer!")   
+!            end if 
+!        end if 
+!
+!        rc = WaitForSingleObject(music%hEvent, INFINITE) 
+!       if (rc /= 0) call displayDebug("WaitForSingleObject failed!")  
+!    
+!        do 
+!           if (iand(music%hdr%dwFlags, WHDR_DONE) == 1 .AND. &
+!               iand(music%hdr%dwFlags, WHDR_INQUEUE) == 0) exit       
+!        end do
+!
+!        bufferFed = .FALSE.
+!
+!    end subroutine
 
     subroutine playMusicEnd()
         integer(4)                            :: rc
@@ -391,7 +473,7 @@ MODULE wavePlayer
 
         musicChunkWaiting = .FALSE.
         musicLastChunk    = .FALSE.
-        musicInd          = 0 
+        !musicInd          = 0 
         musicFirstChunk   = .FALSE.
         bufferFed         = .FALSE.  
 

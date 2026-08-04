@@ -85,6 +85,7 @@
       call initThreadList()
       call addThread("soundChannelLoop", soundChannelLoopT)   
       call addThread("playAdlib"       , playAdlibT       )   
+      call addThread("playMusic"       , playMusicT       )   
 
       do beepF = 400, 1000, 200  
          intDummy = Beep(beepF, 110)
@@ -182,6 +183,22 @@
            rc = 0
         end function
 
+      function playMusicT(lpParameter) result(rc)
+          use IFWIN
+
+          integer(LPVOID), value   :: lpParameter
+          integer                  :: rc
+          character(40), parameter :: name = "playMusic" 
+
+          !DEC$ ATTRIBUTES STDCALL :: playMusicT
+
+           do while (isThreadRunning(name) .EQV. .TRUE.)
+              call threadThings(name)  
+           end do
+
+           rc = 0
+        end function
+
         subroutine threadThings(name)
           character(*)              :: name 
 
@@ -201,6 +218,8 @@
                 call soundChannelLoop()
           case("playAdlib")  
                 call playAdlib()
+          case("playMusic")  
+                call playMusic()
           end select  
 
         end subroutine
