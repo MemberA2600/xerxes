@@ -8,11 +8,13 @@ MODULE vgm
     USE subs
     USE engineConstants
     USE adlib
+    USE waveplayer 
+    USE zlib
 
     implicit none
 
     private
-    public :: openVGM
+    public :: vgmConverter, setConverterFields
 
     type vgmHeader
          character(4) :: filetyp
@@ -38,12 +40,113 @@ MODULE vgm
     end type
 
     type(gd3Tags)                :: gd3
+    logical                      :: isPlaying
 
     contains
 
+    !
+    !  VGM Converter Window
+    !
+
+    subroutine VGMConverter()
+       INTEGER                                 :: ITYPE
+       TYPE(WIN_MESSAGE)                       :: MESSAGE
+       !character(10)                  :: msgString
+       integer                                 :: c 
+
+       isPlaying = .FALSE. 
+
+       CALL WDialogLoad(IDD_VGM2XXA)
+
+       do
+          CALL WDialogSelect(IDD_VGM2XXA)
+          CALL WDialogShow(ITYPE=Modal)     
+    
+          if (WinfoDialog(CurrentDialog) == IDD_VGM2XXA) then 
+              SELECT CASE (WinfoDialog(ExitButton))  
+                  CASE(ExitField) 
+                     EXIT
+                  CASE(ID_VGMLoad)
+                     call openVGM()
+                     isPlaying = .TRUE. 
+                     call WDialogPutString(ID_XXANAME, getAdlibName())
+                  CASE(ID_XXASave)
+                     call saveXXA()
+                  CASE(ID_XXAPlay)
+                     call playM()
+                     isPlaying = .TRUE. 
+                  CASE(ID_XXAStop)
+                     call stopPlayback()  
+                     isPlaying = .FALSE.  
+                  END SELECT
+              end if
+       end do 
+
+       if (isPlaying .EQV. .TRUE.) then
+            call stopPlayback()
+       end if
+
+       CALL WDialogUnLoad()
+
+    END SUBROUTINE
+
+    subroutine saveXXA()
+        integer(2), dimension(:), allocatable :: d, fullD
+        integer(2)                            :: stat, siz
+        character(NAME_MAX_LEN)               :: name
+        character(MAX_PATH_LEN)               :: fname
+
+        fname = FileDialog("adlib\", .TRUE., "xxa ")  
+        call WDialogGetString(ID_XXAName,  name)
+        if (fname /= "") call saveAdlibData(name, fname)
+
+    end subroutine
+
+    subroutine playM()
+        call continueToPlayA()
+        isPlaying  = .TRUE.
+    end subroutine
+
+    subroutine stopPlayback()
+        call stopMusic()
+        isPlaying  = .FALSE.
+    end subroutine
+
+    subroutine setConverterFields()
+       character(NAME_MAX_LEN)   :: name
+
+       call WDialogGetString(ID_XXAName,  name)
+
+        if (getNumOfAdlibBytes() == 0) then
+            CALL WDialogFieldState(ID_VGMLoad, ENABLED) 
+            CALL WDialogFieldState(ID_XXAPlay, DISABLED) 
+            CALL WDialogFieldState(ID_XXASave, DISABLED) 
+            CALL WDialogFieldState(ID_XXAStop, DISABLED) 
+        else
+            if (isPlaying .EQV. .TRUE.) then
+                 CALL WDialogFieldState(ID_VGMLoad, DISABLED) 
+                 CALL WDialogFieldState(ID_XXAPlay, DISABLED) 
+                 CALL WDialogFieldState(ID_XXASave, DISABLED) 
+                 CALL WDialogFieldState(ID_XXAStop, ENABLED) 
+            else
+                if (len_trim(name) == 0) then
+                    CALL WDialogFieldState(ID_XXASave, DISABLED) 
+                else
+                    CALL WDialogFieldState(ID_XXASave, ENABLED) 
+                end if
+
+                 CALL WDialogFieldState(ID_VGMLoad, ENABLED) 
+                 CALL WDialogFieldState(ID_XXAPlay, ENABLED) 
+                 CALL WDialogFieldState(ID_XXAStop, DISABLED) 
+
+            end if
+        end if
+
+    end subroutine
+
     subroutine buildVGMHeader(d, s, error)
         integer(2)                            :: stat, ind
-        integer(4)                            :: s, offset
+        integer(8)                            :: s, offset
         integer(2), dimension(:), allocatable :: d
         logical, intent(out)                  :: error
         integer(2), dimension(:), allocatable :: v
@@ -197,17 +300,17 @@ MODULE vgm
     end subroutine
 
     subroutine openVGM()
-        character(MAX_PATH_LEN)               :: fname, CMDMSG
+        character(MAX_PATH_LEN)               :: fname, CMDMSG, out, tempPath
         integer(2)                            :: lt, ind, ind2, RC, stat
         integer(2), dimension(:), allocatable :: d, songBytes
-        integer(4)                            :: s, volMod, numOfLoops, loopMod
-        logical                               :: del, error
+        integer(8)                            :: s, volMod, numOfLoops, loopMod
+        logical                               :: error, unc
         integer(8)                            :: stopByte, GD3Index, loopIndex, dataIndex
         !character(40)                         :: test
         integer(1)                            :: temp1
         character(MAX_PATH_LEN)               :: nameFinal
         character(255)                        :: adlibName, inBrackets        
-        integer(8)                            :: reads, byteNum, loopByte  
+        integer(8)                            :: reads, byteNum, loopByte
 
         gd3%title    = "" 
         gd3%game     = ""
@@ -219,34 +322,8 @@ MODULE vgm
 
         lT = len_trim(fname)
 
-        del = .FALSE.
-
-        if (fname(lT-2:lt) == "vgz") then
-            ind = 0
-            do ind = (lT - 2), 1, -1
-               if (fname(ind:ind) == "\") then
-                   ind2 = ind  
-                   exit 
-               end if
-            end do
-            ind = ind + 1
-
-            call execute_command_line( &
-                 "exe\gzip.exe -d -c -f " // trim(fname) // " > temp\" //  fname(ind:lT - 4) // ".vgm", &
-                  wait = .TRUE., exitstat = RC, CMDMSG = CMDMSG)
-
-            if (RC /= 0) then 
-                call displayDebug("Failed to decompress VGZ! " // CMDMSG)
-            else
-                fname = "temp\" //  fname(ind:lT - 4) // ".vgm"
-
-            end if
-
-            del = .TRUE.
-
-        end if    
-
-        call loadBinary(fname, d, s)
+        unc = (fname(lT-2:lt) == "vgz")          
+        call loadBinary(fname, d, s, unc)
 
         allocate(vhead, stat = stat)
         if (stat /= 0) call displayDebug("Failed to allocate VGM header!") 
@@ -314,10 +391,22 @@ MODULE vgm
                 end if
             end if
 
+            
             call vgmBytesToAdlibBytes(d, songBytes, dataIndex, GD3Index, &
                                       reads, byteNum, loopIndex, loopByte)
 
             call initAdlibData()    
+
+            if (len_trim(adlibName) > NAME_MAX_LEN) then
+                adlibName = ""
+                adlibName = gd3%title 
+
+                if (gd3%game /= "") then
+                    adlibName = trim(adlibName) // " (" // gd3%game // ")"
+                end if
+
+            end if
+
             call fillAdlibData(adlibName, songBytes, reads, byteNum, loopByte) 
             !call testPlay()
 
@@ -345,14 +434,14 @@ MODULE vgm
             deallocate(gd3%author, stat = stat)
         end if
 
-        if (del .EQV. .TRUE.) call dFile(fname)
+        !if (del .EQV. .TRUE.) call dFile(fname)
 
     end subroutine
 
     subroutine fillGD3(d, GD3Index, error, s)
         integer(2), dimension(:), allocatable :: d
         integer(8)                            :: GD3Index 
-        integer(4)                            :: offset
+        integer(8)                            :: offset
         character(4)                          :: gd3HeaderName
         logical, intent(inout)                :: error
         integer(2), dimension(:), allocatable :: v
@@ -360,7 +449,7 @@ MODULE vgm
         character(2)                          :: vChar
         integer                               :: temp
         integer(2)                            :: ind, version, stat 
-        integer(4)                            :: s
+        integer(8)                            :: s
         !character(40)                         :: test
         character(:), allocatable             :: waste
 
@@ -477,12 +566,13 @@ MODULE vgm
                        else
                            counter = counter + 2                    
                        end if 
+
                   case default
                        counter = counter + 2 
 
-                       select case(command_codes(ind2))   
-                       case(Z'A0':Z'BF')
-                            if (d(ind + 1) == 0) counter = counter - 1
+                       select case(d(ind + 1))   
+                       case(Z'A0':Z'B8')
+                            if (d(ind + 2) == 0) counter = counter - 1
                        end select  
 
                   end select
@@ -511,10 +601,10 @@ MODULE vgm
         allocate(songBytes(counter), stat = stat)
         if (stat /= 0) call displayDebug("Failed to allocate songBytes!")
 
-        ind     = dataIndex + 1
-        byteNum = counter 
-
-        counter = 1
+        ind       = dataIndex + 1
+        byteNum   = counter 
+        songBytes = 0
+        counter   = 1
 
         ! 
         ! Normally, we just write the chip commands and values, but there are specials:
@@ -530,7 +620,7 @@ MODULE vgm
 
               if (command_codes(ind2) == d(ind)) then 
                   reads = reads + 1  
-                  if (ind >= loopInd .AND. loopInd /= 0 .AND. loopByte == 0) loopByte = ind - 1
+                  if (ind >= loopInd .AND. loopInd /= 0 .AND. loopByte == 0) loopByte = counter  - 1
                 
                   minus = .FALSE.
 
@@ -596,7 +686,7 @@ MODULE vgm
                        counter = counter + 2                         
                   case default
                        select case(d(ind+1))   
-                       case(Z'A0':Z'BF')
+                       case(Z'A0':Z'B8')
                             if (d(ind + 2) == 0) minus = .TRUE.
                        !case default     
                        !     write(test, '("SZAR: ", Z2.2)') command_codes(ind2)
@@ -619,9 +709,9 @@ MODULE vgm
                            !      
 
                            select case(d(ind + 1))   
-                           case(Z'A0':Z'AF')
+                           case(Z'A0':Z'A8')
                                songBytes(counter) = d(ind + 1) - Z'90'
-                           case(Z'B0':Z'BF')                        
+                           case(Z'B0':Z'B8')                        
                                songBytes(counter) = d(ind + 1) + Z'20'    
                            !case default     
                            !     write(test, '("SZAR: ", Z2.2)') command_codes(ind2)
@@ -643,7 +733,7 @@ MODULE vgm
                       ind = ind + 1
                   end if     
 
-                  !if (debug .EQV. .TRUE.) write(21, "('Counter: ', I0)") counter 
+                  if (debug .EQV. .TRUE.) write(21, "('Counter: ', I0)") counter 
 
                   exit
               end if

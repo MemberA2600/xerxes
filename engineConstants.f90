@@ -24,6 +24,8 @@ MODULE engineConstants
 
     real(8), parameter            :: pi = 3.141592653589793238462643383279502884197
     integer(4), parameter         :: chunkSize = 32767
+    character(4), parameter       :: OPL2_FILE_TYPE = 'OPL2'
+    character(4), parameter       :: TIA_FILE_TYPE = 'TIA '
 
 
 END MODULE engineConstants

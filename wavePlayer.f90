@@ -151,9 +151,8 @@ MODULE wavePlayer
 
     subroutine stopMusic()
         call pauseWavePlayer(.TRUE.)
-        if (musicstate() /= 0) call playMusicEnd()
-
         call music%stopPlaying()
+        if (musicstate() /= 0) call playMusicEnd()
 
         musicChunkWaiting = .FALSE.
         musicLastChunk    = .FALSE.
@@ -186,14 +185,15 @@ MODULE wavePlayer
         character(MAX_PATH_LEN) :: fname
         TYPE(WaveFile)          :: wfile
         integer(2), dimension(:), allocatable :: d
-        integer               :: s, ind, offset, stat
+        integer(8)            :: s, ind, offset
+        integer(8)            :: stat
         !character(40)         :: test
         integer               :: cNum
 
         fname = FileDialog("", .FALSE., "wave") 
         if (fname /= "") then  
             ! call  displayDebug("Opened file: " // trim(fname) // "!")
-            call loadBinary(fname, d, s)
+            call loadBinary(fname, d, s, .FALSE.)
 
             if (s > 0) then
                 offset = 1
@@ -238,14 +238,7 @@ MODULE wavePlayer
                     call effects(cNum)%addWave(d)
                     call effects(cNum)%playWav()
                 else
-                    if (cNum == 0) then 
-                        call addWaveToChannel(d)
-                    !else
-                    !    call playMusicInit(d, 0, .FALSE.)
-                        !call playMusic()
-                        !call playMusicEnd()
-
-                    end if
+                    call addWaveToChannel(d)
                 end if
 
                 deallocate(d, stat = stat)
@@ -362,12 +355,12 @@ MODULE wavePlayer
         allocate(music%buffer(music%L), stat = rc) 
         if (rc /= 0 ) call displaydebug("Failed to allocate music buffer!")
 
-        music%buffer(1:music%L) = d(1:music%L)
+        if (manualMode .EQV. .FALSE.) music%buffer(1:music%L) = d(1:music%L)
 
         if (rc /= 0 ) call displaydebug("Failed to allocate music buffer!")
         call music%playWavPrep(.TRUE.)
 
-        music%hdr%lpData          = loc(music%buffer)
+        if (manualMode .EQV. .FALSE.) music%hdr%lpData = loc(music%buffer)
 
         rc = waveOutPrepareHeader( &
         music%hWave, music%hdr, sizeof(music%hdr))
@@ -455,12 +448,11 @@ MODULE wavePlayer
     subroutine playMusicEnd()
         integer(4)                            :: rc
 
-        deallocate(buff, stat = rc) 
-        if (rc /= 0 ) call displaydebug("Failed to deallocate BUFF!")
-
         rc = waveOutUnprepareHeader( &
              music%hWave, music%hdr, sizeof(music%hdr))
        
+        if (rc /= MMSYSERR_NOERROR) call displayDebug("Failed to unprepare header!")   
+
         rc = waveOutClose(music%hWave)
 
         if (rc /= MMSYSERR_NOERROR) call displayDebug("Failed to close wave out!")   
@@ -468,11 +460,16 @@ MODULE wavePlayer
         rc = CloseHandle(music%hEvent)
         if (rc /= 1) call displayDebug("Failed to close event!")   
 
+        deallocate(buff, stat = rc) 
+        if (rc /= 0 ) call displaydebug("Failed to deallocate BUFF!")
+
         music%hEvent = 0
         music%L      = 0
 
-        deallocate(music%buffer, stat = rc) 
-        if (rc /= 0 ) call displaydebug("Failed to deallocate music buffer!")
+        if (allocated(music%buffer)) then
+            deallocate(music%buffer, stat = rc) 
+            if (rc /= 0 ) call displaydebug("Failed to deallocate music buffer!")
+        end if
 
         musicChunkWaiting = .FALSE.
         musicLastChunk    = .FALSE.

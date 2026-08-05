@@ -45,8 +45,10 @@
 ! Initialise Winteracter
 !
 
-      inquire(DIRECTORY="temp", exist=editMode)
+      inquire(file="xerxes.f90", exist=editMode)
       if (editMode .EQV. .FALSE.) call WMenuSetState(ID_DEV, ItemEnabled, 0)  
+
+      CALL setCWD()  
 
       CALL WInitialise()
       CALL IGrColourModel(24,ColModelDef)
@@ -81,11 +83,11 @@
 !
 !   Start threads
 !
-
       call initThreadList()
       call addThread("soundChannelLoop", soundChannelLoopT)   
       call addThread("playAdlib"       , playAdlibT       )   
       call addThread("playMusic"       , playMusicT       )   
+      call addThread("checkDialogs"    , checkDialogsT    )   
 
       do beepF = 400, 1000, 200  
          intDummy = Beep(beepF, 110)
@@ -95,8 +97,8 @@
 !    Put tests here!  
 !
       !call playTIAbyName("Cicafos", 0)  
-      call openVGM()  
-
+      !call openVGM()  
+      !call displayDebug(trim(CWD()) // "!!")  
 !
 !   Main message loop
 !
@@ -128,6 +130,8 @@
                     call setSpeed(MESSAGE%VALUE1 - ID_SPEED) 
               CASE (ID_TIA_Noiser)              
                     call tiaMaker()     
+              CASE (ID_VGM2XXA)              
+                    call vgmConverter() 
 
             END SELECT 
 
@@ -199,6 +203,22 @@
            rc = 0
         end function
 
+      function checkDialogsT(lpParameter) result(rc)
+          use IFWIN
+
+          integer(LPVOID), value   :: lpParameter
+          integer                  :: rc
+          character(40), parameter :: name = "checkDialogs" 
+
+          !DEC$ ATTRIBUTES STDCALL :: checkDialogsT
+
+           do while (isThreadRunning(name) .EQV. .TRUE.)
+              call threadThings(name)  
+           end do
+
+           rc = 0
+        end function
+
         subroutine threadThings(name)
           character(*)              :: name 
 
@@ -211,16 +231,35 @@
              if (getThreadCommand(name) == UNPAUSE_COMMAND) then
                  call pauseThread(name, .FALSE.)
              end if   
+             if (getThreadCommand(name) == FORCE_EXIT) return
           end do   
 
-          select case(name)
-          case("soundChannelLoop")
-                call soundChannelLoop()
-          case("playAdlib")  
-                call playAdlib()
-          case("playMusic")  
-                call playMusic()
-          end select  
+          if (getThreadCommand(name) /= FORCE_EXIT .AND. &
+              getThreadCommand(name) /= PAUSE_COMMAND) then   
+              select case(name)
+              case("soundChannelLoop")
+                    call soundChannelLoop()
+              case("playAdlib")  
+                    call playAdlib()
+              case("playMusic")  
+                    call playMusic()
+              case("checkDialogs")  
+                    call dialogChecker()
+              end select  
+           end if
+        end subroutine
+
+        subroutine dialogChecker()
+            integer             :: dialogID
+
+            dialogID = WInfoDialog(CurrentDialog)
+
+            select case(dialogID)
+            case(IDD_TIA)    
+                call TIAchangeSavePlay()
+            case(IDD_VGM2XXA)
+                call setConverterFields()
+            end select
 
         end subroutine
 

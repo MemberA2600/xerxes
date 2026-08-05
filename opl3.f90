@@ -284,6 +284,101 @@ module opl3_mod
 
 contains
 
+  subroutine manualReset()
+        integer(2) :: ind
+
+        ym3812%timer = 0        ! uint16_t
+        ym3812%eg_timer = 0      ! uint64_t
+        ym3812%eg_timerrem = 0
+        ym3812%eg_state = 0
+        ym3812%eg_add = 0
+        ym3812%eg_timer_lo = 0
+        ym3812%newm = 0
+        ym3812%nts = 0
+        ym3812%rhy = 0
+        ym3812%vibpos = 0
+        ym3812%vibshift = 0
+        ym3812%tremolo = 0
+        ym3812%tremolopos = 0
+        ym3812%tremoloshift = 0
+        ym3812%noise = 0        ! uint32_t
+        ym3812%zeromod = 0      ! int16_t, always 0; canonical "zero" target
+        ym3812%mixbuff(4) = 0   ! int32_t
+        ym3812%rm_hh_bit2 = 0
+        ym3812%rm_hh_bit3 = 0
+        ym3812%rm_hh_bit7 = 0
+        ym3812%rm_hh_bit8 = 0
+        ym3812%rm_tc_bit3 = 0
+        ym3812%rm_tc_bit5 = 0
+        ! OPL3L resampler state
+        ym3812%rateratio = 0
+        ym3812%samplecnt = 0
+        ym3812%oldsamples(4) = 0   ! int16_t
+        ym3812%samples(4) = 0      ! int16_t
+        ! buffered register writes
+        ym3812%writebuf_samplecnt = 0
+        ym3812%writebuf_cur = 0
+        ym3812%writebuf_last = 0
+        ym3812%writebuf_lasttime = 0  
+
+        do ind = 1, 18, 1
+            ym3812%channel(ind)%slotz_idx(2) = 0
+            ym3812%channel(ind)%pair_idx     = 0
+            ym3812%channel(ind)%out_kind(4)  = OUT_ZERO
+            ym3812%channel(ind)%out_idx(4)   = 0
+            ym3812%channel(ind)%chtype = ch_2op
+            ym3812%channel(ind)%f_num  = 0    ! uint16_t
+            ym3812%channel(ind)%block  = 0
+            ym3812%channel(ind)%fb     = 0
+            ym3812%channel(ind)%con    = 0
+            ym3812%channel(ind)%alg    = 0
+            ym3812%channel(ind)%ksv    = 0
+            ym3812%channel(ind)%cha = 0
+            ym3812%channel(ind)%chb = 0
+            ym3812%channel(ind)%chc = 0 
+            ym3812%channel(ind)%chd = 0   ! uint16_t
+        end do
+
+        do ind = 1, 36, 1
+            ym3812%slot(ind)%out_     = 0   ! int16_t out
+            ym3812%slot(ind)%fbmod    = 0   ! int16_t fbmod
+            ym3812%slot(ind)%mod_kind = MOD_ZERO
+            ym3812%slot(ind)%mod_idx  = 0   ! meaning depends on mod_kind
+            ym3812%slot(ind)%prout    = 0   ! int16_t prout
+            ym3812%slot(ind)%eg_rout  = 0   ! uint16_t
+            ym3812%slot(ind)%eg_out   = 0   ! uint16_t
+            ym3812%slot(ind)%eg_inc   = 0   ! uint8_t  (unused by original logic; kept for structural parity)
+            ym3812%slot(ind)%eg_gen   = 0   ! uint8_t
+            ym3812%slot(ind)%eg_rate  = 0   ! uint8_t  (unused by original logic; kept for structural parity)
+            ym3812%slot(ind)%eg_ksl   = 0   ! uint8_t
+            ym3812%slot(ind)%trem_is_tremolo = .false.  ! replaces uint8_t* trem
+            ym3812%slot(ind)%reg_vib  = 0
+            ym3812%slot(ind)%reg_type = 0
+            ym3812%slot(ind)%reg_ksr  = 0
+            ym3812%slot(ind)%reg_mult = 0
+            ym3812%slot(ind)%reg_ksl  = 0
+            ym3812%slot(ind)%reg_tl   = 0
+            ym3812%slot(ind)%reg_ar   = 0
+            ym3812%slot(ind)%reg_dr   = 0
+            ym3812%slot(ind)%reg_sl   = 0
+            ym3812%slot(ind)%reg_rr   = 0
+            ym3812%slot(ind)%reg_wf   = 0
+            ym3812%slot(ind)%key      = 0
+            ym3812%slot(ind)%pg_reset = 0
+            ym3812%slot(ind)%pg_phase = 0    ! uint32_t
+            ym3812%slot(ind)%pg_phase_out = 0
+        end do
+
+        do ind = 1, OPL_WRITEBUF_SIZE, 1
+            ym3812%writebuf(ind)%time = 0
+            ym3812%writebuf(ind)%reg  = 0
+            ym3812%writebuf(ind)%data = 0
+        end do
+
+  end subroutine
+    
+
+
   !=======================================================================
   ! Bit-manipulation helpers
   !=======================================================================
@@ -1282,39 +1377,7 @@ contains
     integer(i32), intent(in) :: samplerate
     integer(i32) :: islot, ich, local_ch_slot, channum0, m
 
-    chip%timer = 0        ! uint16_t
-    chip%eg_timer = 0      ! uint64_t
-    chip%eg_timerrem = 0
-    chip%eg_state = 0
-    chip%eg_add = 0
-    chip%eg_timer_lo = 0
-    chip%newm = 0
-    chip%nts = 0
-    chip%rhy = 0
-    chip%vibpos = 0
-    chip%vibshift = 0
-    chip%tremolo = 0
-    chip%tremolopos = 0
-    chip%tremoloshift = 0
-    chip%noise = 0        ! uint32_t
-    chip%zeromod = 0      ! int16_t, always 0; canonical "zero" target
-    chip%mixbuff(4) = 0   ! int32_t
-    chip%rm_hh_bit2 = 0
-    chip%rm_hh_bit3 = 0
-    chip%rm_hh_bit7 = 0
-    chip%rm_hh_bit8 = 0
-    chip%rm_tc_bit3 = 0
-    chip%rm_tc_bit5 = 0
-    ! OPL3L resampler state
-    chip%rateratio = 0
-    chip%samplecnt = 0
-    chip%oldsamples(4) = 0   ! int16_t
-    chip%samples(4) = 0      ! int16_t
-    ! buffered register writes
-    chip%writebuf_samplecnt = 0
-    chip%writebuf_cur = 0
-    chip%writebuf_last = 0
-    chip%writebuf_lasttime = 0  
+    call manualReset()
 
     do islot = 1, 36
       call set_mod_zero(chip, islot)

@@ -8,6 +8,7 @@ MODULE subs
       USE screen  
       USE IFWIN
       USE IFWINTY
+      use IFPORT
 
       IMPLICIT NONE
 
@@ -15,19 +16,38 @@ MODULE subs
       PUBLIC            :: getScreenSize, autoSizeScreen, setResolutionMenu, &
                            getWindowDim, setScreenSize, timer, speed, setSpeed, &
                            randInt, getTime, FileDialog, countCharInString, &
-                           getNextPoz, dFile, f2bitsTo1Bit, getNullTermString
+                           getNextPoz, dFile, f2bitsTo1Bit, getNullTermString, &
+                           CWD, setCWD
 
       CHARACTER(20)     :: msgString
       INTEGER(KIND = 1) :: speed, timer
+      CHARACTER(MAX_PATH_LEN) :: CWDReal  
 
       CONTAINS  
+
+      function CWD() result(r)
+           character(MAX_PATH_LEN) :: r
+           integer                 :: l    
+        
+           r = CWDReal 
+
+      end function 
+               
+      subroutine setCWD()
+           character(MAX_PATH_LEN) :: r
+           integer                 :: l    
+        
+           l = GetCurrentDirectory(260, CWDReal)
+           CWDReal(l + 1:MAX_PATH_LEN) = ""
+
+      end subroutine 
 
       function FileDialog(dir, sav, typ) result(fname)
             character(*)                            :: dir
             character(MAX_PATH_LEN)                 :: fname  
             logical                                 :: sav
             integer                                 :: iflags, ind             
-            character(25), dimension(3,3)           :: typeList         
+            character(25), dimension(4,3)           :: typeList         
             character(4)                            :: typ
             character(40)                           :: title, ftyp 
 
@@ -42,6 +62,10 @@ MODULE subs
             typeList(3,1) = 'vgm '
             typelist(3,2) = 'VGM Files|*.vgm;*.vgz|'
             typelist(3,3) = 'Video Game Music'
+
+            typeList(4,1) = 'xxa '
+            typelist(4,2) = 'Adlib Files|*.xxa|'
+            typelist(4,3) = 'Xerxes Adlib File'
 
             iflags = 8 + 32
 
@@ -265,8 +289,8 @@ MODULE subs
     subroutine getNullTermString(s, d, offset, siz)
 
         integer(2), dimension(:), allocatable    :: d
-        integer(4), intent(inout)                :: offset
-        integer(4)                               :: siz, ind, num
+        integer(8), intent(inout)                :: offset
+        integer(8)                               :: siz, ind, num
         character(:), allocatable, intent(inout) :: s
         character(40)                            :: test
 

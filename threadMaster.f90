@@ -8,7 +8,7 @@ MODULE threadMaster
     PRIVATE
     PUBLIC     :: initThreadList, addThread, killThread, isThreadRunning, closeAllThreads, &
                   isThreadPaused, getThreadCommand, pauseThread, NO_COMMAND, &
-                  PAUSE_COMMAND, UNPAUSE_COMMAND  
+                  PAUSE_COMMAND, UNPAUSE_COMMAND, FORCE_EXIT  
 
     TYPE Thread   
          character(20)          :: name
@@ -21,7 +21,8 @@ MODULE threadMaster
 
     integer(1), parameter       :: NO_COMMAND      = 0, &
                                    PAUSE_COMMAND   = 1, &
-                                   UNPAUSE_COMMAND = 2
+                                   UNPAUSE_COMMAND = 2, &
+                                   FORCE_EXIT      = 3
 
     TYPE(Thread), dimension(:), allocatable  :: threadList
     integer(2)                               :: listSize
@@ -40,6 +41,10 @@ MODULE threadMaster
     
     subroutine closeAllThreads() 
         integer(2)          :: ind
+        character(40)       :: t
+
+        !write(t, '("Number of Threads: ", I0)') listSize
+        !call displayDebug(t)
 
         do ind = 1, listSize, 1
            call killThread(threadList(ind)%name) 
@@ -89,6 +94,8 @@ MODULE threadMaster
          threadList(listSize)%threadHandle = threadHandle          
          threadList(listSize)%threadId     = threadId 
          
+         !call displayDebug("Added Thread: " // name // '!')
+
     end subroutine
 
     subroutine addMore()
@@ -139,12 +146,17 @@ MODULE threadMaster
          integer                :: RC
 
          ind = getThreadNum(name)
+         !call displayDebug("Closing: " // name // "!")
+
          if (ind > 0) then
              threadList(ind)%running = .FALSE.
+             threadList(ind)%command = FORCE_EXIT   
 
              RC  = WaitForSingleObject(threadList(ind)%threadHandle, INFINITE)
              RC  = CloseHandle(threadList(ind)%threadHandle)
              threadList(ind)%threadHandle = NULL
+         else
+             call displayDebug("Failed to find and close " // name // "!")
 
          end if
 

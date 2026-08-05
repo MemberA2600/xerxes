@@ -10,10 +10,11 @@
 "D:\winteracter\projects\xerxes\dataloader.obj"
 "D:\winteracter\projects\xerxes\folderparser.obj"
 "D:\winteracter\projects\xerxes\opl3.obj"
-"D:\winteracter\projects\xerxes\tia.obj"
 "D:\winteracter\projects\xerxes\waveplayer.obj"
+"D:\winteracter\projects\xerxes\tia.obj"
 "D:\winteracter\projects\xerxes\adlib.obj"
 "D:\winteracter\projects\xerxes\vgm.obj"
+"D:\winteracter\projects\xerxes\gzip.obj"
 -out:"xerxes.exe"
 -subsystem:windows
 -machine:x86

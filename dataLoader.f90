@@ -6,12 +6,13 @@ MODULE dataLoader
       USE winAPIs
       use IFPORT
       use engineConstants  
+      use gzip_mod  
 
       IMPLICIT NONE  
 
       PRIVATE
       PUBLIC :: loadbinary, read4CharFromBin, readIntFromBin, copyBytes, copyBytesHalf, &
-                writeChars2Bin, writeBytes2Bin, writeBin2File, bin2Char 
+                writeChars2Bin, writeBytes2Bin, writeBin2File, bin2Char, WriteInt8ToData 
 
       CONTAINS
       
@@ -20,7 +21,8 @@ MODULE dataLoader
          integer(1), allocatable              :: d (:)
          integer(2), allocatable              :: d2(:)
          logical                              :: dealloc  
-         integer(2)                           :: stat, ind, unit, ios    
+         integer(2)                           :: stat, unit, ios  
+         integer(8)                           :: ind  
          character(40)                        :: test   
 
          unit = 16
@@ -31,7 +33,7 @@ MODULE dataLoader
          do ind = 1, size(d2), 1
             !write(test, "(I0, ' | ', Z0, ' | ', A)") ind, d2(ind), achar(d2(ind))
             !call displayDebug(test) 
-            d(ind) = d2(ind)
+            d(ind) = iand(d2(ind), Z'00FF')
          end do
 
          open(unit=unit, &
@@ -63,13 +65,13 @@ MODULE dataLoader
 
       end subroutine          
 
-      subroutine loadBinary(filename, d2, s)
+      subroutine loadBinary(filename, d2, s, uncompress)
 
         character(*), intent(in)             :: filename
-        integer(1), allocatable              :: d (:)
+        integer(1), allocatable              :: d (:), d3(:)
         integer(2), allocatable, intent(out) :: d2(:)
-
-        integer(4), intent(out)              :: s
+        logical                              :: uncompress
+        integer(8), intent(out)              :: s
     
         integer :: unit, ios, stat, ind
     
@@ -99,27 +101,48 @@ MODULE dataLoader
         close(unit, iostat =ios)
         if (ios /= 0) call displayDebug("Failed to close binary file for read!")      
 
+        if (uncompress .EQV. .TRUE.) then
+            call gzip_uncompress(d, d3, stat)
+
+            if (stat /= 0) call displayDebug("Failed to decompress VGZ!")
+
+            s = size(d3)      
+        end if
+
         allocate(d2(s), stat = stat)
         if (stat /= 0) call displayDebug("Failed to allocate binary size = 2!")      
 
         do ind = 1, s, 1
-           if (d(ind) >= 0) then 
-               d2(ind) = d(ind) 
+           if (allocated(d3)) then
+               if (d3(ind) >= 0) then 
+                   d2(ind) = d3(ind) 
+               else
+                   d2(ind) = d3(ind) + 256
+               end if  
            else
-               d2(ind) = d(ind) + 256
-           end if  
+               if (d(ind) >= 0) then 
+                   d2(ind) = d(ind) 
+               else
+                   d2(ind) = d(ind) + 256
+               end if  
+           end if 
         end do 
 
         deallocate(d, stat = stat)
         if (stat /= 0) call displayDebug("Failed to deallocate binary size = 1!")      
 
+        if (allocated(d3)) then
+            deallocate(d3, stat = stat)
+            if (stat /= 0) call displayDebug("Failed to deallocate uncompressed binary size = 1!")     
+        end if
+
       end subroutine
 
       subroutine read4CharFromBin(d, s, offset, res)
           integer(2), allocatable              :: d (:)
-          integer                              :: s
-          integer                              :: ind, charInd
-          integer     , intent(inout)          :: offset       
+          integer(8)                           :: s
+          integer(8)                           :: ind, charInd
+          integer(8)  , intent(inout)          :: offset       
           character(4), intent(out)            :: res   
                       
           res     = ""
@@ -136,9 +159,9 @@ MODULE dataLoader
 
       subroutine readIntFromBin(d, s, offset, res, L)
           integer(2), allocatable              :: d (:)
-          integer                              :: s, L
-          integer                              :: ind, locInd
-          integer, intent(inout)               :: offset       
+          integer(8)                           :: s, L
+          integer(8)                           :: ind, locInd
+          integer(8), intent(inout)            :: offset       
           integer, intent(out)                 :: res   
           integer(1), dimension(4)             :: temp                       
           !character(16)                        :: test   
@@ -164,8 +187,9 @@ MODULE dataLoader
       subroutine copyBytes(fromD, toD, fromI, toI, limit)
          integer(2), allocatable              :: fromD(:)
          integer(2), allocatable, intent(out) :: toD  (:)
-         integer                              :: fromI, toI, limit
-         integer                              :: stat, ind, ind2
+         integer(8)                           :: fromI, toI, limit
+         integer                              :: stat
+         integer(8)                           :: ind, ind2
          !character(16)                        :: test   
 
          if (allocated(toD) .EQV. .FALSE.) then
@@ -195,7 +219,7 @@ MODULE dataLoader
       subroutine copyBytesHalf(fromD, toD)
          integer(2), allocatable              :: fromD(:)
          integer(2), allocatable, intent(out) :: toD  (:)
-         integer                              :: stat, ind, ind2
+         integer(8)                           :: stat, ind, ind2
          integer(2)                           :: buffer1, buffer2, buffer
          !character(16)                        :: test   
          logical                              :: buffered
@@ -232,8 +256,8 @@ MODULE dataLoader
       subroutine writeChars2Bin(d, word, offset, L)
         integer(2), allocatable, intent(inout) :: d (:) 
         character(*)                           :: word
-        integer                                :: offset, L
-        integer                                :: ind, ind2
+        integer(8)                             :: offset, L
+        integer(8)                             :: ind, ind2
 
         if (L == 0) L = len_trim(word) 
         ind2 = 0
@@ -248,8 +272,8 @@ MODULE dataLoader
       subroutine writeBytes2Bin(from, to, offset)  
           integer(2), allocatable, intent(in)    :: from (:) 
           integer(2), allocatable, intent(inout) :: to   (:) 
-          integer                                :: offset  
-          integer                                :: ind, ind2
+          integer(8)                             :: offset  
+          integer(8)                             :: ind, ind2
           
           ind2 = 0    
           do ind = offset, offset + size(from) - 1, 1  
@@ -281,4 +305,26 @@ MODULE dataLoader
          end if
 
       end subroutine  
+
+      subroutine WriteInt8ToData(d, offset, v)
+        
+          implicit none
+        
+          integer(2), intent(inout) :: d(:)
+          integer(8), intent(inout) :: offset
+          integer(8), intent(in)    :: v
+        
+          integer(1)                :: bytes(8)
+          integer                   :: ind
+       
+          bytes = transfer(v, bytes)
+        
+          do ind = 1, 8
+             d(offset + ind - 1) = iand(Z'00FF', bytes(ind))
+          end do
+        
+          offset = offset + 8   
+
+      end subroutine
+
 END MODULE dataLoader

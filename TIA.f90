@@ -16,7 +16,7 @@ MODULE TIA
     implicit none
 
     private
-    public :: TiaMaker, initTiaList, loadTIAFile, playTIAbyName
+    public :: TiaMaker, initTiaList, loadTIAFile, playTIAbyName, TIAchangeSavePlay
 
     type :: state_t
         integer :: offset, count, f
@@ -88,7 +88,6 @@ MODULE TIA
          procedure :: playTIASfx   => playTIASfx   
     end type
 
-    character(4), parameter :: TIA_FILE_TYPE = 'TIA '
     TYPE(TIASfx), dimension(:), allocatable   :: tiaList
 
     type TIAheader
@@ -130,10 +129,11 @@ MODULE TIA
         character(*)                           :: fname
         integer(2)                             :: N
         integer(2), dimension(:), allocatable  :: d, temp
-        integer(4)                             :: siz, stat
+        integer(8)                             :: siz
+        integer(2)                             :: stat
         type(TIAHeader)                        :: header
 
-        call loadBinary("tia\" // fname, d, siz)
+        call loadBinary("tia\" // fname, d, siz, .FALSE.)
         call makeTiaHeader(d, temp, header, siz)
 
         call tiaList(N)%createTIASfx(header%name, temp)     
@@ -174,22 +174,24 @@ MODULE TIA
         integer(2), dimension(:), allocatable :: bytes
         integer(2)                            :: ind, stat, ind2 
 
-        if (mod(size(bytes), 4) /= 0) call displayDebug("Number of bytes is not dividable by 4!")
+        if (mod(size(bytes), 4) /= 0) then
+            call displayDebug("Number of bytes is not dividable by 4!")
+        else
 
-        this%length = size(bytes) / 4         
-        call this%initTIASfx(this%length, N)
+            this%length = size(bytes) / 4         
+            call this%initTIASfx(this%length, N)
+        
+            ind2 = 0        
+            do ind  = 1, size(bytes), 4
+               ind2 = ind2 + 1 
+               
+               this%tones(ind2)%Vol    = bytes(ind)   
+               this%tones(ind2)%Chan   = bytes(ind +1)   
+               this%tones(ind2)%Freq   = bytes(ind +2)  
+               this%tones(ind2)%Length = bytes(ind +3)          
     
-        ind2 = 0        
-        do ind  = 1, size(bytes), 4
-           ind2 = ind2 + 1 
-           
-           this%tones(ind2)%Vol    = bytes(ind)   
-           this%tones(ind2)%Chan   = bytes(ind +1)   
-           this%tones(ind2)%Freq   = bytes(ind +2)  
-           this%tones(ind2)%Length = bytes(ind +3)          
-
-        end do
-
+            end do
+        end if
     end subroutine
    
     subroutine playTIASfx(this, chan)
@@ -463,7 +465,8 @@ MODULE TIA
                   CASE(ExitField) 
                      EXIT
                   CASE(ID_TIAErase)
-                     CALL WDialogPutString(ID_TIAInput, "")   
+                     CALL WDialogPutString(ID_TIAInput, "")  
+    
                   CASE(ID_TIALoad)
                      call TiaLoad()
                   CASE(ID_TIASave)
@@ -478,10 +481,33 @@ MODULE TIA
 
     END SUBROUTINE
 
+    subroutine TIAchangeSavePlay()
+        character(text_len)       :: text
+        character(NAME_MAX_LEN)   :: name
+
+        call WDialogGetString(ID_TIAInput, text)
+        call WDialogGetString(ID_TIAName,  name)
+
+
+        if (len_trim(text) == 0) then
+            CALL WDialogFieldState(ID_TIASave, DISABLED) 
+            CALL WDialogFieldState(ID_TIAPlay, DISABLED) 
+        else
+
+            if (len_trim(name) == 0) then
+                CALL WDialogFieldState(ID_TIASave, DISABLED) 
+            else
+                CALL WDialogFieldState(ID_TIASave, ENABLED) 
+            end if
+            CALL WDialogFieldState(ID_TIAPlay, ENABLED) 
+        end if
+
+    end subroutine
+
     subroutine TiaLoad()
         character(MAX_PATH_LEN)                :: fname
         integer(2), dimension(:), allocatable  :: d, temp
-        integer(4)                             :: siz
+        integer(8)                             :: siz
         integer(2)                             :: ind, V, C, F, L, stat
         type(TIAHeader)                        :: header
         character(text_len)                    :: txt
@@ -492,7 +518,7 @@ MODULE TIA
         fname = FileDialog("tia\", .FALSE., "xxt ")    
         if (fname == "") return
 
-        call loadBinary(fname, d, siz)
+        call loadBinary(fname, d, siz, .FALSE.)
         call makeTiaHeader(d, temp, header, siz)
         
         txt = ""
@@ -522,8 +548,9 @@ MODULE TIA
 
     subroutine makeTiaHeader(d, temp, header, siz)
         integer(2), dimension(:), allocatable, intent(inout)  :: d, temp
-        integer(4), intent(inout)                             :: siz
-        integer(4)                                            :: offset, stat, dataLen
+        integer(8), intent(inout)                             :: siz
+        integer(8)                                            :: offset, dataLen
+        integer(4)                                            :: stat
         type(TIAHeader), intent(inout)                        :: header
 
         offset = 1
@@ -647,7 +674,7 @@ MODULE TIA
 
         call inputBox2Data(d)
         call myTia%createTIASfx("", d)
-        call myTia%playTIASfx(  1)
+        call myTia%playTIASfx(  0)
         call myTia%initTIASfx(  0, "")       
 
         deallocate(d, stat = stat)
