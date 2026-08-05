@@ -27,5 +27,4 @@ MODULE engineConstants
     character(4), parameter       :: OPL2_FILE_TYPE = 'OPL2'
     character(4), parameter       :: TIA_FILE_TYPE = 'TIA '
 
-
 END MODULE engineConstants

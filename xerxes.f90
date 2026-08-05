@@ -96,9 +96,13 @@
 !
 !    Put tests here!  
 !
-      !call playTIAbyName("Cicafos", 0)  
+      !call playTIAbyName("Putty", 0)  
       !call openVGM()  
       !call displayDebug(trim(CWD()) // "!!")  
+
+      !write(msgString, '(I0)') shortWaitMask2Code(Z'0D') - Z'70' + 1
+      !call displayDebug(msgString) 
+
 !
 !   Main message loop
 !

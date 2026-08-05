@@ -1,5 +1,5 @@
-MODULE TIA
 
+MODULE TIA
     !
     ! Based on https://www.biglist.com/lists/stella/archives/200311/msg00156.html
     ! Written by Adam Wozniak (2003)
@@ -102,6 +102,73 @@ MODULE TIA
 
     ! TIASfx
 
+    subroutine compressTIA(d, n)
+        integer(8)                                           :: n
+        integer(2), dimension(:), allocatable, intent(inout) :: d
+        integer(2), dimension(:), allocatable                :: d2
+        integer(2)                                           :: stat
+        integer(8)                                           :: ind, ind2 
+        !character(40)                                        :: test
+       
+        allocate(d2(n * 3), stat = stat)
+        if (stat /= 0) call displayDebug("Failed to allocate compressed TIA!")        
+
+        ind2 = 1
+        do ind = 1, size(d2), 3
+           d2(ind)     = d(ind2) 
+           d2(ind + 1) = d(ind2 + 1) * 16 + d(ind2 + 2)  
+           d2(ind + 2) = d(ind2 + 3) 
+
+           ind2 = ind2 + 4 
+        end do
+
+        deallocate(d, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to deallocate original TIA!")      
+  
+        allocate(d(size(d2)), stat = stat)
+        if (stat /= 0) call displayDebug("Failed to allocate original TIA!")     
+
+        d = d2
+
+        deallocate(d2, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to deallocate compressed TIA!")      
+
+    end subroutine
+
+    subroutine uncompressTIA(d, n)
+        integer(8)                                           :: n
+        integer(2), dimension(:), allocatable, intent(inout) :: d
+        integer(2), dimension(:), allocatable                :: d2
+        integer(2)                                           :: stat
+        integer(8)                                           :: ind, ind2 
+        character(40)                                        :: test
+       
+        allocate(d2(n * 4), stat = stat)
+        if (stat /= 0) call displayDebug("Failed to allocate uncompressed TIA!")        
+
+        ind2 = 1
+        do ind = 1, size(d2), 4
+           d2(ind)     = d(ind2) 
+           d2(ind + 1) = IAND(d(ind2 + 1), Z'00F0') / 16  
+           d2(ind + 2) = IAND(d(ind2 + 1), Z'000F')  
+           d2(ind + 3) = d(ind2 + 2) 
+
+           ind2 = ind2 + 3 
+        end do
+
+        deallocate(d, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to deallocate original TIA!")      
+  
+        allocate(d(size(d2)), stat = stat)
+        if (stat /= 0) call displayDebug("Failed to allocate original TIA!")     
+
+        d = d2
+
+        deallocate(d2, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to deallocate uncompressed TIA!")      
+
+    end subroutine
+
     subroutine playTIAbyName(name, chan)
         character(*)                          :: name
         integer(2)                            :: chan
@@ -135,6 +202,7 @@ MODULE TIA
 
         call loadBinary("tia\" // fname, d, siz, .FALSE.)
         call makeTiaHeader(d, temp, header, siz)
+        call uncompressTIA(temp, header%numOfTones)        
 
         call tiaList(N)%createTIASfx(header%name, temp)     
 
@@ -520,7 +588,8 @@ MODULE TIA
 
         call loadBinary(fname, d, siz, .FALSE.)
         call makeTiaHeader(d, temp, header, siz)
-        
+        call uncompressTIA(temp, header%numOfTones)        
+
         txt = ""
 
         do ind = 1, header%numOfTones* 4, 4
@@ -572,7 +641,7 @@ MODULE TIA
         header%numOfTones = d(offset)
         offset            = offset + 1
 
-        call copyBytes(d, temp, offset, offset + (header%numOfTones * 4) - 1, header%numOfTones * 4) 
+        call copyBytes(d, temp, offset, offset + (header%numOfTones * 3) - 1, header%numOfTones * 3) 
 
     end subroutine
 
@@ -634,6 +703,7 @@ MODULE TIA
         character(NAME_MAX_LEN)               :: name
         type(TIAHeader)                       :: header
         character(MAX_PATH_LEN)               :: fname
+        character(40)                         :: test
 
         fname = FileDialog("tia\", .TRUE., "xxt ")    
         if (fname == "") return
@@ -646,7 +716,7 @@ MODULE TIA
         header%name       = trim(name)    
         header%numOfTones = size(d) / 4
 
-        siz = 4 + 1 + header%nameLen + 1 + (header%numOfTones * 4)
+        siz = 4 + 1 + header%nameLen + 1 + (header%numOfTones * 3)
         allocate (fullD(siz), stat = stat)        
         if (stat /= 0) call displayDebug("Failed to allocate full for save TIA on Editor!")
 
@@ -656,11 +726,16 @@ MODULE TIA
 
         fullD(6 + header%nameLen) = header%numOfTones
 
+        call compressTIA(d, header%numOfTones)
+
         call writeBytes2Bin(d, fullD, 7 + header%nameLen)
         call writeBin2File(fname, fulld, .TRUE.)
 
         deallocate(d, stat = stat)
         if (stat /= 0) call displayDebug("Failed to deallocate temp for save TIA on Editor!")
+
+        !write(test, "(I0, ' | ', I0, ' | ', I0)") siz, size(d), size(fullD)
+        !call displayDebug(test)
 
         !deallocate(fullD, stat = stat)
         !if (stat /= 0) call displayDebug("Failed to deallocate full for save TIA on Editor!")

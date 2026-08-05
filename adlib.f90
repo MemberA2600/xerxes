@@ -17,7 +17,7 @@ MODULE adlib
     private
     public                                     :: initAdlibData, fillAdlibData, playAdlib, &
                                                   getNumOfAdlibBytes, continueToPlayA, saveAdlibData, &
-                                                  getAdlibName
+                                                  getAdlibName, shortWaitCode2Mask, shortWaitMask2Code
 
     character(40)                              :: test 
     logical                                    :: testDebug = .FALSE.
@@ -41,7 +41,58 @@ MODULE adlib
     integer(2), dimension(:), allocatable       :: outBufferFull
     integer(8)                                  :: bufferIndex, bufferSize, waitMe, last
 
+    integer(2), parameter :: shortWaits(2,16) = reshape((/ &
+                                                int(Z'70', kind=2), int(Z'19', kind=2), &
+                                                int(Z'71', kind=2), int(Z'1A', kind=2), &
+                                                int(Z'72', kind=2), int(Z'1B', kind=2), &
+                                                int(Z'73', kind=2), int(Z'1C', kind=2), &
+                                                int(Z'74', kind=2), int(Z'1D', kind=2), &
+                                                int(Z'75', kind=2), int(Z'1E', kind=2), &
+                                                int(Z'76', kind=2), int(Z'1F', kind=2), &
+                                                int(Z'77', kind=2), int(Z'D9', kind=2), &
+                                                int(Z'78', kind=2), int(Z'DA', kind=2), &
+                                                int(Z'79', kind=2), int(Z'DB', kind=2), &
+                                                int(Z'7A', kind=2), int(Z'DC', kind=2), &
+                                                int(Z'7B', kind=2), int(Z'DD', kind=2), &
+                                                int(Z'7C', kind=2), int(Z'DE', kind=2), &
+                                                int(Z'7D', kind=2), int(Z'DF', kind=2), &
+                                                int(Z'7E', kind=2), int(Z'0C', kind=2), &
+                                                int(Z'7F', kind=2), int(Z'0D', kind=2)  &
+                                            /), (/2,16/))
+
     contains
+
+    function shortWaitCode2Mask(inp) result(out)
+        integer(2)             :: inp
+        integer(2)             :: out
+        integer(1)             :: ind
+        !character(40)          :: test
+
+        out = 0
+        do ind = 1, 16, 1
+           if (shortWaits(1, ind) == inp) then
+               out = shortWaits(2, ind) 
+               exit 
+           end if 
+        end do
+
+        !write(test, "(Z2.2, ' ' Z2.2)") inp, shortWaits(2, ind)
+        !call displayDebug(test) 
+    end function
+
+    function shortWaitMask2Code(inp) result(out)
+        integer(2)             :: inp
+        integer(2)             :: out
+        integer(1)             :: ind
+
+        out = 0
+        do ind = 1, 16, 1
+           if (shortWaits(2, ind) == inp) then
+               out = shortWaits(1, ind) 
+               exit  
+           end if 
+        end do
+    end function
 
     subroutine saveAdlibData(name, fname)
         integer(2), dimension(:), allocatable :: fullD
@@ -257,6 +308,8 @@ MODULE adlib
         implicit none
         integer(8)          :: waitTime, numOfFrames, maxAllowed
         integer(1)          :: RC
+        integer(2)          :: smallWait
+        !character(40)       :: tt
 
         maxAllowed = bufferSize - bufferIndex + 1
 
@@ -270,42 +323,54 @@ MODULE adlib
 
                 test        = ""
 
-                select case(adlibD%songBytes(adlibD%ind))
-                case(Z'05')
-                      waitTime   =  adlibD%songBytes(adlibD%ind + 1) + &
-                                   (adlibD%songBytes(adlibD%ind + 2) * 256)  
-
-                      if (testDebug .EQV. .TRUE.) &  
-                      write(test, "(I8.8, '# wait for ', I8.8 ' frames!' )") adlibD%ind, &
-                                     adlibD%songBytes(adlibD%ind + 1) + &
-                                   (adlibD%songBytes(adlibD%ind + 2) * 256)           
-
-                      adlibD%ind = adlibD%ind + 2
-                case(Z'06')
-                      waitTime   =  adlibD%songBytes(adlibD%ind + 1)
-
-                      if (testDebug .EQV. .TRUE.) &  
-                      write(test, "(I8.8, '# wait for ', I8.8 ' frames!' )") adlibD%ind, &
-                                     adlibD%songBytes(adlibD%ind + 1)            
-
-                      adlibD%ind = adlibD%ind + 1 
-                case(Z'10':Z'1F')
-                      waitTime = minWait
-                      call OPL3_WriteRegBuffered(ym3812, adlibD%songBytes(adlibD%ind) + Z'90', Z'00')    
-                      !adlibD%ind = adlibD%ind + 1 
-
-                case(Z'D0':Z'DF')
-                      waitTime = minWait
-                      !adlibD%ind = adlibD%ind + 1 
-                      call OPL3_WriteRegBuffered(ym3812, adlibD%songBytes(adlibD%ind) - Z'20', Z'00')   
-                case default
-
-                      waitTime = minWait
-                      call OPL3_WriteRegBuffered(ym3812, adlibD%songBytes(adlibD%ind),   & 
-                                            adlibD%songBytes(adlibD%ind + 1))   
-                      adlibD%ind = adlibD%ind + 1 
-
-                end select
+                smallWait   = shortWaitMask2Code(adlibD%songBytes(adlibD%ind))
+                if (smallWait > 0) then
+                    waitTime = smallWait - Z'70' + 1  
+                    !write(test, "(Z2.2, ' | ' I0)") adlibD%songBytes(adlibD%ind), smallWait
+                    !call displayDebug(test)
+                else
+    
+                    select case(adlibD%songBytes(adlibD%ind))
+                    case(Z'05')
+                          waitTime   =  adlibD%songBytes(adlibD%ind + 1) + &
+                                       (adlibD%songBytes(adlibD%ind + 2) * 256)  
+    
+                          if (testDebug .EQV. .TRUE.) &  
+                          write(test, "(I8.8, '# wait for ', I8.8 ' frames!' )") adlibD%ind, &
+                                         adlibD%songBytes(adlibD%ind + 1) + &
+                                       (adlibD%songBytes(adlibD%ind + 2) * 256)           
+    
+                          adlibD%ind = adlibD%ind + 2
+                    case(Z'06')
+                          waitTime   =  adlibD%songBytes(adlibD%ind + 1)
+    
+                          if (testDebug .EQV. .TRUE.) &  
+                          write(test, "(I8.8, '# wait for ', I8.8 ' frames!' )") adlibD%ind, &
+                                         adlibD%songBytes(adlibD%ind + 1)            
+    
+                          adlibD%ind = adlibD%ind + 1 
+                    case(Z'0A') 
+                          waitTime = 735               
+                    case(Z'0B')
+                          waitTime = 882               
+                    case(Z'10':Z'1F')
+                          waitTime = minWait
+                          call OPL3_WriteRegBuffered(ym3812, adlibD%songBytes(adlibD%ind) + Z'90', Z'00')    
+                          !adlibD%ind = adlibD%ind + 1 
+    
+                    case(Z'D0':Z'DF')
+                          waitTime = minWait
+                          !adlibD%ind = adlibD%ind + 1 
+                          call OPL3_WriteRegBuffered(ym3812, adlibD%songBytes(adlibD%ind) - Z'20', Z'00')   
+                    case default
+    
+                          waitTime = minWait
+                          call OPL3_WriteRegBuffered(ym3812, adlibD%songBytes(adlibD%ind),   & 
+                                                adlibD%songBytes(adlibD%ind + 1))   
+                          adlibD%ind = adlibD%ind + 1 
+    
+                    end select
+                end if                
 
                 if (testDebug .EQV. .TRUE.) then 
                     IF (test /= "") call displayDebug(test)

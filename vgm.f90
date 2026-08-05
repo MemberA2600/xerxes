@@ -9,7 +9,6 @@ MODULE vgm
     USE engineConstants
     USE adlib
     USE waveplayer 
-    USE zlib
 
     implicit none
 
@@ -522,7 +521,7 @@ MODULE vgm
         logical                                              :: found = .FALSE., minus
         character(40)                                        :: test
         character(2)                                         :: command
-        logical, parameter                                   :: debug = .FALSE.         
+        logical, parameter                                   :: debug = .TRUE.         
 
         if (debug .EQV. .TRUE.) open(unit = 21       , file = 'vmg_adlib_info.txt', &
                                      status='replace', action='write')
@@ -555,9 +554,9 @@ MODULE vgm
                   case(Z'66')  
                        counter = counter + 0
                   case(Z'62')                      
-                       counter = counter + 3  
+                       counter = counter + 1  
                   case(Z'63')                      
-                       counter = counter + 3                    
+                       counter = counter + 1                    
                   case(Z'61') 
                        waitTime = d(ind + 1) + (d(ind + 2) * 256)  
 
@@ -566,11 +565,13 @@ MODULE vgm
                        else
                            counter = counter + 2                    
                        end if 
+                  case(Z'70':Z'7F') 
+                       counter = counter + 1 
 
                   case default
                        counter = counter + 2 
-
-                       select case(d(ind + 1))   
+                      
+                       select case(d(ind + 1)) 
                        case(Z'A0':Z'B8')
                             if (d(ind + 2) == 0) counter = counter - 1
                        end select  
@@ -610,6 +611,10 @@ MODULE vgm
         ! Normally, we just write the chip commands and values, but there are specials:
         ! $05 : Wait 255+  samples
         ! $06 : Wait 1-255 samples
+        ! $0A : Wait 735 samples
+        ! $0B : wait 882 samples
+
+
         ! $A0 : If the value to write is 0, change "register" to $10 and write no 0.
         ! $B0 : If the value to write is 0, change "register" to $D0 and write no 0.
         !
@@ -630,23 +635,23 @@ MODULE vgm
                            write(21, '(A)') "EndByte (0x66) found!!" 
                        counter = counter + 0
                   case(Z'62')                      
-                       songBytes(counter    ) = Z'05'
-                       songBytes(counter + 1) = Z'DF'
-                       songBytes(counter + 2) = Z'02'
+                       songBytes(counter    ) = Z'0A'
+                       !songBytes(counter + 1) = Z'DF'
+                       !songBytes(counter + 2) = Z'02'
 
                        if (debug .EQV. .TRUE.) &
-                           write(21, '(A)') "62 >> 05 df 02" 
+                           write(21, '(A)') "62 >> 0A" 
 
-                       counter = counter + 3  
+                       counter = counter + 1  
                   case(Z'63')          
-                       songBytes(counter    ) = Z'05'
-                       songBytes(counter + 1) = Z'72'
-                       songBytes(counter + 2) = Z'03'
+                       songBytes(counter    ) = Z'0B'
+                       !songBytes(counter + 1) = Z'72'
+                       !songBytes(counter + 2) = Z'03'
             
                        if (debug .EQV. .TRUE.) &
-                           write(21, '(A)') "63 >> 05 72 03" 
+                           write(21, '(A)') "63 >> 0B" 
 
-                       counter = counter + 3                    
+                       counter = counter + 1                    
                   case(Z'61') 
                        waitTime = d(ind + 1) + (d(ind + 2) * 256)  
 
@@ -676,14 +681,18 @@ MODULE vgm
                            end if
                        end if 
                   case(Z'70':Z'7F') 
-                       songBytes(counter    ) = Z'06' 
-                       songBytes(counter + 1) = d(ind) - Z'69' 
+                       !songBytes(counter    ) = Z'06' 
+                       !songBytes(counter + 1) = d(ind) - Z'69' 
 
+                       !if (debug .EQV. .TRUE.) &
+                       !        write(21, "(Z2.2, ' >> 06 ', Z2.2)") &
+                       !              command_codes(ind2), songBytes(counter + 1)
+
+                       songbytes(counter) = shortWaitCode2Mask(d(ind)) 
                        if (debug .EQV. .TRUE.) &
-                               write(21, "(Z2.2, ' >> 06 ', Z2.2)") &
-                                     command_codes(ind2), songBytes(counter + 1)
+                               write(21, "(Z2.2, ' >> ', Z2.2)") &
+                                     d(ind), songBytes(counter)
 
-                       counter = counter + 2                         
                   case default
                        select case(d(ind+1))   
                        case(Z'A0':Z'B8')
