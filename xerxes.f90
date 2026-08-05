@@ -79,7 +79,9 @@
       if (editMode .EQV. .FALSE.) call WMenuSetState(ID_DEV, ItemEnabled, 0)  
 
       call initWavChannels()
-      call getFolder("tia", "xxt")
+      call getFolder("tia"  , "xxt")
+      call getFolder("adlib", "xxa")
+
 !
 !   Start threads
 !
@@ -102,7 +104,7 @@
 
       !write(msgString, '(I0)') shortWaitMask2Code(Z'0D') - Z'70' + 1
       !call displayDebug(msgString) 
-
+      !call playAdlibbyName("ultima")   
 !
 !   Main message loop
 !

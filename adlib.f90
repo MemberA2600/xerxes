@@ -17,19 +17,19 @@ MODULE adlib
     private
     public                                     :: initAdlibData, fillAdlibData, playAdlib, &
                                                   getNumOfAdlibBytes, continueToPlayA, saveAdlibData, &
-                                                  getAdlibName, shortWaitCode2Mask, shortWaitMask2Code
+                                                  getAdlibName, shortWaitCode2Mask, shortWaitMask2Code, &
+                                                  initAdlibList, loadAdlibHeader, playAdlibbyName
 
     character(40)                              :: test 
     logical                                    :: testDebug = .FALSE.
     integer(1), parameter                      :: minWait = 0 ! 27 on real hw
     integer, parameter                         :: RATE = 44100
 
-    logical                                    :: loopMe
     type adlibData
          character(4)                          :: header
          integer(1)                            :: nameLen
          character(NAME_MAX_LEN)               :: name 
-         integer(8)                            :: numOfReads, numOfBytes, loopByte
+         integer(8)                            :: numOfBytes, loopByte
          integer(2), dimension(:), allocatable :: songBytes
          integer(8)                            :: ind  
          integer(2), dimension(:), allocatable :: outBuffer
@@ -37,6 +37,18 @@ MODULE adlib
 
     type(adlibData)                             :: adlibD 
     type(CounterTimer)                          :: counter
+
+    type adlibItem  
+         character(MAX_PATH_LEN)               :: fileName 
+         character(4)                          :: header
+         integer(1)                            :: nameLen
+         character(NAME_MAX_LEN)               :: name 
+         integer(8)                            :: numOfBytes, loopByte
+         integer(8)                            :: firstDataByte, dataLen
+    end type
+
+    type(adlibItem), dimension(:), allocatable  :: adlibList  
+
 
     integer(2), dimension(:), allocatable       :: outBufferFull
     integer(8)                                  :: bufferIndex, bufferSize, waitMe, last
@@ -61,6 +73,106 @@ MODULE adlib
                                             /), (/2,16/))
 
     contains
+
+    subroutine initAdlibList(num)
+        integer(1)              :: rc
+        integer(2)              :: num
+
+        if (allocated(adlibList)) then
+            deallocate(adlibList, stat = RC)
+
+            if (rc /= 0) call displayDebug("Failed to deallocate adliblist!")
+        end if
+    
+        allocate(adlibList(num), stat = RC)
+        if (rc /= 0) call displayDebug("Failed to allocate adliblist!")
+
+    end subroutine
+
+    subroutine playAdlibbyName(name)
+        character(*)                           :: name
+        integer(1)                             :: rc
+        integer(2)                             :: ind, ind2, offset
+        integer(2), dimension(:), allocatable  :: d
+        integer(8)                             :: siz
+
+        ind2 = 0
+
+        do ind = 1, size(adlibList), 1
+           if (adlibList(ind)%name == name) then 
+               ind2 = ind
+               exit 
+           end if
+        end do
+
+        if (ind2 == 0) return
+        
+        call loadBinary("adlib\" // adlibList(ind)%filename, d, adlibList(ind)%dataLen, .FALSE.)
+
+        offset = adlibList(ind)%firstDataByte
+
+        call initAdlibData()
+
+        adlibD%header       = adlibList(ind2)%header 
+        adlibD%name         = adlibList(ind2)%name
+        adlibD%nameLen      = adlibList(ind2)%nameLen
+        adlibD%numOfBytes   = adlibList(ind2)%numOfBytes   
+        adlibD%loopByte     = adlibList(ind2)%loopByte     
+               
+        allocate(adlibD%songBytes(adlibD%numOfBytes), stat = RC)
+        if (RC /= 0) call displayDebug("Failed to allocated Adlib bytes!")
+        
+        adlibD%songBytes = d(offset:size(d))
+
+        deallocate(d, stat = RC)
+        if (RC /= 0) call displayDebug("Failed to deallocate the loaded XXA!")  
+
+        call continueToPlayA()
+
+    end subroutine
+
+    subroutine loadAdlibHeader(num, fname)
+        integer(1)                             :: rc
+        integer(2)                             :: num
+        character(*)                           :: fname
+        integer(8)                             :: siz
+        integer(2)                             :: stat
+        integer(2), dimension(:), allocatable  :: d, temp
+        integer(8)                             :: offset, dataLen
+
+        call loadBinary("adlib\" // fname, d, siz, .FALSE.)
+
+        adlibList(num)%dataLen = size(d)
+        
+        offset = 1
+        call read4CharFromBin(d, siz, offset, adlibList(num)%header)  
+        if (adlibList(num)%header /= OPL2_FILE_TYPE) then
+            call displayDebug("This is not a valid OPL2 file!")
+            return
+        end if    
+    
+        adlibList(num)%nameLen = d(offset)
+        offset                  = offset + 1
+
+        call copyBytes(d, temp, offset, &
+                       offset + adlibList(num)%nameLen - 1, &
+                       adlibList(num)%nameLen) 
+
+        offset = offset + adlibList(num)%nameLen
+
+        call bin2Char(adlibList(num)%name, temp, adlibList(num)%nameLen, .TRUE.) 
+
+        adlibList(num)%numOfBytes = ReadInt8FromData(d, offset) 
+        adlibList(num)%loopByte   = ReadInt8FromData(d, offset) 
+        adlibList(num)%fileName   = fname    
+
+        adlibList(num)%firstDataByte = offset
+
+
+        deallocate(d, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to deallocate the loaded XXA!")
+
+    end subroutine
 
     function shortWaitCode2Mask(inp) result(out)
         integer(2)             :: inp
@@ -111,7 +223,7 @@ MODULE adlib
         ! LoopByte               : 8 bytes
         ! Actual Len of Data    
 
-        siz = 4 + 1 + len_trim(name) + 24 + adlibD%numOfBytes
+        siz = 4 + 1 + len_trim(name) + 16 + adlibD%numOfBytes
 
         allocate(fullD(siz), stat = stat)
         if (stat /= 0) call displayDebug("Failed to allocate output bytes for saving XXA!")
@@ -122,7 +234,6 @@ MODULE adlib
         call writeChars2Bin(fullD, trim(name), 6, len_trim(name))
 
         ind = 6 + len_trim(name)
-        call WriteInt8ToData(fullD, ind, adlibd%numOfReads) 
         call WriteInt8ToData(fullD, ind, adlibd%numOfBytes) 
         call WriteInt8ToData(fullD, ind, adlibd%loopByte) 
 
@@ -135,7 +246,6 @@ MODULE adlib
             write(49, "(A)")     adlibD%header
             write(49, "(I0)")    len_trim(name)
             write(49, "(A)")     trim(name)
-            write(49, "(I0)")    adlibd%numOfReads
             write(49, "(I0)")    adlibd%numOfBytes
             write(49, "(I0)")    adlibd%loopByte
             close(49)
@@ -172,11 +282,9 @@ MODULE adlib
          adlibD%header        = OPL2_FILE_TYPE
          adlibD%nameLen       =  0
          adlibD%name          =  ""   
-         adlibD%numOfReads    =  0
          adlibD%numOfBytes    =  0          
          adlibD%loopByte      =  0
          adlibD%ind           =  0  
-         loopMe               = .FALSE.
 
          if (allocated( adlibD%songBytes)) then
              deallocate(adlibD%songBytes, stat = stat)
@@ -213,15 +321,8 @@ MODULE adlib
          adlibD%name          =  adlibName 
          adlibD%nameLen       =  len_trim(adlibName)        
     
-         adlibD%numOfReads    =  reads
          adlibD%numOfBytes    =  byteNum          
          adlibD%loopByte      =  loopByte
-
-         if (loopByte > 0) then
-             loopMe           = .TRUE.
-         else   
-             loopMe           = .FALSE.
-         end if
 
          if (allocated( adlibD%songBytes)) then
              deallocate(adlibD%songBytes, stat = stat)
@@ -242,6 +343,8 @@ MODULE adlib
 
       subroutine continueToPlayA()  
          integer(2)                            :: stat   
+
+         call stopMusic() 
 
          last          = 0
          bufferSize    = 0

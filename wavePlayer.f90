@@ -560,7 +560,7 @@ MODULE wavePlayer
 
         this%playing             = .FALSE.
         rc = waveOutReset(this%hWave)
-        if (rc /= 0) call displayDebug("Failed to reset sound!")
+        if (rc /= 0 .AND. rc /= 5) call displayDebug("Failed to reset sound!")
 
         call this%initChannel(0)
 

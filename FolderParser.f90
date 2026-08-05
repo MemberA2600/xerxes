@@ -7,6 +7,7 @@ MODULE FolderParser
       use IFPORT
       use engineConstants  
       use TIA  
+      use Adlib  
 
       IMPLICIT NONE  
 
@@ -35,6 +36,9 @@ MODULE FolderParser
           select case(extension)
           case("xxt")
               call initTiaList(N)  
+          case("xxa")
+              call initAdlibList(N)  
+
           end select
 
           hndl = FILE$FIRST
@@ -48,6 +52,8 @@ MODULE FolderParser
              select case(extension)
              case("xxt")
                   call loadTIAFile(N, dir_info%name)
+             case("xxa")
+                  call loadAdlibHeader(N, dir_info%name)
              end select
 
           END DO

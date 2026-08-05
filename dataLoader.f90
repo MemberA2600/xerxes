@@ -12,7 +12,8 @@ MODULE dataLoader
 
       PRIVATE
       PUBLIC :: loadbinary, read4CharFromBin, readIntFromBin, copyBytes, copyBytesHalf, &
-                writeChars2Bin, writeBytes2Bin, writeBin2File, bin2Char, WriteInt8ToData 
+                writeChars2Bin, writeBytes2Bin, writeBin2File, bin2Char, WriteInt8ToData, &
+                ReadInt8FromData
 
       CONTAINS
       
@@ -326,5 +327,25 @@ MODULE dataLoader
           offset = offset + 8   
 
       end subroutine
+
+      function ReadInt8FromData(d, offset) result(v)
+        
+          implicit none
+      
+          integer(2), intent(in)    :: d(:)
+          integer(8), intent(inout) :: offset
+        
+          integer(8) :: v
+          integer(1) :: bytes(8)
+          integer    :: ind
+        
+          do ind = 1, 8
+              bytes(ind) = int(d(offset + ind-1), kind=1)
+          end do
+        
+          v = transfer(bytes, v)
+          offset = offset + 8   
+
+      end function
 
 END MODULE dataLoader
