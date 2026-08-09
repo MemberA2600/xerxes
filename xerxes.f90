@@ -79,9 +79,13 @@
       if (editMode .EQV. .FALSE.) call WMenuSetState(ID_DEV, ItemEnabled, 0)  
 
       call initWavChannels()
-      call getFolder("tia"  , "xxt")
-      call getFolder("adlib", "xxa")
 
+      if (editMode .EQV. .FALSE.) then  
+          call loadFolders()
+      else
+          ! Remove from final.  
+          call loadFolders()
+      end if    
 !
 !   Start threads
 !
@@ -160,6 +164,11 @@
       STOP
 
       CONTAINS  
+
+      subroutine loadFolders()
+           call getFolder("tia"  , "xxt")
+           call getFolder("adlib", "xxa")
+      end subroutine  
 
       function soundChannelLoopT(lpParameter) result(rc)
           use IFWIN

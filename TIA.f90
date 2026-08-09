@@ -115,8 +115,8 @@ MODULE TIA
 
         ind2 = 1
         do ind = 1, size(d2), 3
-           d2(ind)     = d(ind2) 
-           d2(ind + 1) = d(ind2 + 1) * 16 + d(ind2 + 2)  
+           d2(ind    ) = d(ind2    ) * 16 + d(ind2 + 1)  
+           d2(ind + 1) = d(ind2 + 2) 
            d2(ind + 2) = d(ind2 + 3) 
 
            ind2 = ind2 + 4 
@@ -148,9 +148,9 @@ MODULE TIA
 
         ind2 = 1
         do ind = 1, size(d2), 4
-           d2(ind)     = d(ind2) 
-           d2(ind + 1) = IAND(d(ind2 + 1), Z'00F0') / 16  
-           d2(ind + 2) = IAND(d(ind2 + 1), Z'000F')  
+           d2(ind    ) = IAND(d(ind2), Z'00F0') / 16  
+           d2(ind + 1) = IAND(d(ind2), Z'000F')  
+           d2(ind + 2) = d(ind2 + 1) 
            d2(ind + 3) = d(ind2 + 2) 
 
            ind2 = ind2 + 3 
