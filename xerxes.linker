@@ -1,5 +1,6 @@
 "d:\winteracter\projects\xerxes\xerxes.obj"
 "d:\winteracter\projects\xerxes\threadmaster.obj"
+"d:\winteracter\projects\xerxes\gzip.obj"
 "d:\winteracter\projects\xerxes\engineconstants.obj"
 "d:\winteracter\projects\xerxes\subs.obj"
 "d:\winteracter\projects\xerxes\winapis.obj"
@@ -11,10 +12,10 @@
 "d:\winteracter\projects\xerxes\folderparser.obj"
 "d:\winteracter\projects\xerxes\opl3.obj"
 "d:\winteracter\projects\xerxes\waveplayer.obj"
+"d:\winteracter\projects\xerxes\waveplayerwindow.obj"
 "d:\winteracter\projects\xerxes\tia.obj"
 "d:\winteracter\projects\xerxes\adlib.obj"
 "d:\winteracter\projects\xerxes\vgm.obj"
-"d:\winteracter\projects\xerxes\gzip.obj"
 -out:"xerxes.exe"
 -subsystem:windows
 -machine:x86

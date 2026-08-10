@@ -18,11 +18,14 @@ MODULE adlib
     public                                     :: initAdlibData, fillAdlibData, playAdlib, &
                                                   getNumOfAdlibBytes, continueToPlayA, saveAdlibData, &
                                                   getAdlibName, shortWaitCode2Mask, shortWaitMask2Code, &
-                                                  initAdlibList, loadAdlibHeader, playAdlibbyName
+                                                  initAdlibList, loadAdlibHeader, playAdlibbyName, &
+                                                  dropAdlibList, playRandomAdlib, changeAdlibVolumeChanger 
+                                                  
+    real                                       :: adlibVolumeChanger = 1.0    
 
     character(40)                              :: test 
     logical                                    :: testDebug = .FALSE.
-    integer(1), parameter                      :: minWait = 0 ! 27 on real hw
+    integer(1), parameter                      :: minWait = 27 ! 27 on real hw
     integer, parameter                         :: RATE = 44100
 
     type adlibData
@@ -73,6 +76,42 @@ MODULE adlib
                                             /), (/2,16/))
 
     contains
+ 
+    subroutine volChange(buf, last)
+        integer(8)                                           :: ind
+        integer(8)                                           :: last
+        integer(2), dimension(:), allocatable, intent(inout) :: buf
+
+        do ind = 1, last, 1
+           buf(ind) = buf(ind) * (adlibVolumeChanger ** 2)
+           if (buf(ind) >  32767) buf(ind) =  32767  
+           if (buf(ind) < -32768) buf(ind) = -32768 
+        end do
+
+    end subroutine
+
+    subroutine changeAdlibVolumeChanger(r)
+        real        :: r
+        adlibVolumeChanger = r
+
+    end subroutine 
+
+    subroutine playRandomAdlib()
+
+        call playAdlibbyName(adlibList(randInt(1, size(adlibList)))%name)
+
+    end subroutine 
+
+    subroutine dropAdlibList()    
+        integer(1)              :: rc
+   
+        if (allocated(adlibList  ) .EQV. .TRUE.) then
+
+            deallocate(adlibList  , stat = RC)
+    
+            if (rc /= 0) call displayDebug("Failed to dealloc AdlibList!") 
+        end if
+    end subroutine
 
     subroutine initAdlibList(num)
         integer(1)              :: rc
@@ -400,6 +439,7 @@ MODULE adlib
         bufferIndex = bufferIndex + size(adlibD%outBuffer)
    
         if (lastIndex == bufferSize) then
+            call volChange(outBufferFull, lastIndex)
             call wavFeedBuffer(outBufferFull, lastIndex)
             bufferIndex = 1
             !call musicLoop()
@@ -532,8 +572,6 @@ MODULE adlib
 
         end if 
 
-    end subroutine
-
-    
+    end subroutine   
     
 END MODULE adlib

@@ -8,20 +8,20 @@
 //
 // Winteracter resource script
 //
-// Modified : 04/aug./2026 22:07:07
+// Modified : 10/aug./2026 16:23:13
 //
 ///////////////////////////////////////////////////
 //
 // Number of resources
 //
 //*WN* NMENU       1
-//*WN* NITEM       20
-//*WN* NDIALOG     4
-//*WN* NFIELD      18
+//*WN* NITEM       23
+//*WN* NDIALOG     5
+//*WN* NFIELD      36
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
-//*WN* NIDENTIFIER 52
+//*WN* NIDENTIFIER 74
 //*WN* NINCLUDE    0
 //*WN* NOPTROW     0
 ///////////////////////////////////////////////////
@@ -34,48 +34,70 @@
 //
 // Parameter Definitions
 //
-#define IDM_MAIN        30001
-#define ID_SCREENSIZE   40001
-#define IDF_DEBUGTXT     1001
-#define IDD_DEBUGMSG      102
-#define ID_DEBUGOK       1002
-#define ID_AUTO         40002
-#define ID_320x240      40003
-#define ID_640x480      40004
-#define ID_800x600      40005
-#define ID_1024x768     40006
-#define ID_1152x864     40007
-#define ID_1280x960     40008
-#define ID_1400x1050    40009
-#define ID_1600x1200    40010
-#define ID_2048x1536    40011
-#define ID_SPEED        40012
-#define ID_SPEED1       40013
-#define ID_SPEED2       40014
-#define ID_SPEED3       40015
-#define ID_SPEED4       40016
-#define ID_SPEED5       40017
-#define ID_DEV          40018
-#define ID_TIA_Noiser   40019
-#define IDD_GENBEEP       101
-#define ID_GENBEEP_GEN   1003
-#define ID_GENBEEP_SAVE  1004
-#define ID_GENBEEP_PLAY  1005
-#define ID_TIAINPUT      1006
-#define IDD_TIA           104
-#define ID_TIAName       1007
-#define ID_TIAErase      1011
-#define ID_TIASave       1012
-#define ID_TIAPlay       1013
-#define ID_TIALoad       1014
-#define IDF_STRING4      1016
-#define ID_VGMLoad       1008
-#define IDD_VGM2XXA       105
-#define ID_XXASave       1009
-#define ID_XXAPlay       1010
-#define ID_XXAName       1015
-#define ID_VGM2XXA      40020
-#define ID_XXAStop       1017
+#define IDM_MAIN          30001
+#define ID_SCREENSIZE     40001
+#define IDF_DEBUGTXT       1001
+#define IDD_DEBUGMSG        102
+#define ID_DEBUGOK         1002
+#define ID_AUTO           40002
+#define ID_320x240        40003
+#define ID_640x480        40004
+#define ID_800x600        40005
+#define ID_1024x768       40006
+#define ID_1152x864       40007
+#define ID_1280x960       40008
+#define ID_1400x1050      40009
+#define ID_1600x1200      40010
+#define ID_2048x1536      40011
+#define ID_SPEED          40012
+#define ID_SPEED1         40013
+#define ID_SPEED2         40014
+#define ID_SPEED3         40015
+#define ID_SPEED4         40016
+#define ID_SPEED5         40017
+#define ID_DEV            40018
+#define ID_TIA_Noiser     40019
+#define IDD_GENBEEP         101
+#define ID_GENBEEP_GEN     1003
+#define ID_GENBEEP_SAVE    1004
+#define ID_GENBEEP_PLAY    1005
+#define ID_TIAINPUT        1006
+#define IDD_TIA             104
+#define ID_TIAName         1007
+#define ID_TIAErase        1011
+#define ID_TIASave         1012
+#define ID_TIAPlay         1013
+#define ID_TIALoad         1014
+#define IDF_STRING4        1016
+#define ID_VGMLoad         1008
+#define IDD_VGM2XXA         105
+#define ID_XXASave         1009
+#define ID_XXAPlay         1010
+#define ID_XXAName         1015
+#define ID_VGM2XXA        40020
+#define ID_XXAStop         1017
+#define ID_SoundInput     40021
+#define ID_SoundSettings  40022
+#define ID_InputSettings  40023
+#define IDF_SoundTrack     1018
+#define IDD_SoundSettings   106
+#define IDF_LABELSfxVol    1019
+#define IDF_SoundValue     1020
+#define IDF_MusicValue     1021
+#define IDF_MusicTrack     1022
+#define IDF_LABELMusicVol  1023
+#define IDF_MusicRadio1    1024
+#define IDF_MusicRadio2    1025
+#define IDF_HEX            1026
+#define IDF_LPTPort        1027
+#define ID_SoundOK         1028
+#define ID_SoundCancel     1029
+#define ID_SoundReset      1030
+#define ID_SoundTest       1031
+#define ID_MusicTest       1032
+#define ID_MusicTest2      1033
+#define ID_MusicStop       1034
+#define ID_MusicStop2      1035
 
 ///////////////////////////////////////////////////
 //
@@ -141,6 +163,49 @@ BEGIN
 ,0
 END
 
+IDD_SoundSettings DIALOG 0,0,227,166
+STYLE WS_POPUP | WS_BORDER | WS_DLGFRAME | WS_SYSMENU | DS_3DLOOK | DS_MODALFRAME
+FONT 8, "MS Shell Dlg"
+CAPTION "SFX & Music Settings"
+BEGIN
+  CONTROL "0",IDF_SoundTrack,"MSCTLS_TRACKBAR32",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | TBS_AUTOTICKS,10,20,156,20
+  CONTROL "Volume of Sound Effects",IDF_LABELSfxVol,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,10,4,82,12
+  CONTROL "0",IDF_SoundValue,"INTEGERSPIN",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,174,24,40,14
+  CONTROL "0",IDF_MusicValue,"INTEGERSPIN",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,174,81,40,14
+  CONTROL "0",IDF_MusicTrack,"MSCTLS_TRACKBAR32",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | TBS_AUTOTICKS,10,77,156,20
+  CONTROL "Volume of Music",IDF_LABELMusicVol,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,10,63,82,12
+  CONTROL "OPL2 Emulation",IDF_MusicRadio1,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_AUTORADIOBUTTON | BS_TEXT,10,46,78,14
+  CONTROL "Real OPL2LPT",IDF_MusicRadio2,"BUTTON",WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTORADIOBUTTON | BS_TEXT,10,101,78,14
+  CONTROL "LPT HEX Address:",IDF_HEX,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,10,120,67,12
+  CONTROL "0378",IDF_LPTPort,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_UPPERCASE,81,118,40,14
+  CONTROL "OK",ID_SoundOK,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,46,144,40,14
+  CONTROL "Cancel",ID_SoundCancel,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,93,144,40,14
+  CONTROL "Reset",ID_SoundReset,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,141,144,40,14
+  CONTROL "Test",ID_SoundTest,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,124,4,40,14
+  CONTROL "Test",ID_MusicTest,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,124,63,40,14
+  CONTROL "Test",ID_MusicTest2,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,124,119,40,14
+  CONTROL "Stop",ID_MusicStop,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,170,63,40,14
+  CONTROL "Stop",ID_MusicStop2,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,170,119,40,14
+END
+
+IDD_SoundSettings RCDATA
+BEGIN
+"[Checks] \n"
+"1024 1 \n"
+"1025 0 \n"
+"[Ranges] \n"
+"1018 0 200 \n"
+"1020 0 200 \n"
+"1021 0 200 \n"
+"1022 0 200 \n"
+"[Trackbars] \n"
+"1018         10          1         10          0          0 \n"
+"1022         10          1         10          0          0 \n"
+"[Lengths] \n"
+"1027 4 \n"
+,0
+END
+
 ///////////////////////////////////////////////////
 //
 // Menus
@@ -168,6 +233,11 @@ BEGIN
     MENUITEM "Hare",ID_SPEED4
     MENUITEM "Snail",ID_SPEED5
   END
+  POPUP "Sound / Input"
+  BEGIN
+    MENUITEM "SFX / Music",ID_SoundSettings
+    MENUITEM "Keyboard / Controller",ID_InputSettings
+  END
   POPUP "Development"
   BEGIN
     MENUITEM "TIA Noise Maker",ID_TIA_Noiser
@@ -179,7 +249,8 @@ IDM_MAIN RCDATA
 BEGIN
 ID_SCREENSIZE,1,0,
 ID_SPEED,2,0,
-ID_DEV,3,0,
+ID_SoundInput,3,0,
+ID_DEV,4,0,
 0
 END
 
@@ -205,4 +276,4 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
 //*WI* LASTTYPE    2
-//*WI* LASTRES     1
+//*WI* LASTRES     5

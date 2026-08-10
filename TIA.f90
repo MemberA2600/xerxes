@@ -16,13 +16,16 @@ MODULE TIA
     implicit none
 
     private
-    public :: TiaMaker, initTiaList, loadTIAFile, playTIAbyName, TIAchangeSavePlay
+    public :: TiaMaker, initTiaList, loadTIAFile, playTIAbyName, TIAchangeSavePlay, &
+              playRandomTIA, changeTIAVolChanger, dropTIAList
 
     type :: state_t
         integer :: offset, count, f
         integer :: rate
         logical :: last
     end type state_t
+
+    real               :: TIAVolChanger = 1.0
 
     integer, parameter :: text_len = 1500
     
@@ -100,7 +103,33 @@ MODULE TIA
 
     contains
 
-    ! TIASfx
+    ! TIASfx 
+
+    subroutine dropTIAList()
+        integer(2)                :: ind, rc
+        
+        if (allocated(tiaList) .EQV. .TRUE.) then
+
+            do ind = 1, size(tiaList), 1
+               deallocate(tiaList(ind)%tones, stat = rc) 
+                
+               if (rc /= 0) call displayDebug("Failed to dealloc TIA's tonelist!") 
+            end do
+    
+            deallocate(tiaList, stat = RC)
+    
+            if (rc /= 0) call displayDebug("Failed to dealloc TIAList!") 
+        end if
+    end subroutine
+
+    subroutine changeTIAVolChanger(r)
+            real :: r
+
+            if (r < 0.0) r = 0.0
+            if (r > 2.0) r = 2.0
+
+            TiaVolChanger = r
+    end subroutine
 
     subroutine compressTIA(d, n)
         integer(8)                                           :: n
@@ -169,6 +198,13 @@ MODULE TIA
 
     end subroutine
 
+    subroutine playRandomTIA(chan)
+        integer(2)                            :: chan
+
+        call tiaList(randInt(1, size(tiaList)))%playTiaSFX(chan) 
+
+    end subroutine
+
     subroutine playTIAbyName(name, chan)
         character(*)                          :: name
         integer(2)                            :: chan
@@ -202,8 +238,8 @@ MODULE TIA
 
         call loadBinary("tia\" // fname, d, siz, .FALSE.)
         call makeTiaHeader(d, temp, header, siz)
-        call uncompressTIA(temp, header%numOfTones)        
 
+        call uncompressTIA(temp, header%numOfTones)        
         call tiaList(N)%createTIASfx(header%name, temp)     
 
         deallocate(temp, stat = stat)
@@ -491,6 +527,9 @@ MODULE TIA
 
         do ind = 1, L, 1
            out(ind) = ior(ishft(int(buf(ind),2), 8), iand(int(buf(ind),2), z'FF')) 
+           out(ind) = out(ind) * (TIAVolChanger ** 2)
+           if (out(ind) >  32767) out(ind) =  32767  
+           if (out(ind) < -32768) out(ind) = -32768  
         end do
 
         deallocate(buf, stat = stat)

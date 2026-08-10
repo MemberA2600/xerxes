@@ -25,6 +25,7 @@
       USE adlib  
       USE threadMaster
       use IFWIN
+      USE wavePlayerWindow  
 
       IMPLICIT NONE
 !
@@ -79,13 +80,12 @@
       if (editMode .EQV. .FALSE.) call WMenuSetState(ID_DEV, ItemEnabled, 0)  
 
       call initWavChannels()
-
-      if (editMode .EQV. .FALSE.) then  
-          call loadFolders()
-      else
-          ! Remove from final.  
-          call loadFolders()
-      end if    
+      call loadFolders() 
+!
+!     Call config inits  
+!
+      call resetSoundSettings()  
+      call sendTheValues()  
 !
 !   Start threads
 !
@@ -102,7 +102,7 @@
 !
 !    Put tests here!  
 !
-      !call playTIAbyName("Putty", 0)  
+      !call playTIAbyName("Fireball", 0)  
       !call openVGM()  
       !call displayDebug(trim(CWD()) // "!!")  
 
@@ -139,10 +139,15 @@
               CASE (ID_SPEED1:ID_SPEED5)  
                     call setSpeed(MESSAGE%VALUE1 - ID_SPEED) 
               CASE (ID_TIA_Noiser)              
-                    call tiaMaker()     
+                    call tiaMaker()
+                    call dropTIAList() 
+                    call getFolder("tia"  , "xxt") 
               CASE (ID_VGM2XXA)              
                     call vgmConverter() 
-
+                    call dropAdlibList()     
+                    call getFolder("adlib", "xxa")
+              CASE (ID_SoundSettings)              
+                    call soundSettings() 
             END SELECT 
 
           CASE (CloseRequest)            ! Close window (e.g. Alt/F4)
@@ -274,6 +279,8 @@
                 call TIAchangeSavePlay()
             case(IDD_VGM2XXA)
                 call setConverterFields()
+            case(IDD_SoundSettings)
+                call checkForSoundSettingUpdates()
             end select
 
         end subroutine
