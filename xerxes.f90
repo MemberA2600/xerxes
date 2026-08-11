@@ -26,6 +26,7 @@
       USE threadMaster
       use IFWIN
       USE wavePlayerWindow  
+      USE inpout  
 
       IMPLICIT NONE
 !
@@ -81,6 +82,8 @@
 
       call initWavChannels()
       call loadFolders() 
+
+      call openDLL()  
 !
 !     Call config inits  
 !
@@ -109,6 +112,13 @@
       !write(msgString, '(I0)') shortWaitMask2Code(Z'0D') - Z'70' + 1
       !call displayDebug(msgString) 
       !call playAdlibbyName("ultima")   
+
+       !if (inpOutTest() .EQV. .TRUE.) then
+       !    call displayDebug("It works!") 
+       !else
+       !    call displayDebug("It tells you to f*** off!") 
+       !end if  
+
 !
 !   Main message loop
 !
@@ -164,6 +174,7 @@
       END DO
       CALL WindowClose()                 ! Remove program window
 
+      call closeDLL()  
       call closeAllThreads()
 
       STOP

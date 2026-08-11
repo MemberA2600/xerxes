@@ -8,6 +8,7 @@ ESAME 1
 EXE   xerxes.exe
 MAXF  1000
 FILE    3 xerxes.f90
+FILE    7 inpout.f90
 FILE    7 threadmaster.f90
 FILE    7 gzip.f90
 FILE    7 engineconstants.f90
@@ -28,7 +29,7 @@ FILE    7 adlib.f90
 FILE    7 vgm.f90
 FCREL -c
 OPREL -O2
-LNREL -subsystem:windows -machine:x86 -IMPLIB:Kernel32
+LNREL -subsystem:windows -machine:x86
 LNOGL 
 RCREL 
 PPREL 

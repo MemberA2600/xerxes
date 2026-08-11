@@ -11,6 +11,7 @@ MODULE adlib
     USE ifport
     USE opl3_mod
     USE threadMaster
+    USE inpout
 
     implicit none
 

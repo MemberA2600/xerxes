@@ -14,6 +14,7 @@ MODULE wavePlayerWindow
     USE adlib
     USE TIA
     USE Waveplayer
+    USE inpout
 
     implicit none
 
@@ -123,6 +124,7 @@ MODULE wavePlayerWindow
     subroutine sendTheValues()
          call changeTIAVolChanger(     real(sfxVolume)   / 100)
          call changeAdlibVolumeChanger(real(musicVolume) / 100)
+         call setLPTAddress(LPTAddress)
     end subroutine
 
     subroutine soundSettings()
