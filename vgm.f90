@@ -9,6 +9,7 @@ MODULE vgm
     USE engineConstants
     USE adlib
     USE waveplayer 
+    USE inpout
 
     implicit none
 
@@ -64,6 +65,8 @@ MODULE vgm
           if (WinfoDialog(CurrentDialog) == IDD_VGM2XXA) then 
               SELECT CASE (WinfoDialog(ExitButton))  
                   CASE(ExitField) 
+                     call stopPlayback()  
+                     isPlaying = .FALSE. 
                      EXIT
                   CASE(ID_VGMLoad)
                      call openVGM()
@@ -102,7 +105,11 @@ MODULE vgm
     end subroutine
 
     subroutine playM()
-        call continueToPlayA()
+        if (getLptMode() .EQV. .FALSE.) then
+            call continueToPlayA()
+        else
+            call chipStart()
+        end if
         isPlaying  = .TRUE.
     end subroutine
 
@@ -529,8 +536,8 @@ MODULE vgm
         !write(test, "(Z0, ' | ', Z0)" ) dataIndex, GD3Index
         !call displayDebug(test)
         ind     = dataIndex + 1
-        If (loopIndex /= 0) then
-            loopInd = loopIndex - dataIndex + 1      
+        If (loopIndex > 0) then
+            loopInd = loopIndex - dataIndex      
         else
             loopInd = 0
         end if    

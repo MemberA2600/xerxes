@@ -8,7 +8,7 @@ MODULE threadMaster
     PRIVATE
     PUBLIC     :: initThreadList, addThread, killThread, isThreadRunning, closeAllThreads, &
                   isThreadPaused, getThreadCommand, pauseThread, NO_COMMAND, &
-                  PAUSE_COMMAND, UNPAUSE_COMMAND, FORCE_EXIT  
+                  PAUSE_COMMAND, UNPAUSE_COMMAND, FORCE_EXIT, killThreadAllActive  
 
     TYPE Thread   
          character(20)          :: name
@@ -28,6 +28,8 @@ MODULE threadMaster
     integer(2)                               :: listSize
     integer(2), parameter                    :: initSize = 20, &
                                                  addSize = 10
+    logical                                  :: killThreadAllActive = .FALSE. 
+
     abstract interface
         integer(DWORD) function ThreadEntry(lpParameter)
             use IFWIN
@@ -45,6 +47,7 @@ MODULE threadMaster
 
         !write(t, '("Number of Threads: ", I0)') listSize
         !call displayDebug(t)
+        killThreadAllActive = .TRUE.
 
         do ind = 1, listSize, 1
            call killThread(threadList(ind)%name) 
@@ -55,6 +58,7 @@ MODULE threadMaster
     subroutine initThreadList
         integer(1)      :: rc
         
+        killThreadAllActive  = .FALSE.
         allocate(threadList(initSize), stat = RC)
         if (rc /= 0) call displayDebug("Failed to allocate init threadlist!")
         
@@ -155,6 +159,7 @@ MODULE threadMaster
              RC  = WaitForSingleObject(threadList(ind)%threadHandle, INFINITE)
              RC  = CloseHandle(threadList(ind)%threadHandle)
              threadList(ind)%threadHandle = NULL
+             !call displayDebug("Closed: " // name // "!")   
          else
              call displayDebug("Failed to find and close " // name // "!")
 

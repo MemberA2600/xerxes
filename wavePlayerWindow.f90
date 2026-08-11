@@ -124,16 +124,24 @@ MODULE wavePlayerWindow
     subroutine sendTheValues()
          call changeTIAVolChanger(     real(sfxVolume)   / 100)
          call changeAdlibVolumeChanger(real(musicVolume) / 100)
-         call setLPTAddress(LPTAddress)
+         call setLPTAddress(LPTAddress, OPL2LPT)
     end subroutine
+
+    function isPlaying() result(r)
+        logical     :: r
+        
+        r = ( ((isMusicPlaying() .EQV. .TRUE.) .AND. (OPL2LPT .EQV. .FALSE.)) &
+       .OR.   ((isChipPlaying()  .EQV. .TRUE.) .AND. (OPL2LPT .EQV. .TRUE. )) )
+    end function 
 
     subroutine soundSettings()
        INTEGER                                 :: ITYPE
        TYPE(WIN_MESSAGE)                       :: MESSAGE
        !character(10)                  :: msgString
        integer                                 :: c 
- 
-       if (isMusicPlaying() .EQV. .TRUE.) then
+       character(40)                           :: t  
+
+       if (isPlaying() .EQV. .TRUE.) then
            playingOnStartup = .TRUE.
        else
            playingOnStartup = .FALSE.
@@ -202,15 +210,23 @@ MODULE wavePlayerWindow
        canKill = .TRUE. 
        call sendTheValues()
 
+       !open(56, FILE = 'fos666.txt', status = 'UNKNOWN', action = 'WRITE')  
+
        if (playingOnStartup     .EQV. .TRUE. ) then
-           if (isMusicPlaying() .EQV. .FALSE.) then 
+           !write(56, '(I0)') 1 
+           if ((isMusicPlaying()  .EQV. .FALSE.) .AND. (isChipPlaying() .EQV. .FALSE.)) then 
+               !write(56, '(I0)') 3 
                call continueToPlayA()                
            end if 
        else 
-           if (isMusicPlaying() .EQV. .TRUE.) then 
-               call stopMusic()                
+           !write(56, '(I0)') 2 
+           if ((isMusicPlaying() .EQV. .TRUE.) .OR. (isChipPlaying() .EQV. .TRUE.)) then 
+               !write(56, '(I0)') 4   
+               call stopMusic()
            end if            
        end if  
+
+       close(56) 
 
     end subroutine
 
@@ -245,7 +261,7 @@ MODULE wavePlayerWindow
         call WDialogFieldState(IDF_SoundValue, state ) 
         call WDialogFieldState(IDF_SoundTrack, state ) 
 
-        if (musicPlaying .EQV. .TRUE.) then
+        if ((musicPlaying .EQV. .TRUE.) .OR. (isChipPlaying() .EQV. .TRUE.))then
             state = DISABLED
         else
             state = ENABLED

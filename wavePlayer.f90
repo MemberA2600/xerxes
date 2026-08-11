@@ -13,6 +13,7 @@ MODULE wavePlayer
     use WINMM
     use dataloader 
     use threadMaster
+    use inpout
 
     implicit none
 
@@ -77,7 +78,7 @@ MODULE wavePlayer
         logical         :: r
 
         r = (musicChunkWaiting .EQV. .TRUE. .OR. musicLastChunk .EQV. .TRUE. .OR. &
-             musicFirstChunk   .EQV. .TRUE.) 
+             musicFirstChunk   .EQV. .TRUE.) .AND. (isChipPlaying()  .EQV. .FALSE.)
  
     end function
 
@@ -165,15 +166,19 @@ MODULE wavePlayer
     end subroutine
 
     subroutine stopMusic()
-        call pauseWavePlayer(.TRUE.)
-        call music%stopPlaying()
-        if (musicstate() /= 0) call playMusicEnd()
-
-        musicChunkWaiting = .FALSE.
-        musicLastChunk    = .FALSE.
-       !musicInd          = 0
-        musicFirstChunk   = .FALSE.
-        bufferFed         = .FALSE.
+        if (getLptMode() .EQV. .FALSE.) then
+            call pauseWavePlayer(.TRUE.)
+            call music%stopPlaying()
+            if (musicstate() /= 0) call playMusicEnd()
+    
+            musicChunkWaiting = .FALSE.
+            musicLastChunk    = .FALSE.
+           !musicInd          = 0
+            musicFirstChunk   = .FALSE.
+            bufferFed         = .FALSE.
+        else
+            call initChip(.TRUE.)
+        end if
 
     end subroutine
 

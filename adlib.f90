@@ -20,14 +20,16 @@ MODULE adlib
                                                   getNumOfAdlibBytes, continueToPlayA, saveAdlibData, &
                                                   getAdlibName, shortWaitCode2Mask, shortWaitMask2Code, &
                                                   initAdlibList, loadAdlibHeader, playAdlibbyName, &
-                                                  dropAdlibList, playRandomAdlib, changeAdlibVolumeChanger 
+                                                  dropAdlibList, playRandomAdlib, changeAdlibVolumeChanger, &
+                                                  chipStart 
+                                                  
                                                   
     real                                       :: adlibVolumeChanger = 1.0    
 
     character(40)                              :: test 
     logical                                    :: testDebug = .FALSE.
-    integer(1), parameter                      :: minWait = 27 ! 27 on real hw
     integer, parameter                         :: RATE = 44100
+    type(CounterTimer)                         :: chipTimer 
 
     type adlibData
          character(4)                          :: header
@@ -167,8 +169,20 @@ MODULE adlib
         deallocate(d, stat = RC)
         if (RC /= 0) call displayDebug("Failed to deallocate the loaded XXA!")  
 
-        call continueToPlayA()
+        if (getLptMode() .EQV. .FALSE.) then
+            call continueToPlayA()
+        else
+            call chipStart()
+        end if
 
+    end subroutine
+
+    subroutine chipStart()
+            adlibD%ind = 0
+            last       = 0
+
+            call chipTimer%timerInit()
+            call initChip(.FALSE.)
     end subroutine
 
     subroutine loadAdlibHeader(num, fname)
@@ -207,7 +221,6 @@ MODULE adlib
         adlibList(num)%fileName   = fname    
 
         adlibList(num)%firstDataByte = offset
-
 
         deallocate(d, stat = stat)
         if (stat /= 0) call displayDebug("Failed to deallocate the loaded XXA!")
@@ -390,7 +403,7 @@ MODULE adlib
          bufferSize    = 0
          bufferIndex   = 1
          waitMe        = 0
-         adlibD%ind    =  0  
+         adlibD%ind    = 0  
 
          if (allocated(outBufferFull)) then
              deallocate(outBufferFull, stat = stat)
@@ -414,7 +427,11 @@ MODULE adlib
 
         if (adlibD%numOfBytes > 0) then
             if (last <= adlibD%ind) then
-               call generateAdlib() 
+               if (getLptMode() .EQV. .FALSE.) then 
+                   call generateAdlib() 
+               else 
+                   call generateAdlibLPT() 
+               end if 
             else
                adlibD%ind = adlibD%loopByte
             end if 
@@ -455,13 +472,10 @@ MODULE adlib
         integer(2)          :: smallWait
         !character(40)       :: tt
 
-        maxAllowed = bufferSize - bufferIndex + 1
-
-        !write(test, "('Left: ', I0)") maxAllowed
-        !call displayDebug(test)    
+        maxAllowed = bufferSize - bufferIndex + 1  
 
         if (waitMe == 0) then
-            if (adlibD%ind <= adlibD%numOfBytes) then
+            if (adlibD%ind  < adlibD%numOfBytes) then
                 adlibD%ind  = adlibD%ind + 1
                 waitTime    = 0
 
@@ -470,8 +484,6 @@ MODULE adlib
                 smallWait   = shortWaitMask2Code(adlibD%songBytes(adlibD%ind))
                 if (smallWait > 0) then
                     waitTime = smallWait - Z'70' + 1  
-                    !write(test, "(Z2.2, ' | ' I0)") adlibD%songBytes(adlibD%ind), smallWait
-                    !call displayDebug(test)
                 else
     
                     select case(adlibD%songBytes(adlibD%ind))
@@ -498,17 +510,13 @@ MODULE adlib
                     case(Z'0B')
                           waitTime = 882               
                     case(Z'10':Z'1F')
-                          waitTime = minWait
                           call OPL3_WriteRegBuffered(ym3812, adlibD%songBytes(adlibD%ind) + Z'90', Z'00')    
                           !adlibD%ind = adlibD%ind + 1 
     
                     case(Z'D0':Z'DF')
-                          waitTime = minWait
                           !adlibD%ind = adlibD%ind + 1 
                           call OPL3_WriteRegBuffered(ym3812, adlibD%songBytes(adlibD%ind) - Z'20', Z'00')   
                     case default
-    
-                          waitTime = minWait
                           call OPL3_WriteRegBuffered(ym3812, adlibD%songBytes(adlibD%ind),   & 
                                                 adlibD%songBytes(adlibD%ind + 1))   
                           adlibD%ind = adlibD%ind + 1 
@@ -575,4 +583,63 @@ MODULE adlib
 
     end subroutine   
     
+    subroutine generateAdlibLPT()
+        implicit none
+        integer(8)          :: waitTime, numOfFrames, maxAllowed, trueWait
+        integer(2)          :: smallWait
+        real, parameter     :: oneSample = 1487.0 / 65535.0
+        character(40)       :: t
+
+        if (chipTimer%TimerEnded() .EQV. .FALSE.) return
+
+        if (adlibD%ind  < adlibD%numOfBytes) then
+            adlibD%ind  = adlibD%ind + 1
+            waitTime    = 0
+
+            smallWait   = shortWaitMask2Code(adlibD%songBytes(adlibD%ind))
+            if (smallWait > 0) then
+                waitTime = smallWait - Z'70' + 1  
+            else
+  
+                select case(adlibD%songBytes(adlibD%ind))
+                case(Z'05')
+                      waitTime   =  adlibD%songBytes(adlibD%ind + 1) + &
+                                   (adlibD%songBytes(adlibD%ind + 2) * 256)  
+
+                      adlibD%ind = adlibD%ind + 2
+                case(Z'06')
+                      waitTime   =  adlibD%songBytes(adlibD%ind + 1)
+    
+                      adlibD%ind = adlibD%ind + 1 
+                case(Z'0A') 
+                      waitTime = 735               
+                case(Z'0B')
+                      waitTime = 882               
+                case(Z'10':Z'1F')
+                      call writeReg(adlibD%songBytes(adlibD%ind) + Z'90', Z'00')    
+                case(Z'D0':Z'DF')
+                      call writeReg(adlibD%songBytes(adlibD%ind) - Z'20', Z'00')   
+                case default
+                      call writeReg(adlibD%songBytes(adlibD%ind), & 
+                                    adlibD%songBytes(adlibD%ind + 1))   
+                      adlibD%ind = adlibD%ind + 1 
+    
+                end select
+            end if           
+
+            trueWait = int(1000 * oneSample * waitTime, 8)
+
+            if (trueWait > 0) then 
+                !write(t, "(I0, ' | ', I0)") waitTime, trueWait 
+                !call displayDebug(t)
+
+                call chipTimer%timerStart(trueWait)
+            end if
+        else
+            adlibD%ind = adlibD%loopByte
+        end if
+
+    end subroutine   
+
+
 END MODULE adlib

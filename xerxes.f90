@@ -259,6 +259,8 @@
 
           do while(isThreadPaused(name) .EQV. .TRUE.)
              call sleep(1)
+             ! if (killThreadAllActive) call displayDebug(trim(name) // " | FUCK !!!!")
+
              if (getThreadCommand(name) == UNPAUSE_COMMAND) then
                  call pauseThread(name, .FALSE.)
              end if   
