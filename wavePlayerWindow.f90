@@ -127,11 +127,17 @@ MODULE wavePlayerWindow
          call setLPTAddress(LPTAddress, OPL2LPT)
     end subroutine
 
-    function isPlaying() result(r)
+    function isPlaying(yes) result(r)
         logical     :: r
-        
-        r = ( ((isMusicPlaying() .EQV. .TRUE.) .AND. (OPL2LPT .EQV. .FALSE.)) &
-       .OR.   ((isChipPlaying()  .EQV. .TRUE.) .AND. (OPL2LPT .EQV. .TRUE. )) )
+        logical     :: yes        
+
+        if (yes .EQV. .TRUE.) then
+            r = ( ((isMusicPlaying() .EQV. .TRUE.) .AND. (OPL2LPT .EQV. .FALSE.)) &
+           .OR.   ((isChipPlaying()  .EQV. .TRUE.) .AND. (OPL2LPT .EQV. .TRUE. )) )
+        else
+            r = ((isMusicPlaying() .EQV. .FALSE.) .AND. (isChipPlaying()  .EQV. .FALSE.))
+
+        end if
     end function 
 
     subroutine soundSettings()
@@ -141,7 +147,13 @@ MODULE wavePlayerWindow
        integer                                 :: c 
        character(40)                           :: t  
 
-       if (isPlaying() .EQV. .TRUE.) then
+       do
+         if (WInfoDialog(CurrentDialog) == 0) exit
+         call sleep(1)
+       end do 
+       canKill = .FALSE. 
+
+       if (isPlaying(.TRUE.) .EQV. .TRUE.) then
            playingOnStartup = .TRUE.
        else
            playingOnStartup = .FALSE.
@@ -149,7 +161,6 @@ MODULE wavePlayerWindow
 
        musicPlaying = playingOnStartup 
 
-       canKill = .FALSE. 
        CALL WDialogLoad(IDD_SoundSettings)
     
        sfxVolumeOld   = sfxVolume 
@@ -214,13 +225,13 @@ MODULE wavePlayerWindow
 
        if (playingOnStartup     .EQV. .TRUE. ) then
            !write(56, '(I0)') 1 
-           if ((isMusicPlaying()  .EQV. .FALSE.) .AND. (isChipPlaying() .EQV. .FALSE.)) then 
+           if (isPlaying(.FALSE.) .EQV. .TRUE.) then 
                !write(56, '(I0)') 3 
                call continueToPlayA()                
            end if 
        else 
            !write(56, '(I0)') 2 
-           if ((isMusicPlaying() .EQV. .TRUE.) .OR. (isChipPlaying() .EQV. .TRUE.)) then 
+           if (isPlaying(.TRUE.) .EQV. .TRUE.) then 
                !write(56, '(I0)') 4   
                call stopMusic()
            end if            

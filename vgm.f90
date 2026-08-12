@@ -32,6 +32,7 @@ MODULE vgm
     end type
 
     type(vgmHeader), allocatable :: vhead
+    logical                      :: canKill = .FALSE.
 
     type gd3Tags
 
@@ -55,6 +56,12 @@ MODULE vgm
        integer                                 :: c 
 
        isPlaying = .FALSE. 
+       canKill   = .FALSE.   
+
+       do
+         if (WInfoDialog(CurrentDialog) == 0) exit
+         call sleep(1)
+       end do 
 
        CALL WDialogLoad(IDD_VGM2XXA)
 
@@ -88,7 +95,7 @@ MODULE vgm
             call stopPlayback()
        end if
 
-       CALL WDialogUnLoad()
+       canKill = .TRUE. 
 
     END SUBROUTINE
 
@@ -146,6 +153,11 @@ MODULE vgm
                  CALL WDialogFieldState(ID_XXAStop, DISABLED) 
 
             end if
+        end if
+
+        if (canKill .EQV. .TRUE.) then 
+            CALL WDialogUnLoad()
+            canKill = .FALSE.
         end if
 
     end subroutine
@@ -528,7 +540,7 @@ MODULE vgm
         logical                                              :: found = .FALSE., minus
         character(40)                                        :: test
         character(2)                                         :: command
-        logical, parameter                                   :: debug = .TRUE.         
+        logical, parameter                                   :: debug = .FALSE.         
 
         if (debug .EQV. .TRUE.) open(unit = 21       , file = 'vmg_adlib_info.txt', &
                                      status='replace', action='write')

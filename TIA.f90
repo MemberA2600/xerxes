@@ -75,6 +75,8 @@ MODULE TIA
 
     integer, parameter :: divisors(16) = [ 1, 1, 15, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 1 ]
 
+    logical            :: canKill = .FALSE.
+
     Type TIATone
          integer(1) :: Vol, Chan, Freq, Length
     end type
@@ -560,6 +562,12 @@ MODULE TIA
        !character(10)                  :: msgString
        integer                                 :: c 
 
+       canKill = .FALSE. 
+
+       do
+         if (WInfoDialog(CurrentDialog) == 0) exit
+         call sleep(1)
+       end do 
 
        CALL WDialogLoad(IDD_TIA)
 
@@ -584,7 +592,7 @@ MODULE TIA
               end if
        end do 
 
-       CALL WDialogUnLoad()
+       canKill = .TRUE. 
 
     END SUBROUTINE
 
@@ -607,6 +615,11 @@ MODULE TIA
                 CALL WDialogFieldState(ID_TIASave, ENABLED) 
             end if
             CALL WDialogFieldState(ID_TIAPlay, ENABLED) 
+        end if
+
+        if (canKill .EQV. .TRUE.) then 
+            CALL WDialogUnLoad()
+            canKill = .FALSE.
         end if
 
     end subroutine
