@@ -17,14 +17,15 @@ MODULE dataLoader
 
       CONTAINS
       
-      subroutine writeBin2File(filename, d2, dealloc)
+      subroutine writeBin2File(filename, d2, dealloc, compress)
          character(*), intent(in)             :: filename
-         integer(1), allocatable              :: d (:)
+         integer(1), allocatable              :: d (:), dc(:)
          integer(2), allocatable              :: d2(:)
-         logical                              :: dealloc  
+         logical                              :: dealloc, compress  
          integer(2)                           :: stat, unit, ios  
          integer(8)                           :: ind  
          character(40)                        :: test   
+         integer                              :: status
 
          unit = 16
 
@@ -41,16 +42,29 @@ MODULE dataLoader
               file=filename, &
               access='stream', &
               form='unformatted', &
-              status='UNKNOWN', &
+              status='REPLACE', &
               action='write', &
               iostat=ios)
+
 
         if (ios /= 0) then
             call displayDebug("Failed to open binary file for write!") 
             return
         end if
 
-        write(unit, iostat = ios) d
+
+        if (compress  .EQV. .FALSE.) then
+            write(unit, iostat = ios) d
+
+        else
+            call gzip_compress(d, dc, status)
+            write(unit, iostat = ios) dc
+            
+            deallocate(dc, stat = stat)
+            if (stat /= 0) call displayDebug("Failed to deallocate compressed!")
+
+        end if
+
         if (ios /= 0) call displayDebug("Failed to write binary file!")      
     
         close(unit, iostat =ios)
@@ -75,7 +89,8 @@ MODULE dataLoader
         integer(8), intent(out)              :: s
     
         integer :: unit, ios, stat, ind
-    
+        character(40)                        :: test    
+
         unit = 17
 
         inquire(file=filename, size=s)
@@ -105,7 +120,10 @@ MODULE dataLoader
         if (uncompress .EQV. .TRUE.) then
             call gzip_uncompress(d, d3, stat)
 
-            if (stat /= 0) call displayDebug("Failed to decompress VGZ!")
+            !write(test, '(I0, " | ",I0)') stat, size(d3)  
+            !call displaydebug(test)
+
+            if (stat /= 0) call displayDebug("Failed to decompress binary!")
 
             s = size(d3)      
         end if

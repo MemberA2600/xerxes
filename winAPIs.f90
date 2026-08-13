@@ -172,7 +172,7 @@ MODULE winAPIs
             file=filename, &
             access='stream', &
             form='unformatted', &
-            status='unknown', &
+            status='REPLACE', &
             position='append')
     
         write(unit) data
@@ -197,7 +197,7 @@ MODULE winAPIs
             file=filename, &
             access='stream', &
             form='unformatted', &
-            status='unknown', &
+            status='REPLACE', &
             position='append')
     
         write(unit) data
@@ -222,7 +222,7 @@ MODULE winAPIs
             file=filename, &
             access='stream', &
             form='unformatted', &
-            status='unknown', &
+            status='REPLACE', &
             position='append')
     
         write(unit) data
@@ -247,7 +247,7 @@ MODULE winAPIs
             file=filename, &
             access='stream', &
             form='unformatted', &
-            status='unknown', &
+            status='REPLACE', &
             position='append')
     
         write(unit) data

@@ -149,7 +149,7 @@ MODULE adlib
 
         if (ind2 == 0) return
         
-        call loadBinary("adlib\" // adlibList(ind)%filename, d, adlibList(ind)%dataLen, .FALSE.)
+        call loadBinary("adlib\" // adlibList(ind)%filename, d, adlibList(ind)%dataLen, .TRUE.)
 
         offset = adlibList(ind)%firstDataByte
 
@@ -194,7 +194,7 @@ MODULE adlib
         integer(2), dimension(:), allocatable  :: d, temp
         integer(8)                             :: offset, dataLen
 
-        call loadBinary("adlib\" // fname, d, siz, .FALSE.)
+        call loadBinary("adlib\" // fname, d, siz, .TRUE.)
 
         adlibList(num)%dataLen = size(d)
         
@@ -260,7 +260,7 @@ MODULE adlib
     end function
 
     subroutine saveAdlibData(name, fname)
-        integer(2), dimension(:), allocatable :: fullD
+        integer(2), dimension(:), allocatable :: fullD, compressed
         integer(2)                            :: stat
         character(NAME_MAX_LEN)               :: name
         character(MAX_PATH_LEN)               :: fname
@@ -291,8 +291,7 @@ MODULE adlib
         call WriteInt8ToData(fullD, ind, adlibd%loopByte) 
 
         call writeBytes2Bin(adlibd%songBytes, fullD, ind)
-
-        call writeBin2File(fname, fullD, .TRUE.)
+        call writeBin2File(fname, fullD, .TRUE., .TRUE.)
 
         if (testW .EQV. .TRUE.) then
             open( 49, file = "logAdlibH.txt", status="replace", action="write")

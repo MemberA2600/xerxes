@@ -221,7 +221,7 @@ MODULE wavePlayerWindow
        canKill = .TRUE. 
        call sendTheValues()
 
-       !open(56, FILE = 'fos666.txt', status = 'UNKNOWN', action = 'WRITE')  
+       !open(56, FILE = 'fos666.txt', status = 'REPLACE', action = 'WRITE')  
 
        if (playingOnStartup     .EQV. .TRUE. ) then
            !write(56, '(I0)') 1 

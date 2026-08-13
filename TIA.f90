@@ -781,7 +781,7 @@ MODULE TIA
         call compressTIA(d, header%numOfTones)
 
         call writeBytes2Bin(d, fullD, 7 + header%nameLen)
-        call writeBin2File(fname, fulld, .TRUE.)
+        call writeBin2File(fname, fulld, .TRUE., .FALSE.)
 
         deallocate(d, stat = stat)
         if (stat /= 0) call displayDebug("Failed to deallocate temp for save TIA on Editor!")
