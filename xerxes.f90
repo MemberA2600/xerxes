@@ -27,6 +27,7 @@
       use IFWIN
       USE wavePlayerWindow  
       USE inpout  
+      USE inputReader
 
       IMPLICIT NONE
 !
@@ -69,6 +70,7 @@
       call initScreenBuff(1)  
 
       call WMEssageEnable(BorderSelect, Enabled)
+      !CALL WMessageEnable(KeyDown,Enabled)
 
       CALL IGrArea(0.0,0.0,1.0,1.0)
       CALL IGrAreaClear() 
@@ -97,6 +99,7 @@
       call addThread("playAdlib"       , playAdlibT       )   
       call addThread("playMusic"       , playMusicT       )   
       call addThread("checkDialogs"    , checkDialogsT    )   
+      call addThread("readInput"       , readInputT       )   
 
       do beepF = 400, 1000, 200  
          intDummy = Beep(beepF, 110)
@@ -136,6 +139,9 @@
                 timer = timer - 1
             end if 
 
+          !CASE (KeyDown)
+          !      call setLastKey(MESSAGE%VALUE1)  
+
           CASE (BorderSelect,Expose,Resize)
             call buffer2Real()
             timer = speed
@@ -158,6 +164,8 @@
                     call getFolder("adlib", "xxa")
               CASE (ID_SoundSettings)              
                     call soundSettings() 
+              CASE (ID_InputSettings)
+                    call inputWindow()  
             END SELECT 
 
           CASE (CloseRequest)            ! Close window (e.g. Alt/F4)
@@ -234,6 +242,22 @@
            rc = 0
         end function
 
+      function readInputT(lpParameter) result(rc)
+          use IFWIN
+
+          integer(LPVOID), value   :: lpParameter
+          integer                  :: rc
+          character(40), parameter :: name = "readInput" 
+
+          !DEC$ ATTRIBUTES STDCALL :: playMusicT
+
+           do while (isThreadRunning(name) .EQV. .TRUE.)
+              call threadThings(name)  
+           end do
+
+           rc = 0
+        end function
+
       function checkDialogsT(lpParameter) result(rc)
           use IFWIN
 
@@ -278,6 +302,8 @@
                     call playMusic()
               case("checkDialogs")  
                     call dialogChecker()
+              case("readInput")  
+                    call readInput()
               end select  
            end if
         end subroutine
@@ -294,6 +320,8 @@
                 call setConverterFields()
             case(IDD_SoundSettings)
                 call checkForSoundSettingUpdates()
+            case(IDD_InputSetter)
+                call checkOnInputSettings()
             end select
 
         end subroutine

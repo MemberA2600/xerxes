@@ -8,7 +8,7 @@
 //
 // Winteracter resource script
 //
-// Modified : 10/aug./2026 16:23:13
+// Modified : 14/aug./2026 20:14:06
 //
 ///////////////////////////////////////////////////
 //
@@ -16,12 +16,12 @@
 //
 //*WN* NMENU       1
 //*WN* NITEM       23
-//*WN* NDIALOG     5
-//*WN* NFIELD      36
+//*WN* NDIALOG     6
+//*WN* NFIELD      51
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
-//*WN* NIDENTIFIER 74
+//*WN* NIDENTIFIER 90
 //*WN* NINCLUDE    0
 //*WN* NOPTROW     0
 ///////////////////////////////////////////////////
@@ -98,6 +98,22 @@
 #define ID_MusicTest2      1033
 #define ID_MusicStop       1034
 #define ID_MusicStop2      1035
+#define IDF_InputTester    1036
+#define IDD_InputSetter     107
+#define IDF_LabelButton    1037
+#define IDF_Pressed        1038
+#define IDF_LabelDirs      1039
+#define IDF_JoyUp          1040
+#define IDF_JoyDown        1041
+#define IDF_JoyLeft        1042
+#define IDF_JoyRight       1043
+#define IDF_LabelJoyButt   1044
+#define IDF_Joy1           1045
+#define IDF_Joy2           1046
+#define IDF_Joy3           1047
+#define IDF_Joy4           1048
+#define IDF_Joy5           1049
+#define IDF_Joy6           1050
 
 ///////////////////////////////////////////////////
 //
@@ -206,6 +222,34 @@ BEGIN
 ,0
 END
 
+IDD_InputSetter DIALOG 0,0,270,166
+STYLE WS_POPUP | WS_BORDER | WS_DLGFRAME | WS_SYSMENU | DS_3DLOOK | DS_MODALFRAME
+FONT 8, "MS Shell Dlg"
+CAPTION "Keyboard & Controller Settings"
+BEGIN
+  CONTROL "Keyboard / Controller Test",IDF_InputTester,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | BS_GROUPBOX | BS_TEXT | BS_LEFT,14,12,240,55
+  CONTROL "Pressed Button:",IDF_LabelButton,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_CENTER,18,25,62,8
+  CONTROL "A",IDF_Pressed,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE | ES_UPPERCASE | ES_READONLY,21,42,57,12
+  CONTROL "Joystick Directions:",IDF_LabelDirs,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_CENTER,90,25,70,8
+  CONTROL "A",IDF_JoyUp,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE | ES_UPPERCASE | ES_READONLY,116,36,19,12
+  CONTROL "A",IDF_JoyDown,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE | ES_UPPERCASE | ES_READONLY,116,51,19,12
+  CONTROL "A",IDF_JoyLeft,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE | ES_UPPERCASE | ES_READONLY,94,43,19,12
+  CONTROL "A",IDF_JoyRight,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE | ES_UPPERCASE | ES_READONLY,137,43,19,12
+  CONTROL "Joystick Buttons:",IDF_LabelJoyButt,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_CENTER,173,25,70,8
+  CONTROL "A",IDF_Joy1,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE | ES_UPPERCASE | ES_READONLY,177,36,19,12
+  CONTROL "A",IDF_Joy2,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE | ES_UPPERCASE | ES_READONLY,199,36,19,12
+  CONTROL "A",IDF_Joy3,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE | ES_UPPERCASE | ES_READONLY,222,36,19,12
+  CONTROL "A",IDF_Joy4,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE | ES_UPPERCASE | ES_READONLY,177,50,19,12
+  CONTROL "A",IDF_Joy5,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE | ES_UPPERCASE | ES_READONLY,199,50,19,12
+  CONTROL "A",IDF_Joy6,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE | ES_UPPERCASE | ES_READONLY,222,50,19,12
+END
+
+IDD_InputSetter RCDATA
+BEGIN
+"[Tabs] \n"
+,0
+END
+
 ///////////////////////////////////////////////////
 //
 // Menus
@@ -276,4 +320,4 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
 //*WI* LASTTYPE    2
-//*WI* LASTRES     5
+//*WI* LASTRES     6
