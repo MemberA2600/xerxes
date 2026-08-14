@@ -85,7 +85,8 @@
       call initWavChannels()
       call loadFolders() 
 
-      call openDLL()  
+      call openIODLL() 
+      call openJoyDLL()   
 !
 !     Call config inits  
 !
@@ -182,7 +183,8 @@
       END DO
       CALL WindowClose()                 ! Remove program window
 
-      call closeDLL()  
+      call closeIODLL()  
+      !call closeJoyDLL()  
       call closeAllThreads()
 
       STOP

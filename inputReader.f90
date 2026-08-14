@@ -12,11 +12,13 @@ MODULE inputReader
     use IFPORT
     use USER32
     use IFWINTY
+    USE KERNEL32, WinSleep => Sleep
+    USE WINMM
 
     implicit none
 
     private
-    public              :: inputWindow, checkOnInputSettings, readInput
+    public              :: inputWindow, checkOnInputSettings, readInput, openJoyDLL, closeJoyDLL
 
     logical             :: canKill
     integer(2)          :: lastPressedKey
@@ -35,7 +37,125 @@ MODULE inputReader
         "NUM LOCK    ", "SCROLL LOCK ", "*"           , "+"           , &
         "-"           , "NUM , ."     , "/"   /)
 
+    ! Button masks
+    integer(2), parameter :: XINPUT_GAMEPAD_DPAD_UP        = Z'0001'
+    integer(2), parameter :: XINPUT_GAMEPAD_DPAD_DOWN      = Z'0002'
+    integer(2), parameter :: XINPUT_GAMEPAD_DPAD_LEFT      = Z'0004'
+    integer(2), parameter :: XINPUT_GAMEPAD_DPAD_RIGHT     = Z'0008'
+    integer(2), parameter :: XINPUT_GAMEPAD_START          = Z'0010'
+    integer(2), parameter :: XINPUT_GAMEPAD_BACK           = Z'0020'
+    integer(2), parameter :: XINPUT_GAMEPAD_LEFT_THUMB     = Z'0040'
+    integer(2), parameter :: XINPUT_GAMEPAD_RIGHT_THUMB    = Z'0080'
+    integer(2), parameter :: XINPUT_GAMEPAD_LEFT_SHOULDER  = Z'0100'
+    integer(2), parameter :: XINPUT_GAMEPAD_RIGHT_SHOULDER = Z'0200'
+    integer(2), parameter :: XINPUT_GAMEPAD_A              = Z'1000'
+    integer(2), parameter :: XINPUT_GAMEPAD_B              = Z'2000'
+    integer(2), parameter :: XINPUT_GAMEPAD_X              = Z'4000'
+    integer(2), parameter :: XINPUT_GAMEPAD_Y              = Z'8000'
+
+    ! --------------------------------------------------------
+    ! 6-button controller mapping
+    ! --------------------------------------------------------
+
+    integer(2), parameter :: JOY_BUTTON_1   = XINPUT_GAMEPAD_A
+    integer(2), parameter :: JOY_BUTTON_2   = XINPUT_GAMEPAD_B
+    integer(2), parameter :: JOY_BUTTON_3   = XINPUT_GAMEPAD_X
+    integer(2), parameter :: JOY_BUTTON_4   = XINPUT_GAMEPAD_Y
+    integer(2), parameter :: JOY_BUTTON_5   = XINPUT_GAMEPAD_LEFT_SHOULDER
+    integer(2), parameter :: JOY_BUTTON_6   = XINPUT_GAMEPAD_RIGHT_SHOULDER
+
+    type, bind(C) :: XINPUT_GAMEPAD
+        integer(c_int16_t) :: wButtons
+        integer(c_int8_t)  :: bLeftTrigger
+        integer(c_int8_t)  :: bRightTrigger
+        integer(c_int16_t) :: sThumbLX
+        integer(c_int16_t) :: sThumbLY
+        integer(c_int16_t) :: sThumbRX
+        integer(c_int16_t) :: sThumbRY
+    end type XINPUT_GAMEPAD
+    
+    type, bind(C) :: XINPUT_STATE
+        integer(c_int32_t)   :: dwPacketNumber
+        type(XINPUT_GAMEPAD) :: Gamepad
+    end type XINPUT_STATE
+
+    logical :: joyUp
+    logical :: joyDown
+    logical :: joyLeft
+    logical :: joyRight
+
+    logical :: joyButton(6)
+    
+    integer(HANDLE) :: hLib
+    integer(LPVOID) :: pXInput
+    type(C_FUNPTR)  :: cpXInput
+
+    ! --------------------------------------------------------
+    ! XInputGetState interface
+    ! --------------------------------------------------------
+
+    abstract interface
+    
+        integer(4) function XInputGetState_int(dwUserIndex, pState)
+    
+            import             :: XINPUT_STATE
+    
+            integer(4)         :: dwUserIndex
+            type(XINPUT_STATE) :: pState
+
+            !DEC$ ATTRIBUTES STDCALL :: XInputGetState_int
+            !DEC$ ATTRIBUTES VALUE :: dwUserIndex
+            !DEC$ ATTRIBUTES REFERENCE :: pState
+    
+        end function XInputGetState_int
+    
+    end interface
+    
+    procedure(XInputGetState_int), pointer :: XInput 
+
     contains  
+
+    subroutine openJoyDLL()
+        !character(40)           :: ttt
+
+        hLib = LoadLibrary("xinput1_3.dll" // c_null_char)
+
+        !write(ttt, '(Z8.8)') hLib 
+        !call displayDebug(ttt)
+
+        if (hLib == 0) then
+            call displayDebug("Failed to load XInput!")
+        endif
+
+        pXInput = GetProcAddress(hLib, 'XInputGetState' // c_null_char)
+        if (pXInput == 0) then
+            call displayDebug("Failed to load function XInput!")
+            call closeJoyDLL()
+            return
+        endif
+        
+        cpXInput = transfer(pXInput, cpXInput)
+        call C_F_PROCPOINTER(cpXInput, XInput)
+
+        if (.not. associated(XInput)) then
+            call displayDebug("XInput association failed!")
+        endif
+
+    end subroutine
+
+    subroutine closeJoyDLL()
+        integer(BOOL)      :: rc
+        !character(40)           :: ttt
+
+        !nullify(XInput)
+
+        !write(ttt, '(Z8.8)') hLib 
+        !call displayDebug(ttt)
+
+        rc = FreeLibrary(hLib)
+        if (rc == 0) call displayDebug("Failed to unload XInput!")
+
+    end subroutine
 
     subroutine inputWindow()
        INTEGER                                 :: ITYPE
@@ -100,6 +220,66 @@ MODULE inputReader
         end select
 
         CALL WDialogPutString(IDF_Pressed, keyname)  
+        
+        if (joyUp) then
+            CALL WDialogPutString(IDF_JoyUp, "X")  
+        else
+            CALL WDialogPutString(IDF_JoyUp, " ")  
+        end if
+
+        if (joyDown) then
+            CALL WDialogPutString(IDF_JoyDown, "X")  
+        else
+            CALL WDialogPutString(IDF_JoyDown, " ")  
+        end if
+
+        if (joyLeft) then
+            CALL WDialogPutString(IDF_JoyLeft, "X")  
+        else
+            CALL WDialogPutString(IDF_JoyLeft, " ")  
+        end if
+
+        if (joyRight) then
+            CALL WDialogPutString(IDF_JoyRight, "X")  
+        else
+            CALL WDialogPutString(IDF_JoyRight, " ")  
+        end if
+
+        if (joyButton(1)) then
+            CALL WDialogPutString(IDF_Joy1, "X")  
+        else
+            CALL WDialogPutString(IDF_Joy1, " ")  
+        end if
+
+        if (joyButton(2)) then
+            CALL WDialogPutString(IDF_Joy2, "X")  
+        else
+            CALL WDialogPutString(IDF_Joy2, " ")  
+        end if
+
+        if (joyButton(3)) then
+            CALL WDialogPutString(IDF_Joy3, "X")  
+        else
+            CALL WDialogPutString(IDF_Joy3, " ")  
+        end if
+
+        if (joyButton(4)) then
+            CALL WDialogPutString(IDF_Joy4, "X")  
+        else
+            CALL WDialogPutString(IDF_Joy4, " ")  
+        end if
+
+        if (joyButton(5)) then
+            CALL WDialogPutString(IDF_Joy5, "X")  
+        else
+            CALL WDialogPutString(IDF_Joy5, " ")  
+        end if
+
+        if (joyButton(6)) then
+            CALL WDialogPutString(IDF_Joy6, "X")  
+        else
+            CALL WDialogPutString(IDF_Joy6, " ")  
+        end if
 
         if (canKill .EQV. .TRUE.) then 
             CALL WDialogUnLoad()
@@ -108,26 +288,65 @@ MODULE inputReader
 
     end subroutine
 
-
     subroutine readInput()
-    integer :: vk
-    integer(c_short) :: state
-    logical :: found
+        integer :: vk
+        integer(c_short) :: state
+        logical :: found
+        integer(4) :: rc
+        type(XINPUT_STATE) :: jstate
 
-    found = .false.
-    do vk = 1, 254
-        state = GetAsyncKeyState(vk)
-        if (state < 0_c_short) then
-            found = .true.
-            exit
+        found = .false.
+    
+        do vk = 1, 254
+            state = GetAsyncKeyState(vk)
+            if (state < 0_c_short) then
+                found = .true.
+                exit
+            end if
+        end do
+    
+        if (found)  then
+            lastPressedKey = vk
+        else
+            lastPressedKey = 0
         end if
-    end do
-
-    if (found)  then
-        lastPressedKey = vk
-    else
-        lastPressedKey = 0
-    end if
+    
+        rc = XInput(0, jstate)
+        
+        if (rc == 0) then
+        
+            joyUp = &
+                iand(jstate%Gamepad%wButtons, XINPUT_GAMEPAD_DPAD_UP) /= 0
+        
+            joyDown = &
+                iand(jstate%Gamepad%wButtons, XINPUT_GAMEPAD_DPAD_DOWN) /= 0
+        
+            joyLeft = &
+                iand(jstate%Gamepad%wButtons, XINPUT_GAMEPAD_DPAD_LEFT) /= 0
+        
+            joyRight = &
+                iand(jstate%Gamepad%wButtons, XINPUT_GAMEPAD_DPAD_RIGHT) /= 0
+        
+        
+            joyButton(1) = &
+                iand(jstate%Gamepad%wButtons, JOY_BUTTON_1) /= 0
+        
+            joyButton(2) = &
+                iand(jstate%Gamepad%wButtons, JOY_BUTTON_2) /= 0
+        
+            joyButton(3) = &
+                iand(jstate%Gamepad%wButtons, JOY_BUTTON_3) /= 0
+        
+            joyButton(4) = &
+                iand(jstate%Gamepad%wButtons, JOY_BUTTON_4) /= 0
+        
+            joyButton(5) = &
+                iand(jstate%Gamepad%wButtons, JOY_BUTTON_5) /= 0
+        
+            joyButton(6) = &
+                iand(jstate%Gamepad%wButtons, JOY_BUTTON_6) /= 0
+        
+        end if
 
     end subroutine
 

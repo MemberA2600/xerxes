@@ -8,7 +8,7 @@ module inpout
     implicit none
 
     PRIVATE
-    PUBLIC      :: setLPTAddress, openDLL, closeDLL, getLptMode, initChip, &
+    PUBLIC      :: setLPTAddress, openIODLL, closeIODLL, getLptMode, initChip, &
                    writeReg, lightTest, isChipPlaying         
 
     integer(2)      :: lptAddress = Z'0378'
@@ -111,7 +111,7 @@ module inpout
 
     end subroutine
 
-    subroutine openDLL()
+    subroutine openIODLL()
         integer(1)      :: rc
 
         hLib = LoadLibrary("inpout32.dll" // c_null_char)
@@ -123,7 +123,7 @@ module inpout
         pOut32 = GetProcAddress(hLib, 'Out32' // char(0))
         if (pOut32 == 0) then
             call displayDebug("Failed to load function Out32!")
-            call closeDLL
+            call closeIODLL()
             return
         endif
 
@@ -131,14 +131,14 @@ module inpout
 
         if (pInp32 == 0) then
             call displayDebug("Failed to load function Inp32!")
-            call closeDLL
+            call closeIODLL()
             return
         endif
 
         pIsOpen = GetProcAddress(hLib, 'IsInpOutDriverOpen' // char(0))
         if (pIsOpen == 0) then
             call displayDebug("Failed to load function IsOpen!")
-            call closeDLL
+            call closeIODLL()
             return
         endif
 
@@ -167,7 +167,7 @@ module inpout
 
     end subroutine
 
-    subroutine closeDLL()
+    subroutine closeIODLL()
         integer(1)      :: rc
 
         rc = FreeLibrary(hLib)
