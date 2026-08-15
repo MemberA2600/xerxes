@@ -23,11 +23,11 @@ MODULE inputReader
     logical             :: canKill
     integer(2)          :: lastPressedKey
 
-    integer, parameter :: n_special = 27
+    integer, parameter :: n_special = 30
     integer, parameter :: vk_code(n_special) = (/ &
         8, 9, 13, 16, 17, 18, 19, 20, 27, 32, &
         33, 34, 35, 36, 37, 38, 39, 40, 45, 46, &
-        144, 145, 106, 107, 109, 110, 111 /)
+        144, 145, 106, 107, 109, 110, 111, 1, 2, 4 /)
     character(len=12), parameter :: vk_name(n_special) = (/ &
         "BACKSPACE   ", "TAB         ", "ENTER       ", "SHIFT       ", &
         "CTRL        ", "ALT         ", "PAUSE       ", "CAPSLOCK    ", &
@@ -35,7 +35,8 @@ MODULE inputReader
         "END         ", "HOME        ", "LEFT ARROW  ", "UP ARROW    ", &
         "RIGHT ARROW ", "DOWN ARROW  ", "INSERT      ", "DELETE      ", &
         "NUM LOCK    ", "SCROLL LOCK ", "*"           , "+"           , &
-        "-"           , "NUM , ."     , "/"   /)
+        "-"           , "NUM , ."     , "/"           , "MOUSE LEFT"  , &
+        "MOUSE RIGHT" , "MOUSE MIDDLE"   /)
 
     ! Button masks
     integer(2), parameter :: XINPUT_GAMEPAD_DPAD_UP        = Z'0001'
@@ -82,7 +83,7 @@ MODULE inputReader
     type(T_JOYINFOEX) :: ji
 
     integer(4), parameter    :: joycenter = 32767
-    integer(4)               :: joydiff   = 8192
+    integer(4)               :: joydiff   = 15, joyDiffSaved = 15
 
     logical :: joyUp
     logical :: joyDown
@@ -176,14 +177,24 @@ MODULE inputReader
 
        CALL WDialogLoad(IDD_InputSetter)
 
+       call WDialogPutInteger( IDF_JoySenseVal, joyDiffSaved)
+       call WDialogPutTrackbar(IDF_JoySenseTrk, joyDiffSaved)
+
        do
-          CALL WDialogSelect(IDD_TIA)
+          CALL WDialogSelect(IDD_InputSetter)
           CALL WDialogShow(ITYPE=Modal)     
     
           if (WinfoDialog(CurrentDialog) == IDD_InputSetter) then 
               SELECT CASE (WinfoDialog(ExitButton))  
                   CASE(ExitField) 
                      EXIT
+                  CASE(ID_InputCancel) 
+                     EXIT
+                  CASE(ID_InputOK) 
+                     joyDiffSaved = joyDiff
+                     EXIT
+                  CASE(ID_InputRestore) 
+                     call restoreAll()
                   END SELECT
 
               end if
@@ -193,10 +204,19 @@ MODULE inputReader
 
     end subroutine
 
+    subroutine restoreAll()
+        joyDiff     = 15
+    
+        call WDialogPutInteger( IDF_JoySenseVal, joyDiff)
+        call WDialogPutTrackbar(IDF_JoySenseTrk, joyDiff)
+
+    end subroutine
+
     subroutine checkOnInputSettings()
         character(len=12) :: keyname
         integer           :: i
         logical           :: found
+        integer(4)        :: tempTrk, tempVal  
 
         select case(lastPressedKey) 
         case(0)  
@@ -286,6 +306,20 @@ MODULE inputReader
             CALL WDialogPutString(IDF_Joy6, " ")  
         end if
 
+        call WDialogGetInteger( IDF_JoySenseVal, tempVal)
+        call WDialogGetTrackbar(IDF_JoySenseTrk, tempTrk)
+
+        if (tempVal /= joyDiff) then
+            joyDiff = tempVal
+        else
+            if (tempTrk /= joyDiff) then
+                joyDiff = tempTrk
+            end if
+        end if
+
+        call WDialogPutInteger( IDF_JoySenseVal, joyDiff)
+        call WDialogPutTrackbar(IDF_JoySenseTrk, joyDiff)
+
         if (canKill .EQV. .TRUE.) then 
             CALL WDialogUnLoad()
             canKill = .FALSE.
@@ -297,7 +331,7 @@ MODULE inputReader
         integer             :: vk
         integer(c_short)    :: state
         logical             :: found
-        integer(4)          :: rc
+        integer(4)          :: rc, diff1024
         type(XINPUT_STATE)  :: jstate
         integer(1)          :: ind
 
@@ -359,15 +393,17 @@ MODULE inputReader
     
             if (rc == JOYERR_NOERROR) then
                 
+                diff1024 = JoyDiff * 1024
+
                 do ind = 1, 6, 1
                    joyButton(ind) = btest(ji%dwButtons, ind-1)
                 end do
 
-                if (ji%dwXpos < (joyCenter - JoyDiff)) then     
+                if (ji%dwXpos < (joyCenter - diff1024)) then     
                     joyLeft  = .TRUE.
                     joyRight = .FALSE.
                 else
-                    if (ji%dwXpos > (joyCenter + JoyDiff)) then     
+                    if (ji%dwXpos > (joyCenter + diff1024)) then     
                         joyLeft  = .FALSE.
                         joyRight = .TRUE.
                     else
@@ -376,11 +412,11 @@ MODULE inputReader
                     end if 
                 end if 
                        
-                if (ji%dwYpos < (joyCenter - JoyDiff)) then     
+                if (ji%dwYpos < (joyCenter - diff1024)) then     
                     joyUp   = .TRUE.
                     joyDown = .FALSE.
                 else
-                    if (ji%dwYpos > (joyCenter + JoyDiff)) then     
+                    if (ji%dwYpos > (joyCenter + diff1024)) then     
                         joyUp   = .FALSE.
                         joyDown = .TRUE.
                     else
@@ -391,7 +427,6 @@ MODULE inputReader
             end if
 
         end if
-
 
     end subroutine
 
