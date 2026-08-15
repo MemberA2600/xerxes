@@ -1,5 +1,4 @@
 "D:\winteracter\projects\xerxes\xerxes.obj"
-"D:\winteracter\projects\xerxes\inputreader.obj"
 "D:\winteracter\projects\xerxes\inpout.obj"
 "D:\winteracter\projects\xerxes\threadmaster.obj"
 "D:\winteracter\projects\xerxes\gzip.obj"
@@ -18,6 +17,7 @@
 "D:\winteracter\projects\xerxes\tia.obj"
 "D:\winteracter\projects\xerxes\adlib.obj"
 "D:\winteracter\projects\xerxes\vgm.obj"
+"D:\winteracter\projects\xerxes\inputreader.obj"
 -out:"xerxes.exe"
 -subsystem:windows
 -machine:x86

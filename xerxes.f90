@@ -92,6 +92,8 @@
 !
       call resetSoundSettings()  
       call sendTheValues()  
+      call restoreKeyButtons()
+
 !
 !   Start threads
 !

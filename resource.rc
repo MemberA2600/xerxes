@@ -8,7 +8,7 @@
 //
 // Winteracter resource script
 //
-// Modified : 15/aug./2026 09:50:49
+// Modified : 15/aug./2026 14:44:14
 //
 ///////////////////////////////////////////////////
 //
@@ -17,11 +17,11 @@
 //*WN* NMENU       1
 //*WN* NITEM       23
 //*WN* NDIALOG     6
-//*WN* NFIELD      57
+//*WN* NFIELD      89
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
-//*WN* NIDENTIFIER 96
+//*WN* NIDENTIFIER 128
 //*WN* NINCLUDE    0
 //*WN* NOPTROW     0
 ///////////////////////////////////////////////////
@@ -34,92 +34,124 @@
 //
 // Parameter Definitions
 //
-#define IDM_MAIN          30001
-#define ID_SCREENSIZE     40001
-#define IDF_DEBUGTXT       1001
-#define IDD_DEBUGMSG        102
-#define ID_DEBUGOK         1002
-#define ID_AUTO           40002
-#define ID_320x240        40003
-#define ID_640x480        40004
-#define ID_800x600        40005
-#define ID_1024x768       40006
-#define ID_1152x864       40007
-#define ID_1280x960       40008
-#define ID_1400x1050      40009
-#define ID_1600x1200      40010
-#define ID_2048x1536      40011
-#define ID_SPEED          40012
-#define ID_SPEED1         40013
-#define ID_SPEED2         40014
-#define ID_SPEED3         40015
-#define ID_SPEED4         40016
-#define ID_SPEED5         40017
-#define ID_DEV            40018
-#define ID_TIA_Noiser     40019
-#define IDD_GENBEEP         101
-#define ID_GENBEEP_GEN     1003
-#define ID_GENBEEP_SAVE    1004
-#define ID_GENBEEP_PLAY    1005
-#define ID_TIAINPUT        1006
-#define IDD_TIA             104
-#define ID_TIAName         1007
-#define ID_TIAErase        1011
-#define ID_TIASave         1012
-#define ID_TIAPlay         1013
-#define ID_TIALoad         1014
-#define IDF_STRING4        1016
-#define ID_VGMLoad         1008
-#define IDD_VGM2XXA         105
-#define ID_XXASave         1009
-#define ID_XXAPlay         1010
-#define ID_XXAName         1015
-#define ID_VGM2XXA        40020
-#define ID_XXAStop         1017
-#define ID_SoundInput     40021
-#define ID_SoundSettings  40022
-#define ID_InputSettings  40023
-#define IDF_SoundTrack     1018
-#define IDD_SoundSettings   106
-#define IDF_LABELSfxVol    1019
-#define IDF_SoundValue     1020
-#define IDF_MusicValue     1021
-#define IDF_MusicTrack     1022
-#define IDF_LABELMusicVol  1023
-#define IDF_MusicRadio1    1024
-#define IDF_MusicRadio2    1025
-#define IDF_HEX            1026
-#define IDF_LPTPort        1027
-#define ID_SoundOK         1028
-#define ID_SoundCancel     1029
-#define ID_SoundReset      1030
-#define ID_SoundTest       1031
-#define ID_MusicTest       1032
-#define ID_MusicTest2      1033
-#define ID_MusicStop       1034
-#define ID_MusicStop2      1035
-#define IDF_InputTester    1036
-#define IDD_InputSetter     107
-#define IDF_LabelButton    1037
-#define IDF_Pressed        1038
-#define IDF_LabelDirs      1039
-#define IDF_JoyUp          1040
-#define IDF_JoyDown        1041
-#define IDF_JoyLeft        1042
-#define IDF_JoyRight       1043
-#define IDF_LabelJoyButt   1044
-#define IDF_Joy1           1045
-#define IDF_Joy2           1046
-#define IDF_Joy3           1047
-#define IDF_Joy4           1048
-#define IDF_Joy5           1049
-#define IDF_Joy6           1050
-#define IDF_JoySenseTrk    1051
-#define IDF_JoySenseVal    1052
-#define IDF_Analog         1053
-#define ID_InputCancel     1054
-#define ID_InputOK         1055
-#define ID_InputRestore    1056
+#define IDM_MAIN              30001
+#define ID_SCREENSIZE         40001
+#define IDF_DEBUGTXT           1001
+#define IDD_DEBUGMSG            102
+#define ID_DEBUGOK             1002
+#define ID_AUTO               40002
+#define ID_320x240            40003
+#define ID_640x480            40004
+#define ID_800x600            40005
+#define ID_1024x768           40006
+#define ID_1152x864           40007
+#define ID_1280x960           40008
+#define ID_1400x1050          40009
+#define ID_1600x1200          40010
+#define ID_2048x1536          40011
+#define ID_SPEED              40012
+#define ID_SPEED1             40013
+#define ID_SPEED2             40014
+#define ID_SPEED3             40015
+#define ID_SPEED4             40016
+#define ID_SPEED5             40017
+#define ID_DEV                40018
+#define ID_TIA_Noiser         40019
+#define IDD_GENBEEP             101
+#define ID_GENBEEP_GEN         1003
+#define ID_GENBEEP_SAVE        1004
+#define ID_GENBEEP_PLAY        1005
+#define ID_TIAINPUT            1006
+#define IDD_TIA                 104
+#define ID_TIAName             1007
+#define ID_TIAErase            1011
+#define ID_TIASave             1012
+#define ID_TIAPlay             1013
+#define ID_TIALoad             1014
+#define IDF_STRING4            1016
+#define ID_VGMLoad             1008
+#define IDD_VGM2XXA             105
+#define ID_XXASave             1009
+#define ID_XXAPlay             1010
+#define ID_XXAName             1015
+#define ID_VGM2XXA            40020
+#define ID_XXAStop             1017
+#define ID_SoundInput         40021
+#define ID_SoundSettings      40022
+#define ID_InputSettings      40023
+#define IDF_SoundTrack         1018
+#define IDD_SoundSettings       106
+#define IDF_LABELSfxVol        1019
+#define IDF_SoundValue         1020
+#define IDF_MusicValue         1021
+#define IDF_MusicTrack         1022
+#define IDF_LABELMusicVol      1023
+#define IDF_MusicRadio1        1024
+#define IDF_MusicRadio2        1025
+#define IDF_HEX                1026
+#define IDF_LPTPort            1027
+#define ID_SoundOK             1028
+#define ID_SoundCancel         1029
+#define ID_SoundReset          1030
+#define ID_SoundTest           1031
+#define ID_MusicTest           1032
+#define ID_MusicTest2          1033
+#define ID_MusicStop           1034
+#define ID_MusicStop2          1035
+#define IDF_InputTester        1036
+#define IDD_InputSetter         107
+#define IDF_LabelButton        1037
+#define IDF_Pressed            1038
+#define IDF_LabelDirs          1039
+#define IDF_JoyUp              1040
+#define IDF_JoyDown            1041
+#define IDF_JoyLeft            1042
+#define IDF_JoyRight           1043
+#define IDF_LabelJoyButt       1044
+#define IDF_Joy1               1045
+#define IDF_Joy2               1046
+#define IDF_Joy3               1047
+#define IDF_Joy4               1048
+#define IDF_Joy5               1049
+#define IDF_Joy6               1050
+#define IDF_JoySenseTrk        1051
+#define IDF_JoySenseVal        1052
+#define IDF_Analog             1053
+#define ID_InputCancel         1054
+#define ID_InputOK             1055
+#define ID_InputRestore        1056
+#define IDF_KeyboardGroup      1057
+#define IDF_JoystickGroup      1058
+#define IDF_LabelButtonName    1059
+#define IDF_LabelButtonName2   1060
+#define IDF_LabelButtonName3   1061
+#define IDF_LabelButtonName4   1062
+#define IDF_LabelButtonName5   1063
+#define IDF_LabelButtonName6   1064
+#define IDF_LabelButtonName7   1065
+#define IDF_LabelButtonName8   1066
+#define IDF_LabelButtonName9   1067
+#define IDF_LabelButtonName10  1068
+#define ID_AssignLeftKey       1069
+#define ID_AssignRightKey      1070
+#define ID_AssignUpKey         1071
+#define ID_AssignDownKey       1072
+#define ID_AssignAttackKey     1073
+#define ID_AssignChargeKey     1074
+#define ID_AssignSpell1Key     1075
+#define ID_AssignSpell2Key     1076
+#define ID_AssignSpell3Key     1077
+#define ID_AssignMenuKey       1078
+#define ID_AssignLeftJoy       1079
+#define ID_AssignRightJoy      1080
+#define ID_AssignUpJoy         1081
+#define ID_AssignDownJoy       1082
+#define ID_AssignAttackJoy     1083
+#define ID_AssignChargeJoy     1084
+#define ID_AssignSpell1Joy     1085
+#define ID_AssignSpell2Joy     1086
+#define ID_AssignSpell3Joy     1087
+#define ID_AssignMenuJoy       1088
 
 ///////////////////////////////////////////////////
 //
@@ -228,7 +260,7 @@ BEGIN
 ,0
 END
 
-IDD_InputSetter DIALOG 0,0,270,191
+IDD_InputSetter DIALOG 0,0,270,362
 STYLE WS_POPUP | WS_BORDER | WS_DLGFRAME | WS_SYSMENU | DS_3DLOOK | DS_MODALFRAME
 FONT 8, "MS Shell Dlg"
 CAPTION "Keyboard & Controller Settings"
@@ -251,9 +283,41 @@ BEGIN
   CONTROL "8",IDF_JoySenseTrk,"MSCTLS_TRACKBAR32",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | TBS_AUTOTICKS,14,93,190,20
   CONTROL "8",IDF_JoySenseVal,"INTEGERSPIN",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,212,94,40,14
   CONTROL "Analog Stick Sensitivity",IDF_Analog,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,17,78,86,12
-  CONTROL "OK",ID_InputOK,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,69,172,40,14
-  CONTROL "Cancel",ID_InputCancel,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,115,172,40,14
-  CONTROL "Restore",ID_InputRestore,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,160,172,40,14
+  CONTROL "OK",ID_InputOK,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,100,340,40,14
+  CONTROL "Cancel",ID_InputCancel,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,148,340,40,14
+  CONTROL "Restore",ID_InputRestore,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,195,340,40,14
+  CONTROL "Keyboard",IDF_KeyboardGroup,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | BS_GROUPBOX | BS_TEXT | BS_LEFT,92,118,72,215
+  CONTROL "Joystick",IDF_JoystickGroup,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | BS_GROUPBOX | BS_TEXT | BS_LEFT,172,118,72,215
+  CONTROL "Move Left",IDF_LabelButtonName,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,18,138,62,8
+  CONTROL "Move Right",IDF_LabelButtonName2,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,18,158,62,8
+  CONTROL "Move Up",IDF_LabelButtonName3,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,18,178,62,8
+  CONTROL "Move Down",IDF_LabelButtonName4,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,18,198,62,8
+  CONTROL "Attack",IDF_LabelButtonName5,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,18,218,62,8
+  CONTROL "Charge",IDF_LabelButtonName6,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,18,238,62,8
+  CONTROL "Spell - 1",IDF_LabelButtonName7,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,18,258,62,8
+  CONTROL "Spell - 2",IDF_LabelButtonName8,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,18,278,62,8
+  CONTROL "Spell - 3",IDF_LabelButtonName9,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,18,298,62,8
+  CONTROL "Menu",IDF_LabelButtonName10,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,18,318,62,8
+  CONTROL "",ID_AssignLeftKey,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,98,135,60,15
+  CONTROL "",ID_AssignRightKey,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,98,155,60,15
+  CONTROL "",ID_AssignUpKey,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,98,175,60,15
+  CONTROL "",ID_AssignDownKey,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,98,195,60,15
+  CONTROL "",ID_AssignAttackKey,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,98,215,60,15
+  CONTROL "",ID_AssignChargeKey,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,98,235,60,15
+  CONTROL "",ID_AssignSpell1Key,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,98,255,60,15
+  CONTROL "",ID_AssignSpell2Key,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,98,275,60,15
+  CONTROL "",ID_AssignSpell3Key,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,98,295,60,15
+  CONTROL "",ID_AssignMenuKey,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,98,315,60,15
+  CONTROL "",ID_AssignLeftJoy,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,178,135,60,15
+  CONTROL "",ID_AssignRightJoy,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,178,155,60,15
+  CONTROL "",ID_AssignUpJoy,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,178,175,60,15
+  CONTROL "",ID_AssignDownJoy,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,178,195,60,15
+  CONTROL "",ID_AssignAttackJoy,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,178,215,60,15
+  CONTROL "",ID_AssignChargeJoy,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,178,235,60,15
+  CONTROL "",ID_AssignSpell1Joy,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,178,255,60,15
+  CONTROL "",ID_AssignSpell2Joy,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,178,275,60,15
+  CONTROL "",ID_AssignSpell3Joy,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,178,295,60,15
+  CONTROL "",ID_AssignMenuJoy,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER,178,315,60,15
 END
 
 IDD_InputSetter RCDATA
@@ -335,5 +399,5 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FORTSAVE    1
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
-//*WI* LASTTYPE    2
-//*WI* LASTRES     6
+//*WI* LASTTYPE    100
+//*WI* LASTRES     0

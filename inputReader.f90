@@ -18,7 +18,8 @@ MODULE inputReader
     implicit none
 
     private
-    public              :: inputWindow, checkOnInputSettings, readInput, openJoyDLL, closeJoyDLL
+    public              :: inputWindow, checkOnInputSettings, readInput, openJoyDLL, closeJoyDLL, &
+                           restoreKeyButtons 
 
     logical             :: canKill
     integer(2)          :: lastPressedKey
@@ -64,6 +65,19 @@ MODULE inputReader
     integer(2), parameter :: JOY_BUTTON_4   = XINPUT_GAMEPAD_Y
     integer(2), parameter :: JOY_BUTTON_5   = XINPUT_GAMEPAD_LEFT_SHOULDER
     integer(2), parameter :: JOY_BUTTON_6   = XINPUT_GAMEPAD_RIGHT_SHOULDER
+
+    integer(2), dimension(10), parameter    :: IND_KEY_LEFT           = 1 , &  
+                                               IND_KEY_RIGHT          = 2 , &  
+                                               IND_KEY_UP             = 3 , &  
+                                               IND_KEY_DOWN           = 4 , &  
+                                               IND_KEY_ATTACK         = 5 , &  
+                                               IND_KEY_CHARGE         = 6 , &  
+                                               IND_KEY_SPELL1         = 7 , &  
+                                               IND_KEY_SPELL2         = 8 , &
+                                               IND_KEY_SPELL3         = 9 , &
+                                               IND_KEY_MENU           = 10
+
+    integer(2), dimension(10) :: buttons
 
     type, bind(C) :: XINPUT_GAMEPAD
         integer(c_int16_t) :: wButtons
@@ -172,7 +186,6 @@ MODULE inputReader
        integer                                 :: c 
 
        canKill = .FALSE. 
-
        do
          if (WInfoDialog(CurrentDialog) == 0) exit
          call sleep(1)
@@ -182,6 +195,7 @@ MODULE inputReader
 
        call WDialogPutInteger( IDF_JoySenseVal, joyDiffSaved)
        call WDialogPutTrackbar(IDF_JoySenseTrk, joyDiffSaved)
+       call addTextToKeyButtons() 
 
        do
           CALL WDialogSelect(IDD_InputSetter)
@@ -198,6 +212,12 @@ MODULE inputReader
                      EXIT
                   CASE(ID_InputRestore) 
                      call restoreAll()
+                !
+                ! They must be in a continous range or must be  
+                ! set one by one! :(
+                !
+                  CASE(ID_AssignLeftKey:ID_AssignMenuKey)
+                     call assignKey(WinfoDialog(ExitButton))   
                   END SELECT
 
               end if
@@ -207,35 +227,96 @@ MODULE inputReader
 
     end subroutine
 
+    subroutine assignKey(buttonID)
+        integer(4)             :: buttonID
+        integer(4)             :: buttonArrayID 
+
+        buttonArrayID          = buttonID - ID_AssignLeftKey + 1
+        call WindowOutStatusBar(1, "Press a Button!")       
+
+        DO
+            call WinSleep(10)
+            if (lastPressedKey /= 0) then
+                buttons(buttonArrayID) = lastPressedKey
+                exit
+            end if
+        END DO
+
+        CALL WDialogPutString(buttonID, getKeyName(buttons(buttonArrayID)))  
+        call WindowOutStatusBar(1, "")       
+
+    end subroutine
+
     subroutine restoreAll()
         joyDiff     = 15
     
         call WDialogPutInteger( IDF_JoySenseVal, joyDiff)
         call WDialogPutTrackbar(IDF_JoySenseTrk, joyDiff)
 
+        call restoreKeyButtons()
+        call addTextToKeyButtons()
+
     end subroutine
 
-    subroutine checkOnInputSettings()
-        character(len=12) :: keyname
-        integer           :: i
-        logical           :: found
-        integer(4)        :: tempTrk, tempVal  
+    subroutine restoreKeyButtons()
 
-        select case(lastPressedKey) 
+        buttons(1)  = getValueOfName("LEFT ARROW")
+        buttons(2)  = getValueOfName("RIGHT ARROW")
+        buttons(3)  = getValueOfName("UP ARROW")
+        buttons(4)  = getValueOfName("DOWN ARROW")
+        buttons(5)  = Z'58'                          ! X
+        buttons(6)  = getValueOfName("SHIFT")
+        buttons(7)  = Z'61'                          ! NUM 1
+        buttons(8)  = Z'62'                          ! NUM 2
+        buttons(9)  = Z'63'                          ! NUM 3
+        buttons(10) = getValueOfName("ENTER")        ! ENTER
+
+    end subroutine
+
+    subroutine addTextToKeyButtons()
+        integer(2)               :: ind
+
+        do ind = 0, size(buttons) - 1, 1
+            CALL WDialogPutString(ind + ID_AssignLeftKey, getKeyName(buttons(ind + 1)))  
+        end do
+
+    end subroutine
+
+    function getValueOfName(n) result(v)
+        character(*)             :: n
+        integer(2)               :: ind, v
+
+        v = 0
+        do ind = 1, n_special, 1
+           if (vk_name(ind) == n) then 
+               v = vk_code(ind)
+               return
+           end if  
+        end do
+
+    end function
+
+    function getKeyName(val) result(keyname)
+        character(len=12) :: keyname
+        logical           :: found
+        integer           :: i
+        integer(2)        :: val
+
+        select case(val) 
         case(0)  
             keyname = "" 
         case(48:57) 
-            write(keyname, "(I0)") lastPressedKey - 48  
+            write(keyname, "(I0)") val - 48  
         case(65:90) 
-            keyname = char(lastPressedKey)
+            keyname = char(val)
         case(96:105) 
-            write(keyname, "('NUM ', I0)") lastPressedKey - 96
+            write(keyname, "('NUM ', I0)") val - 96
         case(112:123) 
-            write(keyname, "('F', I0)") lastPressedKey - 111
+            write(keyname, "('F', I0)") val - 111
         case default   
             found = .FALSE.
             do i = 1, n_special
-                if (lastPressedKey == vk_code(i)) then
+                if (val == vk_code(i)) then
                     keyname = trim(vk_name(i))
                     found = .TRUE.
                     exit
@@ -243,11 +324,16 @@ MODULE inputReader
             end do
 
             if (found .EQV. .FALSE.) then
-                write(keyname, '(A, " (", I0, ")")') char(lastPressedKey), lastPressedKey 
+                write(keyname, '(A, " (", I0, ")")') char(val), val 
             end if
         end select
 
-        CALL WDialogPutString(IDF_Pressed, keyname)  
+    end function
+
+    subroutine checkOnInputSettings()
+        integer(4)        :: tempTrk, tempVal  
+
+        CALL WDialogPutString(IDF_Pressed, getKeyName(lastPressedKey))  
         
         if (joyUp) then
             CALL WDialogPutString(IDF_JoyUp, "X")  
