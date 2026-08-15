@@ -102,14 +102,11 @@
       call addThread("checkDialogs"    , checkDialogsT    )   
       call addThread("readInput"       , readInputT       )   
 
-      do beepF = 400, 1000, 200  
-         intDummy = Beep(beepF, 110)
-      end do
+      call playTIAbyName("StartUp", 0)  
 
 !
 !    Put tests here!  
 !
-      !call playTIAbyName("Fireball", 0)  
       !call openVGM()  
       !call displayDebug(trim(CWD()) // "!!")  
 
