@@ -112,35 +112,60 @@ module inpout
     end subroutine
 
     subroutine openIODLL()
-         integer(1)      :: rc
+        integer(1)      :: rc
+        logical         :: firstOne
 
+        firstOne        = .TRUE.
+    
         hLib = LoadLibrary("inpout32.dll" // c_null_char)
 
-        if (hLib == 0) then
-            call displayDebug("Failed to load Inpout32!")
+444     if (hLib == 0) then
+            call displayDebug("Failed to load InpOut32!")
         endif
 
-        pOut32 = GetProcAddress(hLib, 'Out32' // char(0))
-        if (pOut32 == 0) then
-            call displayDebug("Failed to load function Out32!")
-            call closeIODLL()
-            return
-        endif
-
-        pInp32 = GetProcAddress(hLib, 'Inp32' // char(0))
-
-        if (pInp32 == 0) then
-            call displayDebug("Failed to load function Inp32!")
-            call closeIODLL()
-            return
-        endif
-
-        pIsOpen = GetProcAddress(hLib, 'IsInpOutDriverOpen' // char(0))
-        if (pIsOpen == 0) then
-            call displayDebug("Failed to load function IsOpen!")
-            call closeIODLL()
-            return
-        endif
+        if (firstOne .EQV. .TRUE.) then
+            pOut32 = GetProcAddress(hLib, 'Out32' // char(0))
+            if (pOut32 == 0) then
+                call displayDebug("Failed to load function Out32!")
+                call closeIODLL()
+                return
+            endif
+    
+            pInp32 = GetProcAddress(hLib, 'Inp32' // char(0))
+            if (pInp32 == 0) then
+                call displayDebug("Failed to load function Inp32!")
+                call closeIODLL()
+                return
+            endif
+    
+            pIsOpen = GetProcAddress(hLib, 'IsInpOutDriverOpen' // char(0))
+            if (pIsOpen == 0) then
+                call displayDebug("Failed to load function IsOpen!")
+                call closeIODLL()
+                return
+            endif
+        else 
+            pOut32 = GetProcAddress(hLib, '?Inp32@@YAFF@Z' // char(0))
+            if (pOut32 == 0) then
+                call displayDebug("Failed to load function Out32!")
+                call closeIODLL()
+                return
+            endif
+    
+            pInp32 = GetProcAddress(hLib, '?Out32@@YAXFF@Z' // char(0))
+            if (pInp32 == 0) then
+                call displayDebug("Failed to load function Inp32!")
+                call closeIODLL()
+                return
+            endif
+    
+            pIsOpen = GetProcAddress(hLib, '?IsInpOutDriverOpen@@YAHXZ' // char(0))
+            if (pIsOpen == 0) then
+                call displayDebug("Failed to load function IsOpen!")
+                call closeIODLL()
+                return
+            endif        
+        end if
 
         cpOut32 = transfer(pOut32, cpOut32)
         cpInp32 = transfer(pInp32, cpInp32)
@@ -160,8 +185,21 @@ module inpout
 
         if (.not. associated(IsInpOutDriverOpen)) then
             call displayDebug("IsInpOutDriverOpen association failed!")
-        endif 
+        endif
 
+        rc = IsInpOutDriverOpen()
+        if (rc == 0) then 
+            if (firstOne .EQV. .TRUE.) then
+                call closeIODLL()
+                firstOne = .FALSE.
+                hLib = LoadLibrary("inpoutx64.dll" // c_null_char)
+            
+                goto 444
+            else
+                 call displayDebug("InpOut32 Driver not opened!")
+                 return
+            end if
+        end if
     end subroutine
 
     subroutine closeIODLL()

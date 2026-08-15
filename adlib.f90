@@ -314,9 +314,9 @@ MODULE adlib
 
     subroutine pauseAdlib(s)
          logical    :: s   
-         
+
+         call pauseThread("playMusic", s)        
          call pauseThread("playAdlib", s)
-         call pauseThread("playMusic", s)
 
          if (s .EQV. .TRUE.) then
              do while (isThreadPaused("playAdlib") .EQV. .FALSE.)

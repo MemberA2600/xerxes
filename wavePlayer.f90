@@ -166,20 +166,24 @@ MODULE wavePlayer
     end subroutine
 
     subroutine stopMusic()
-        if (getLptMode() .EQV. .FALSE.) then
-            call pauseWavePlayer(.TRUE.)
-            call music%stopPlaying()
-            if (musicstate() /= 0) call playMusicEnd()
-    
-            musicChunkWaiting = .FALSE.
-            musicLastChunk    = .FALSE.
-           !musicInd          = 0
-            musicFirstChunk   = .FALSE.
-            bufferFed         = .FALSE.
-        else
-            call initChip(.TRUE.)
-        end if
+        if (isMusicPlaying() .EQV. .TRUE.)  then
+            if (getLptMode() .EQV. .FALSE.) then
+                call pauseWavePlayer(.TRUE.)
+                call music%stopPlaying()
+                
+                call sleep(1)
 
+                if (musicstate() /= 0) call playMusicEnd()
+    
+                musicChunkWaiting = .FALSE.
+                musicLastChunk    = .FALSE.
+               !musicInd          = 0
+                musicFirstChunk   = .FALSE.
+                bufferFed         = .FALSE.
+            else
+                call initChip(.TRUE.)
+            end if
+        end if
     end subroutine
 
     subroutine testSine()
@@ -639,8 +643,8 @@ MODULE wavePlayer
     subroutine pauseWavePlayer(s)
          logical    :: s   
          
-         call pauseThread("playAdlib", s)
          call pauseThread("playMusic", s)
+         call pauseThread("playAdlib", s)
 
          if (s .EQV. .TRUE.) then
              do while (isThreadPaused("playMusic") .EQV. .FALSE.)

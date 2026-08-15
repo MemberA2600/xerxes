@@ -202,7 +202,10 @@ MODULE TIA
 
     subroutine playRandomTIA(chan)
         integer(2)                            :: chan
-
+        !character(40)                         :: tt
+        
+        !write(tt, "(I0, ' | ', I0)") size(tiaList), randInt(1, size(tiaList))
+        !call displayDebug(tt)     
         call tiaList(randInt(1, size(tiaList)))%playTiaSFX(chan) 
 
     end subroutine

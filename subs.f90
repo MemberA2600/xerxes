@@ -237,7 +237,7 @@ MODULE subs
           integer(8)          :: xx  
 
           call random_number(x)
-          xx = x * 368974687435677964 
+          xx = x * getTime() 
           r  = mod(abs(xx), high - low + 1) + low  
 
      end function

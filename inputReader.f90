@@ -130,13 +130,16 @@ MODULE inputReader
         !call displayDebug(ttt)
 
         if (hLib == 0) then
-            call displayDebug("Failed to load XInput!")
+            hLib = LoadLibrary("XInput1_4.dll" // c_null_char)
+            if (hLib == 0) then
+                call displayDebug("Failed to load XInput!")
+            end if
         endif
 
         pXInput = GetProcAddress(hLib, 'XInputGetState' // c_null_char)
         if (pXInput == 0) then
             call displayDebug("Failed to load function XInput!")
-            call closeJoyDLL()
+            !call closeJoyDLL()
             return
         endif
         

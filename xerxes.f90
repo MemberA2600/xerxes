@@ -103,7 +103,6 @@
       call addThread("readInput"       , readInputT       )   
 
       call playTIAbyName("StartUp", 0)  
-
 !
 !    Put tests here!  
 !
