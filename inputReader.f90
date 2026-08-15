@@ -79,6 +79,11 @@ MODULE inputReader
         type(XINPUT_GAMEPAD) :: Gamepad
     end type XINPUT_STATE
 
+    type(T_JOYINFOEX) :: ji
+
+    integer(4), parameter    :: joycenter = 32767
+    integer(4)               :: joydiff   = 8192
+
     logical :: joyUp
     logical :: joyDown
     logical :: joyLeft
@@ -289,11 +294,12 @@ MODULE inputReader
     end subroutine
 
     subroutine readInput()
-        integer :: vk
-        integer(c_short) :: state
-        logical :: found
-        integer(4) :: rc
-        type(XINPUT_STATE) :: jstate
+        integer             :: vk
+        integer(c_short)    :: state
+        logical             :: found
+        integer(4)          :: rc
+        type(XINPUT_STATE)  :: jstate
+        integer(1)          :: ind
 
         found = .false.
     
@@ -344,9 +350,48 @@ MODULE inputReader
                 iand(jstate%Gamepad%wButtons, JOY_BUTTON_5) /= 0
         
             joyButton(6) = &
-                iand(jstate%Gamepad%wButtons, JOY_BUTTON_6) /= 0
-        
+                iand(jstate%Gamepad%wButtons, JOY_BUTTON_6) /= 0 
+        else
+            ji%dwSize  = sizeof(ji)
+            ji%dwFlags = JOY_RETURNALL
+    
+            rc = joyGetPosEx(JOYSTICKID1, ji)
+    
+            if (rc == JOYERR_NOERROR) then
+                
+                do ind = 1, 6, 1
+                   joyButton(ind) = btest(ji%dwButtons, ind-1)
+                end do
+
+                if (ji%dwXpos < (joyCenter - JoyDiff)) then     
+                    joyLeft  = .TRUE.
+                    joyRight = .FALSE.
+                else
+                    if (ji%dwXpos > (joyCenter + JoyDiff)) then     
+                        joyLeft  = .FALSE.
+                        joyRight = .TRUE.
+                    else
+                        joyLeft  = .FALSE.
+                        joyRight = .FALSE.    
+                    end if 
+                end if 
+                       
+                if (ji%dwYpos < (joyCenter - JoyDiff)) then     
+                    joyUp   = .TRUE.
+                    joyDown = .FALSE.
+                else
+                    if (ji%dwYpos > (joyCenter + JoyDiff)) then     
+                        joyUp   = .FALSE.
+                        joyDown = .TRUE.
+                    else
+                        joyUp   = .FALSE.
+                        joyDown = .FALSE.    
+                    end if 
+                end if 
+            end if
+
         end if
+
 
     end subroutine
 
