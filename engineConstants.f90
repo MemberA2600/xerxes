@@ -27,4 +27,26 @@ MODULE engineConstants
     character(4), parameter       :: OPL2_FILE_TYPE = 'OPL2'
     character(4), parameter       :: TIA_FILE_TYPE = 'TIA '
 
+    integer(1), parameter         :: IND_KEY_LEFT           = 1 , &  
+                                     IND_KEY_RIGHT          = 2 , &  
+                                     IND_KEY_UP             = 3 , &  
+                                     IND_KEY_DOWN           = 4 , &  
+                                     IND_KEY_ATTACK         = 5 , &  
+                                     IND_KEY_CHARGE         = 6 , &  
+                                     IND_KEY_SPELL1         = 7 , &  
+                                     IND_KEY_SPELL2         = 8 , &
+                                     IND_KEY_SPELL3         = 9 , &
+                                     IND_KEY_MENU           = 10, &
+                                                                            
+                                     IND_JOY_LEFT           = 1 , &  
+                                     IND_JOY_RIGHT          = 2 , &  
+                                     IND_JOY_UP             = 3 , &  
+                                     IND_JOY_DOWN           = 4 , &  
+                                     IND_JOY_BUTTON1        = 5 , &  
+                                     IND_JOY_BUTTON2        = 6 , &  
+                                     IND_JOY_BUTTON3        = 7 , &  
+                                     IND_JOY_BUTTON4        = 8 , &
+                                     IND_JOY_BUTTON5        = 9 , &
+                                     IND_JOY_BUTTON6        = 10  
+
 END MODULE engineConstants

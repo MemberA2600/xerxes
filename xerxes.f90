@@ -93,6 +93,7 @@
       call resetSoundSettings()  
       call sendTheValues()  
       call restoreKeyButtons()
+      call restoreJoyButtons()
 
 !
 !   Start threads

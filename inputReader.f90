@@ -19,9 +19,9 @@ MODULE inputReader
 
     private
     public              :: inputWindow, checkOnInputSettings, readInput, openJoyDLL, closeJoyDLL, &
-                           restoreKeyButtons 
+                           restoreKeyButtons, restoreJoyButtons 
 
-    logical             :: canKill
+    logical             :: canKill, justACancel
     integer(2)          :: lastPressedKey
 
     integer, parameter :: n_special = 30
@@ -66,18 +66,8 @@ MODULE inputReader
     integer(2), parameter :: JOY_BUTTON_5   = XINPUT_GAMEPAD_LEFT_SHOULDER
     integer(2), parameter :: JOY_BUTTON_6   = XINPUT_GAMEPAD_RIGHT_SHOULDER
 
-    integer(2), dimension(10), parameter    :: IND_KEY_LEFT           = 1 , &  
-                                               IND_KEY_RIGHT          = 2 , &  
-                                               IND_KEY_UP             = 3 , &  
-                                               IND_KEY_DOWN           = 4 , &  
-                                               IND_KEY_ATTACK         = 5 , &  
-                                               IND_KEY_CHARGE         = 6 , &  
-                                               IND_KEY_SPELL1         = 7 , &  
-                                               IND_KEY_SPELL2         = 8 , &
-                                               IND_KEY_SPELL3         = 9 , &
-                                               IND_KEY_MENU           = 10
-
-    integer(2), dimension(10) :: buttons
+    integer(2), dimension(20) :: buttons
+    integer(2), dimension(20) :: buttonsOld
 
     type, bind(C) :: XINPUT_GAMEPAD
         integer(c_int16_t) :: wButtons
@@ -193,19 +183,25 @@ MODULE inputReader
 
        CALL WDialogLoad(IDD_InputSetter)
 
+       buttonsOld  = buttons 
+       justACancel = .FALSE. 
+
        call WDialogPutInteger( IDF_JoySenseVal, joyDiffSaved)
        call WDialogPutTrackbar(IDF_JoySenseTrk, joyDiffSaved)
        call addTextToKeyButtons() 
+       call addTextToJoyButtons() 
 
-       do
+321    do
           CALL WDialogSelect(IDD_InputSetter)
           CALL WDialogShow(ITYPE=Modal)     
     
           if (WinfoDialog(CurrentDialog) == IDD_InputSetter) then 
               SELECT CASE (WinfoDialog(ExitButton))  
                   CASE(ExitField) 
+                     buttons = buttonsOld 
                      EXIT
-                  CASE(ID_InputCancel) 
+                  CASE(ID_InputCancel)
+                     buttons = buttonsOld 
                      EXIT
                   CASE(ID_InputOK) 
                      joyDiffSaved = joyDiff
@@ -218,10 +214,14 @@ MODULE inputReader
                 !
                   CASE(ID_AssignLeftKey:ID_AssignMenuKey)
                      call assignKey(WinfoDialog(ExitButton))   
+                  CASE(ID_AssignLeftJoy:ID_AssignMenuJoy)
+                     call assignJoy(WinfoDialog(ExitButton))  
                   END SELECT
 
               end if
        end do 
+
+       if (justACancel .EQV. .TRUE.) goto 321  
 
        canKill = .TRUE. 
 
@@ -229,23 +229,110 @@ MODULE inputReader
 
     subroutine assignKey(buttonID)
         integer(4)             :: buttonID
-        integer(4)             :: buttonArrayID 
+        integer(4)             :: buttonArrayID, ind 
+        logical                :: pressed
 
         buttonArrayID          = buttonID - ID_AssignLeftKey + 1
-        call WindowOutStatusBar(1, "Press a Button!")       
+        call WindowOutStatusBar(1, "Press a Button (or ESC to Cancel)!")       
+
+        pressed = .FALSE.
 
         DO
             call WinSleep(10)
             if (lastPressedKey /= 0) then
-                buttons(buttonArrayID) = lastPressedKey
+                If (getKeyName(lastPressedKey) /= "ESC") then 
+                    do ind = 1, 10, 1
+                       if (buttons(ind) == lastPressedKey) then 
+                           buttons(ind) = buttons(buttonArrayID)
+                           CALL WDialogPutString(ind + ID_AssignLeftKey - 1, getKeyName(buttons(ind)))  
+                           exit 
+                       end if 
+                    end do 
+
+                    buttons(buttonArrayID) = lastPressedKey
+                    pressed = .TRUE.
+                else 
+                    justACancel = .TRUE.
+                end if
+
                 exit
             end if
         END DO
 
-        CALL WDialogPutString(buttonID, getKeyName(buttons(buttonArrayID)))  
+        if (pressed .EQV. .TRUE.) CALL WDialogPutString(buttonID, getKeyName(buttons(buttonArrayID)))  
         call WindowOutStatusBar(1, "")       
 
     end subroutine
+
+    subroutine assignJoy(buttonID)
+        integer(4)             :: buttonID
+        integer(4)             :: buttonArrayID, ind  
+        logical                :: pressed
+        integer(1)             :: dominantJoy
+        !character(40)          :: tt
+
+        buttonArrayID          = buttonID - ID_AssignLeftKey + 1
+        call WindowOutStatusBar(1, "Use the Joystick (or ESC to Cancel)!")       
+        pressed = .FALSE.
+
+        !write(tt, "(I0)") buttonArrayID
+        !call displayDebug(tt)
+
+        DO
+            call WinSleep(10)
+            if (lastPressedKey /= 0) then
+                If (getKeyName(lastPressedKey) == "ESC") then 
+                    justACancel = .TRUE.
+                    exit
+                end if 
+            end if
+
+            dominantJoy = getDominantJoy()
+
+            if (dominantJoy /= 0) then
+                do ind = 10, 20, 1
+                    if (buttons(ind) == dominantJoy) then 
+                        buttons(ind) = buttons(buttonArrayID)
+                        CALL WDialogPutString(ind + ID_AssignLeftKey - 1, getJoyName(buttons(ind)))  
+                        exit 
+                    end if 
+                end do 
+
+                pressed = .TRUE.
+                buttons(buttonArrayID) = dominantJoy 
+                exit
+            end if
+
+        END DO
+
+        if (pressed .EQV. .TRUE.) CALL WDialogPutString(buttonID, getJoyName(buttons(buttonArrayID)))  
+        call WindowOutStatusBar(1, "")       
+
+    end subroutine
+
+    function getDominantJoy() result(joyVal)
+        integer(1)          :: joyVal, ind
+
+        joyVal = 0
+
+
+        do ind = 1, size(joyButton), 1
+        
+           if (joyButton(ind) .EQV. .TRUE.) then
+               joyVal = ind + IND_JOY_BUTTON1 - 1 
+               exit 
+           end if 
+        end do 
+
+        if (joyVal == 0) then
+            if (joyUp)    joyVal = IND_JOY_UP
+            if (joyDown)  joyVal = IND_JOY_DOWN
+            if (joyLeft)  joyVal = IND_JOY_LEFT
+            if (joyRight) joyVal = IND_JOY_RIGHT
+        end if
+
+    end function
+
 
     subroutine restoreAll()
         joyDiff     = 15
@@ -254,7 +341,10 @@ MODULE inputReader
         call WDialogPutTrackbar(IDF_JoySenseTrk, joyDiff)
 
         call restoreKeyButtons()
+        call restoreJoyButtons()
+
         call addTextToKeyButtons()
+        call addTextToJoyButtons()
 
     end subroutine
 
@@ -273,11 +363,65 @@ MODULE inputReader
 
     end subroutine
 
+    subroutine restoreJoyButtons()
+
+        buttons(11)  = getValueOfJoyName("LEFT")
+        buttons(12)  = getValueOfJoyName("RIGHT")
+        buttons(13)  = getValueOfJoyName("UP")
+        buttons(14)  = getValueOfJoyName("DOWN")
+        buttons(15)  = getValueOfJoyName("BUTTON1")                         
+        buttons(16)  = getValueOfJoyName("BUTTON2")
+        buttons(17)  = getValueOfJoyName("BUTTON3")
+        buttons(18)  = getValueOfJoyName("BUTTON4")
+        buttons(19)  = getValueOfJoyName("BUTTON5")
+        buttons(20)  = getValueOfJoyName("BUTTON6")
+    end subroutine
+
+    function getValueOfJoyName(n) result(v)
+        character(*)            :: n
+        integer(1)              :: v        
+
+        select case(n)
+        case("LEFT")
+            v = IND_JOY_LEFT
+        case("RIGHT")
+            v = IND_JOY_RIGHT
+        case("UP")
+            v = IND_JOY_UP
+        case("DOWN")
+            v = IND_JOY_DOWN
+        case("BUTTON1")
+            v = IND_JOY_BUTTON1                         
+        case("BUTTON2")
+            v = IND_JOY_BUTTON2
+        case("BUTTON3")
+            v = IND_JOY_BUTTON3
+        case("BUTTON4")
+            v = IND_JOY_BUTTON4
+        case("BUTTON5")
+            v = IND_JOY_BUTTON5
+        case("BUTTON6")
+            v = IND_JOY_BUTTON6
+        case default
+            v = 0
+        end select
+
+    end function
+
     subroutine addTextToKeyButtons()
         integer(2)               :: ind
 
-        do ind = 0, size(buttons) - 1, 1
+        do ind = 0, 9, 1
             CALL WDialogPutString(ind + ID_AssignLeftKey, getKeyName(buttons(ind + 1)))  
+        end do
+
+    end subroutine
+
+    subroutine addTextToJoyButtons()
+        integer(2)               :: ind
+
+        do ind = 10, 19, 1
+            CALL WDialogPutString(ind + ID_AssignLeftKey, getJoyName(buttons(ind + 1)))  
         end do
 
     end subroutine
@@ -326,6 +470,37 @@ MODULE inputReader
             if (found .EQV. .FALSE.) then
                 write(keyname, '(A, " (", I0, ")")') char(val), val 
             end if
+        end select
+
+    end function
+
+    function getJoyName(val) result(joyname)
+        integer(2)        :: val
+        character(len=12) :: joyName
+
+        select case(val)
+        case(IND_JOY_LEFT)
+            joyName = "LEFT"
+        case(IND_JOY_RIGHT)
+            joyName = "RIGHT"
+        case(IND_JOY_UP)
+            joyName = "UP"
+        case(IND_JOY_DOWN)
+            joyName = "DOWN"
+        case(IND_JOY_BUTTON1)
+            joyName = "BUTTON1"                         
+        case(IND_JOY_BUTTON2)
+            joyName = "BUTTON2"
+        case(IND_JOY_BUTTON3)
+            joyName = "BUTTON3"
+        case(IND_JOY_BUTTON4)
+            joyName = "BUTTON4"
+        case(IND_JOY_BUTTON5)
+            joyName = "BUTTON5"
+        case(IND_JOY_BUTTON6)
+            joyName = "BUTTON6"
+        case default
+            joyName = ""
         end select
 
     end function
