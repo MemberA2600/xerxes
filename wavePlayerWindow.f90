@@ -74,6 +74,8 @@ MODULE wavePlayerWindow
 
         ind = ind + 5
 
+        if (IsInpOutDriverOpen() .EQV. .FALSE.) OPL2LPT = .FALSE.
+
     end subroutine
 
     subroutine resetSoundSettings()
@@ -208,6 +210,8 @@ MODULE wavePlayerWindow
 
        CALL MoveValuesToDialog()  
        CALL enableDisableFields() 
+       if (IsInpOutDriverOpen() .EQV. .FALSE.) call WDialogFieldState(IDF_MusicRadio2, DISABLED)     
+
 
        do
           CALL WDialogSelect(IDD_SoundSettings)
@@ -325,7 +329,12 @@ MODULE wavePlayerWindow
         end if
 
         call WDialogFieldState(IDF_MusicRadio1,    state ) 
-        call WDialogFieldState(IDF_MusicRadio2,    state )
+
+        if (IsInpOutDriverOpen() .EQV. .TRUE.) then
+            call WDialogFieldState(IDF_MusicRadio2,    state )
+        else
+            call WDialogFieldState(IDF_MusicRadio2, DISABLED)     
+        end if
 
         if (state == ENABLED) then
             call enableDisableFields()

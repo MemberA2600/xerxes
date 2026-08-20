@@ -9,7 +9,7 @@ module inpout
 
     PRIVATE
     PUBLIC      :: setLPTAddress, openIODLL, closeIODLL, getLptMode, initChip, &
-                   writeReg, lightTest, isChipPlaying         
+                   writeReg, lightTest, isChipPlaying, IsInpOutDriverOpen         
 
     integer(2)      :: lptAddress = Z'0378'
     logical         :: OPL2LPT, chipPlay = .FALSE.

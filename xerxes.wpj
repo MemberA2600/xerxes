@@ -8,6 +8,7 @@ ESAME 1
 EXE   xerxes.exe
 MAXF  1000
 FILE    3 xerxes.f90
+FILE    7 config.f90
 FILE    7 inpout.f90
 FILE    7 threadmaster.f90
 FILE    7 gzip.f90
