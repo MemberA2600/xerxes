@@ -68,7 +68,7 @@ MODULE wavePlayerWindow
         sfxVolume   = bytes(ind)
         musicVolume = bytes(ind + 1)
 
-        OPL2LPT = (bytes(ind + 2) /= 0)
+        OPL2LPT = (bytes(ind + 2) == 1)
 
         LPTAddress =  (bytes(ind + 3) * 256) +  bytes(ind + 4)
 
