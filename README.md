@@ -15,3 +15,4 @@
 <p style="text-align:justified" ><img src="pics/Settings02.png" alt="Controller Settings"></p>
 <p style="text-align:justified" >The game can be controlled thru the keyboard and joysticks, even old analog joystics or XBox360 style controllers. The menu let's you test the buttons and the controllers as well (4 directions and 6 buttons). The sensitivity of analog joysticks can be set as well.</p>
 <h3><i>Tests</i></h3>
+<p style="text-align:justified" >The game is developed on Windows 7 with Winteracter 17 and Intel Fortran 15. After changing the exe header manually, I can run the game on XP (emulated), but seemed really slow in threading, I will do it on a real HW soon. My Win 2003 server died on the Kernel32 interfaces, so it's not compatible. I also run the game on Windows 11, the only thing that refused to compete is the inpout32.dll, so using OPL2LPT on this machine is not possible.</p>
