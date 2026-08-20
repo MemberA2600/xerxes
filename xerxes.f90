@@ -28,6 +28,7 @@
       USE wavePlayerWindow  
       USE inpout  
       USE inputReader
+      USE config  
 
       IMPLICIT NONE
 !
@@ -123,6 +124,10 @@
        !end if  
 
 !
+!   Load the config!
+!
+     call loadConfig()
+!
 !   Main message loop
 !
       DO                                 ! Loop until user terminates
@@ -152,8 +157,10 @@
                     call autoSizeScreen()  
               CASE (ID_320x240:ID_2048x1536)  
                     call setScreenSize(MESSAGE%VALUE1) 
+                    call saveConfig()
               CASE (ID_SPEED1:ID_SPEED5)  
                     call setSpeed(MESSAGE%VALUE1 - ID_SPEED) 
+                    call saveConfig()                
               CASE (ID_TIA_Noiser)              
                     call tiaMaker()
                     call dropTIAList() 
@@ -163,9 +170,11 @@
                     call dropAdlibList()     
                     call getFolder("adlib", "xxa")
               CASE (ID_SoundSettings)              
-                    call soundSettings() 
+                    call soundSettings()
+                    call saveConfig() 
               CASE (ID_InputSettings)
                     call inputWindow()  
+                    call saveConfig()
             END SELECT 
 
           CASE (CloseRequest)            ! Close window (e.g. Alt/F4)

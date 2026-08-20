@@ -19,7 +19,8 @@ MODULE wavePlayerWindow
     implicit none
 
     PRIVATE
-    PUBLIC :: soundSettings, resetSoundSettings, checkForSoundSettingUpdates, sendTheValues 
+    PUBLIC :: soundSettings, resetSoundSettings, checkForSoundSettingUpdates, &
+              sendTheValues, getSoundSettings, setSoundSettings  
 
     integer(2)                              :: sfxVolume   , musicVolume   , LPTAddress   , &
                                                sfxVolumeOld, musicVolumeOld, LPTAddressOld      
@@ -37,6 +38,43 @@ MODULE wavePlayerWindow
     TYPE(SoundSettingsBuffer)              :: oldSettings, newSettings
 
     CONTAINS
+
+    subroutine getSoundSettings(bytes, ind)
+        integer(2), dimension(:), allocatable  :: bytes
+        integer(2)                             :: ind
+
+        bytes(ind)     = int(sfxVolume  , 1)
+        bytes(ind + 1) = int(musicVolume, 1)
+
+        if (OPL2LPT .EQV. .TRUE.) then
+            bytes(ind + 2) = 1
+        else    
+            bytes(ind + 2) = 0
+        end if
+
+        bytes(ind + 3) = int(iand(LPTAddress, Z'FF00') / 256, 1)
+        bytes(ind + 4) = int(iand(LPTAddress, Z'00FF')      , 1)
+
+        ind = ind + 5
+
+
+    end subroutine
+
+    subroutine setSoundSettings(bytes, ind, version)
+        integer(2), dimension(:), allocatable  :: bytes
+        integer(8)                             :: ind
+        integer(1)                             :: version
+
+        sfxVolume   = bytes(ind)
+        musicVolume = bytes(ind + 1)
+
+        OPL2LPT = (bytes(ind + 2) /= 0)
+
+        LPTAddress =  (bytes(ind + 3) * 256) +  bytes(ind + 4)
+
+        ind = ind + 5
+
+    end subroutine
 
     subroutine resetSoundSettings()
             sfxVolume    = 100

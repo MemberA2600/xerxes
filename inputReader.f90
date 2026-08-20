@@ -19,7 +19,8 @@ MODULE inputReader
 
     private
     public              :: inputWindow, checkOnInputSettings, readInput, openJoyDLL, closeJoyDLL, &
-                           restoreKeyButtons, restoreJoyButtons 
+                           restoreKeyButtons, restoreJoyButtons, getControllerSettings, &
+                           setControllerSettings
 
     logical             :: canKill, justACancel
     integer(2)          :: lastPressedKey
@@ -124,6 +125,35 @@ MODULE inputReader
     procedure(XInputGetState_int), pointer :: XInput 
 
     contains  
+
+    subroutine getControllerSettings(bytes, ind)
+        integer(2), dimension(:), allocatable  :: bytes
+        integer(2)                             :: ind, ind2
+ 
+        bytes(ind)      = int(joyDiffSaved, 1) 
+        
+        do ind2 = 1, size(buttons), 1
+           bytes(ind + ind2) = int(buttons(ind2), 1) 
+        end do
+
+        ind = ind + 22
+
+    end subroutine
+
+    subroutine setControllerSettings(bytes, ind, version)
+        integer(2), dimension(:), allocatable  :: bytes
+        integer(2)                             :: ind, ind2
+        integer(1)                             :: version 
+
+        joyDiffSaved    = bytes(ind) 
+      
+        do ind2 = 1, size(buttons), 1
+           buttons(ind2) = bytes(ind + ind2) 
+        end do
+
+        ind = ind + 22
+
+    end subroutine
 
     subroutine openJoyDLL()
         !character(40)           :: ttt

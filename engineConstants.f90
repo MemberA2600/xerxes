@@ -24,8 +24,9 @@ MODULE engineConstants
 
     real(8), parameter            :: pi = 3.141592653589793238462643383279502884197
     integer(4), parameter         :: chunkSize = 32767
-    character(4), parameter       :: OPL2_FILE_TYPE = 'OPL2'
-    character(4), parameter       :: TIA_FILE_TYPE = 'TIA '
+    character(4), parameter       :: OPL2_FILE_TYPE   = 'OPL2', &
+                                     TIA_FILE_TYPE    = 'TIA ', &
+                                     CONF_FILE_TYPE   = 'CONF'
 
     integer(1), parameter         :: IND_KEY_LEFT           = 1 , &  
                                      IND_KEY_RIGHT          = 2 , &  
@@ -48,5 +49,8 @@ MODULE engineConstants
                                      IND_JOY_BUTTON4        = 8 , &
                                      IND_JOY_BUTTON5        = 9 , &
                                      IND_JOY_BUTTON6        = 10  
+
+    integer(1), parameter            :: configVersion       = 0
+    character(8), parameter          :: configName          = "conf.xxc"    
 
 END MODULE engineConstants

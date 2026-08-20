@@ -17,10 +17,10 @@ MODULE subs
                            getWindowDim, setScreenSize, timer, speed, setSpeed, &
                            randInt, getTime, FileDialog, countCharInString, &
                            getNextPoz, dFile, f2bitsTo1Bit, getNullTermString, &
-                           CWD, setCWD
+                           CWD, setCWD, getScreenSizeId, getSpeed
 
       CHARACTER(20)     :: msgString
-      INTEGER(KIND = 1) :: speed, timer
+      INTEGER(KIND = 1) :: speed, timer, screenSize
       CHARACTER(MAX_PATH_LEN) :: CWDReal  
 
       CONTAINS  
@@ -118,6 +118,13 @@ MODULE subs
 
       END SUBROUTINE setSpeed
 
+      function getSpeed() result(r)
+           integer(1)           :: r 
+
+           r = speed 
+
+      end function    
+
       FUNCTION getScreenSize() result(scr)
           INTEGER(KIND=2), DIMENSION(2) :: scr
           INTEGER(KIND=1)               :: currMon
@@ -129,32 +136,44 @@ MODULE subs
       END FUNCTION  
 
       SUBROUTINE autoSizeScreen()
-          INTEGER(KIND=2), DIMENSION(2) :: scr
-          INTEGER(KIND=1)               :: num, lastOK 
+          call setScreenSize(getLastOK() + ID_AUTO)
+      END SUBROUTINE 
 
-      ! write(msgString, '(I0, "|", I0)') standards(1,1), standards(1,2)       
-      ! call displayDebug(msgString)   
+      FUNCTION getLastOK() result(lastOK)
+          INTEGER(KIND=1)               :: num, lastOK 
+          INTEGER(KIND=2), DIMENSION(2) :: scr
 
           scr    = getScreenSize()  
+
+          lastOK = 0
 
           do num = 1, maxNumberOfScreenSizes, 1
              if (standards(num, 1) >= scr(1) .OR. standards(num, 2) >= scr(2)) exit
              lastOK = num
           end do   
 
-          !call WindowSizePos(width  = standards(lastOK, 1), &
-          !                   height = standards(lastOK, 2))  
- 
-          
-          !write(msgString, '(I0)') lastOK + screenSizeStarter
-          !call displayDebug(msgString)  
-          call setScreenSize(lastOK + ID_AUTO)
+      end function  
 
+      function getScreenSizeId() result(r)
+          integer(1)                     :: r  
 
-      END SUBROUTINE 
+          r = screenSize - ID_AUTO  
+
+      end function   
 
       SUBROUTINE setScreenSize(id)
-          integer          :: id     
+          integer                       :: id     
+          INTEGER(KIND=1)               :: lastOK 
+          !character(40)                 :: ttt
+
+          lastOK = getLastOK()  
+            
+          !write(ttt, "(I0)") lastOK  
+          !call displayDebug(ttt)  
+
+          if (id > lastOK + ID_AUTO) id = lastOK + ID_AUTO
+
+          screenSize = id  
 
           call WindowSizePos(width  = standards(id - ID_AUTO, 1), &
                              height = standards(id - ID_AUTO, 2))  
@@ -186,10 +205,7 @@ MODULE subs
           do num = 1, maxNumberOfScreenSizes, 1
              call WMenuSetState(num + ID_AUTO, iprop=ItemEnabled, ivalue=0)
 
-             ! write(msgString, '(I0, "|", I0, "|", I0, "|", I0)') standards(num,1), standards(num,2), scr(1), scr(2)       
-             ! call displayDebug(msgString)   
-
-             if (standards(num, 1) > scr(1) .OR. standards(num, 2) > scr(2)) cycle
+             if (standards(num, 1) >= scr(1) .OR. standards(num, 2) >= scr(2)) cycle
  
              call WMenuSetState(num + ID_AUTO, iprop=ItemEnabled, ivalue=1)
 
