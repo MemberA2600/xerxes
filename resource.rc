@@ -8,7 +8,7 @@
 //
 // Winteracter resource script
 //
-// Modified : 15/aug./2026 14:44:14
+// Modified : 22/aug./2026 20:50:51
 //
 ///////////////////////////////////////////////////
 //
@@ -336,7 +336,7 @@ END
 //
 IDM_MAIN MENU
 BEGIN
-  POPUP "Resolution"
+  POPUP "Resolution",GRAYED
   BEGIN
     MENUITEM "Auto",ID_AUTO
     MENUITEM "320x240",ID_320x240
@@ -349,7 +349,7 @@ BEGIN
     MENUITEM "1600x1200",ID_1600x1200
     MENUITEM "2048x1536",ID_2048x1536
   END
-  POPUP "Screen Refresh"
+  POPUP "Screen Refresh",GRAYED
   BEGIN
     MENUITEM "Lightning",ID_SPEED1
     MENUITEM "Rocket",ID_SPEED2
@@ -357,12 +357,12 @@ BEGIN
     MENUITEM "Hare",ID_SPEED4
     MENUITEM "Snail",ID_SPEED5
   END
-  POPUP "Sound / Input"
+  POPUP "Sound / Input",GRAYED
   BEGIN
     MENUITEM "SFX / Music",ID_SoundSettings
     MENUITEM "Keyboard / Controller",ID_InputSettings
   END
-  POPUP "Development"
+  POPUP "Development",GRAYED
   BEGIN
     MENUITEM "TIA Noise Maker",ID_TIA_Noiser
     MENUITEM "VGM to XXA",ID_VGM2XXA
@@ -399,5 +399,5 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FORTSAVE    1
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
-//*WI* LASTTYPE    100
-//*WI* LASTRES     0
+//*WI* LASTTYPE    1
+//*WI* LASTRES     1

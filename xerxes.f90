@@ -37,7 +37,7 @@
       INTEGER                        :: ITYPE
       TYPE(WIN_MESSAGE)              :: MESSAGE
       INTEGER(KIND=2), DIMENSION (2) :: scr
-      LOGICAL                        :: editMode
+      LOGICAL                        :: editMode, firstTime = .TRUE.
       CHARACTER(20)                  :: msgString
       INTEGER                        :: intDummy, beepF, stat
         
@@ -53,7 +53,6 @@
       if (editMode .EQV. .FALSE.) call WMenuSetState(ID_DEV, ItemEnabled, 0)  
 
       CALL setCWD()  
-
       CALL WInitialise()
       CALL IGrColourModel(24,ColModelDef)
       CALL WBitmapAlloc(1)
@@ -65,6 +64,7 @@
                       TITLE ='Xerxes',                                   &
                       ncol256=128 )
 
+      CALL getCPUInfo()  
       CALL generateColors() 
       scr  = getScreenSize()
       call autoSizeScreen()  
@@ -81,8 +81,8 @@
       call WindowClear(RGB=RGB_BLACK)
 
       call random_seed() 
-      if (editMode .EQV. .FALSE.) call WMenuSetState(ID_DEV, ItemEnabled, 0)  
 
+      call openAllOuts()    
       call initWavChannels()
       call loadFolders() 
 
@@ -100,13 +100,10 @@
 !   Start threads
 !
       call initThreadList()
-      call addThread("soundChannelLoop", soundChannelLoopT)   
       call addThread("playAdlib"       , playAdlibT       )   
-      call addThread("playMusic"       , playMusicT       )   
-      call addThread("checkDialogs"    , checkDialogsT    )   
-      call addThread("readInput"       , readInputT       )   
+      call addThread("playMusic"       , playMusicT       )    
+      call addThread("allOthers"       , allOthersT)   
 
-      call playTIAbyName("StartUp", 0)  
 !
 !    Put tests here!  
 !
@@ -127,10 +124,20 @@
 !   Load the config!
 !
      call loadConfig()
+     call playTIAbyName("StartUp", 0)  
+
 !
 !   Main message loop
 !
       DO                                 ! Loop until user terminates
+        if (firstTime) then
+           if (allOpened()) then 
+               if (editMode .EQV. .TRUE.) call WMenuSetState(ID_DEV, ItemEnabled, 1)  
+               call WMenuSetState(ID_SCREENSIZE, ItemEnabled, 1)  
+               call WMenuSetState(ID_SPEED     , ItemEnabled, 1)  
+               call WMenuSetState(ID_SoundInput, ItemEnabled, 1)  
+           end if
+        END IF  
 
         CALL WMessagePeek(ITYPE,MESSAGE)   
 
@@ -194,6 +201,7 @@
       call closeIODLL()  
       !call closeJoyDLL()  
       call closeAllThreads()
+      call closeAllOuts()  
 
       STOP
 
@@ -203,22 +211,6 @@
            call getFolder("tia"  , "xxt")
            call getFolder("adlib", "xxa")
       end subroutine  
-
-      function soundChannelLoopT(lpParameter) result(rc)
-          use IFWIN
-
-          integer(LPVOID), value   :: lpParameter
-          integer                  :: rc
-          character(40), parameter :: name = "soundChannelLoop" 
-
-          !DEC$ ATTRIBUTES STDCALL :: soundChannelLoopT
-
-           do while (isThreadRunning(name) .EQV. .TRUE.)
-              call threadThings(name)  
-           end do
-
-           rc = 0
-        end function
 
       function playAdlibT(lpParameter) result(rc)
           use IFWIN
@@ -252,30 +244,14 @@
            rc = 0
         end function
 
-      function readInputT(lpParameter) result(rc)
+      function allOthersT(lpParameter) result(rc)
           use IFWIN
 
           integer(LPVOID), value   :: lpParameter
           integer                  :: rc
-          character(40), parameter :: name = "readInput" 
+          character(40), parameter :: name = "allOthers" 
 
-          !DEC$ ATTRIBUTES STDCALL :: playMusicT
-
-           do while (isThreadRunning(name) .EQV. .TRUE.)
-              call threadThings(name)  
-           end do
-
-           rc = 0
-        end function
-
-      function checkDialogsT(lpParameter) result(rc)
-          use IFWIN
-
-          integer(LPVOID), value   :: lpParameter
-          integer                  :: rc
-          character(40), parameter :: name = "checkDialogs" 
-
-          !DEC$ ATTRIBUTES STDCALL :: checkDialogsT
+          !DEC$ ATTRIBUTES STDCALL :: allOthersT
 
            do while (isThreadRunning(name) .EQV. .TRUE.)
               call threadThings(name)  
@@ -285,6 +261,8 @@
         end function
 
         subroutine threadThings(name)
+          use KERNEL32, only: WinSleep => Sleep
+
           character(*)              :: name 
 
           if (getThreadCommand(name) == PAUSE_COMMAND) then
@@ -292,8 +270,7 @@
           end if
 
           do while(isThreadPaused(name) .EQV. .TRUE.)
-             call sleep(1)
-             ! if (killThreadAllActive) call displayDebug(trim(name) // " | FUCK !!!!")
+             call WinSleep(100)
 
              if (getThreadCommand(name) == UNPAUSE_COMMAND) then
                  call pauseThread(name, .FALSE.)
@@ -304,15 +281,13 @@
           if (getThreadCommand(name) /= FORCE_EXIT .AND. &
               getThreadCommand(name) /= PAUSE_COMMAND) then   
               select case(name)
-              case("soundChannelLoop")
-                    call soundChannelLoop()
               case("playAdlib")  
                     call playAdlib()
               case("playMusic")  
                     call playMusic()
-              case("checkDialogs")  
+              case("allOthers")  
+                    call soundChannelLoop()
                     call dialogChecker()
-              case("readInput")  
                     call readInput()
               end select  
            end if

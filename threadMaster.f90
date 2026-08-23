@@ -8,7 +8,8 @@ MODULE threadMaster
     PRIVATE
     PUBLIC     :: initThreadList, addThread, killThread, isThreadRunning, closeAllThreads, &
                   isThreadPaused, getThreadCommand, pauseThread, NO_COMMAND, &
-                  PAUSE_COMMAND, UNPAUSE_COMMAND, FORCE_EXIT, killThreadAllActive  
+                  PAUSE_COMMAND, UNPAUSE_COMMAND, FORCE_EXIT, killThreadAllActive, &
+                  getCPUInfo
 
     TYPE Thread   
          character(20)          :: name
@@ -29,6 +30,7 @@ MODULE threadMaster
     integer(2), parameter                    :: initSize = 20, &
                                                  addSize = 10
     logical                                  :: killThreadAllActive = .FALSE. 
+    integer                                  :: numThreads, numOfProcs
 
     abstract interface
         integer(DWORD) function ThreadEntry(lpParameter)
@@ -40,7 +42,30 @@ MODULE threadMaster
     end interface
 
     contains
-    
+   
+    subroutine getCPUInfo()       
+        type(T_SYSTEM_INFO) :: sysInfo
+        !character(50)       :: ttt
+        integer(DWORD_PTR)  :: procMask 
+        integer(1)          :: ind
+
+        call GetSystemInfo(sysInfo)
+        
+        numThreads = sysInfo%dwNumberOfProcessors
+        procMask   = sysInfo%dwActiveProcessorMask
+
+        numOfProcs = 0
+
+        do ind = 1, 32, 1
+           if (bTest(procMask, 1)) numOfProcs = numOfProcs + 1    
+
+        end do
+
+        !write(ttt, "(I0, ' | ', I0)") numThreads, numOfProcs 
+        !call displayDebug(ttt)
+        
+    end subroutine
+ 
     subroutine closeAllThreads() 
         integer(2)          :: ind
         character(40)       :: t

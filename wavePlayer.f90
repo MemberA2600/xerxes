@@ -19,7 +19,8 @@ MODULE wavePlayer
 
     PRIVATE
     PUBLIC :: initWavChannels, stopChannel, TIA2Wav, soundChannelLoop, loadWaveFile, &
-              stopMusic, playMusicInit, wavFeedBuffer, playMusic, anySFXPlaying, isMusicPlaying
+              stopMusic, playMusicInit, wavFeedBuffer, playMusic, anySFXPlaying, isMusicPlaying, &
+              openAllOuts, closeAllOuts, allOpened  
 
     integer, parameter                      :: RATE = 44100
     integer, parameter                      :: NUMBER_OF_EFFECTS = 4
@@ -42,7 +43,7 @@ MODULE wavePlayer
         type(T_WAVEHDR)      :: hdr 
         integer(HANDLE)      :: hEvent
         integer(HANDLE)      :: hWave
-        logical              :: playing, headerSet, toneWaiting
+        logical              :: playing, headerSet, toneWaiting, waveOpened
         type(CounterTimer)   :: timer
         
         contains 
@@ -55,6 +56,8 @@ MODULE wavePlayer
         procedure   :: addWave       => addWave       
         procedure   :: destroyHeader => destroyHeader
         procedure   :: playWavPrep   => playWavPrep
+        procedure   :: openOut       => openOut 
+        procedure   :: closeOut      => closeOut    
     END TYPE
 
     Type(WaveChannel)                               :: Music
@@ -73,6 +76,54 @@ MODULE wavePlayer
     !
     !  Main Player Stuff
     ! 
+
+    function allOpened() result(r)
+        logical            :: r
+        integer(1)         :: ind
+
+        r = .TRUE.
+
+        do ind = 1, NUMBER_OF_EFFECTS, 1   
+            if (effects(ind)%waveOpened .EQV. .FALSE.) then
+                r = .FALSE.
+                return
+            end if
+        end do  
+
+        if (music%waveOpened .EQV. .FALSE.) r = .FALSE. 
+
+    end function
+
+    subroutine openAllOuts()
+        integer(1)         :: ind
+
+        do ind = 1, NUMBER_OF_EFFECTS, 1   
+           call effects(ind)%openOut(.FALSE.)  
+        end do  
+        call music%openOut(.TRUE.) 
+
+    end subroutine
+
+    subroutine closeAllOuts()
+        integer(1)         :: ind, rc
+
+        do ind = 1, NUMBER_OF_EFFECTS, 1   
+           call effects(ind)%closeOut() 
+        end do  
+
+        rc = waveOutUnprepareHeader( &
+             music%hWave, music%hdr, sizeof(music%hdr))
+       
+        if (rc /= MMSYSERR_NOERROR) call displayDebug("Failed to unprepare music header!")  
+
+        rc = CloseHandle(music%hEvent)
+        if (rc /= 1) call displayDebug("Failed to close event!") 
+
+        call music%closeOut() 
+
+    end subroutine
+
+
 
     function isMusicPlaying() result(r)
         logical         :: r
@@ -170,16 +221,15 @@ MODULE wavePlayer
             if (getLptMode() .EQV. .FALSE.) then
                 call pauseWavePlayer(.TRUE.)
                 call music%stopPlaying()
-                
-                call sleep(1)
-
-                if (musicstate() /= 0) call playMusicEnd()
-    
+                    
                 musicChunkWaiting = .FALSE.
                 musicLastChunk    = .FALSE.
                !musicInd          = 0
                 musicFirstChunk   = .FALSE.
                 bufferFed         = .FALSE.
+                music%L           = 0
+
+                !if (musicstate() /= 0) call playMusicEnd()
             else
                 call initChip(.TRUE.)
             end if
@@ -361,6 +411,7 @@ MODULE wavePlayer
 
         call pauseWavePlayer(.TRUE.)
         call music%initChannel(0) 
+        !call music%openOut(.TRUE.)
 
         manualMode = m
         bufferFed  = .FALSE.
@@ -377,14 +428,13 @@ MODULE wavePlayer
         if (manualMode .EQV. .FALSE.) music%buffer(1:music%L) = d(1:music%L)
 
         if (rc /= 0 ) call displaydebug("Failed to allocate music buffer!")
-        call music%playWavPrep(.TRUE.)
+        call music%playWavPrep()
 
         if (manualMode .EQV. .FALSE.) music%hdr%lpData = loc(music%buffer)
 
-        rc = waveOutPrepareHeader( &
-        music%hWave, music%hdr, sizeof(music%hdr))
+        !call displayDebug("Prep#1")
 
-        if (rc /= MMSYSERR_NOERROR) call displayDebug("Failed to prepare wave header!")   
+        call prepWavHeader(music)
 
         rc = ResetEvent(music%hEvent)
         if (rc /= 1) call displayDebug("ResetEvent failed!")  
@@ -407,39 +457,50 @@ MODULE wavePlayer
 
     end subroutine
 
-    subroutine playMusicEnd()
+    subroutine prepWavHeader(this)
+        type(WaveChannel), intent(inout)      :: this 
         integer(4)                            :: rc
+        character(40)                         :: t
 
-        rc = waveOutUnprepareHeader( &
-             music%hWave, music%hdr, sizeof(music%hdr))
-       
-        if (rc /= MMSYSERR_NOERROR) call displayDebug("Failed to unprepare header!")   
+        rc = waveOutPrepareHeader( &
+        this%hWave, this%hdr, sizeof(this%hdr))
 
-        rc = waveOutClose(music%hWave)
+        write(t, "(I0)") rc
 
-        if (rc /= MMSYSERR_NOERROR) call displayDebug("Failed to close wave out!")   
-
-        rc = CloseHandle(music%hEvent)
-        if (rc /= 1) call displayDebug("Failed to close event!")   
-
-        deallocate(buff, stat = rc) 
-        if (rc /= 0 ) call displaydebug("Failed to deallocate BUFF!")
-
-        music%hEvent = 0
-        music%L      = 0
-
-        if (allocated(music%buffer)) then
-            deallocate(music%buffer, stat = rc) 
-            if (rc /= 0 ) call displaydebug("Failed to deallocate music buffer!")
+        if (rc /= MMSYSERR_NOERROR) then
+            call displayDebug("Failed to prepare wave header! " // trim(t))    
         end if
 
-        musicChunkWaiting = .FALSE.
-        musicLastChunk    = .FALSE.
-        !musicInd          = 0 
-        musicFirstChunk   = .FALSE.
-        bufferFed         = .FALSE.  
-
     end subroutine
+
+!    subroutine playMusicEnd()
+!        integer(4)                            :: rc
+
+        !call displayDebug("UnPrep#1")
+!        rc = waveOutUnprepareHeader( &
+!             music%hWave, music%hdr, sizeof(music%hdr))
+       
+!        if (rc /= MMSYSERR_NOERROR) call displayDebug("Failed to unprepare header!")   
+
+        !rc = waveOutClose(music%hWave)
+
+        !if (rc /= MMSYSERR_NOERROR) call displayDebug("Failed to close wave out!")   
+
+        !rc = CloseHandle(music%hEvent)
+        !if (rc /= 1) call displayDebug("Failed to close event!")   
+
+        !music%hEvent = 0
+        !musicInd          = 0 
+
+!        deallocate(buff, stat = rc) 
+!        if (rc /= 0 ) call displaydebug("Failed to deallocate BUFF!")
+
+!        if (allocated(music%buffer)) then
+!            deallocate(music%buffer, stat = rc) 
+!            if (rc /= 0 ) call displaydebug("Failed to deallocate music buffer!")
+!        end if 
+
+!    end subroutine
 
     subroutine TIA2Wav(d, cNum)
         integer(2), dimension(:), allocatable :: d            
@@ -494,25 +555,36 @@ MODULE wavePlayer
         class(WaveChannel), intent(inout) :: this             
         integer(2)                        :: rc
         character(25)                     :: test
-
+        
         do 
            if (this%playing .EQV. .FALSE. .AND. this%canPlayNext("2") .EQV. .TRUE. &
-              .AND. iand(this%hdr%dwFlags, WHDR_DONE) == 1      &
-              .AND. iand(music%hdr%dwFlags, WHDR_INQUEUE) == 0  &
+              .AND. iand(this%hdr%dwFlags, WHDR_DONE)    == 1  &
+              .AND. iand(this%hdr%dwFlags, WHDR_INQUEUE) == 0  &
            ) exit  
         end do
 
+        !call displayDebug("UnPrep#2")
         rc = waveOutUnprepareHeader( &
                 this%hWave, this%hdr, sizeof(this%hdr))
+
+        write(test, "(I0)") rc
     
-        if (rc /= MMSYSERR_NOERROR) call displayDebug("Failed to unprepare wave header!")   
+        if (rc /= MMSYSERR_NOERROR) call displayDebug("Failed to unprepare wave header! " // trim(test))   
+
+        this%toneWaiting         = .FALSE.
+        this%playing             = .FALSE.
+        this%headerSet           = .FALSE.
+    end subroutine
+
+    subroutine closeOut(this)    
+        class(WaveChannel), intent(inout) :: this             
+        integer(2)                        :: rc
 
         rc = waveOutClose(this%hWave)
 
         if (rc /= MMSYSERR_NOERROR) call displayDebug("Failed to close wave out!")   
-        this%headerSet           = .FALSE.
-        this%toneWaiting         = .FALSE.
-        this%playing             = .FALSE.
+
+        this%waveOpened = .FALSE.
 
     end subroutine
 
@@ -549,18 +621,33 @@ MODULE wavePlayer
     
     end subroutine
 
-    subroutine playWavPrep(this, handler)
+    subroutine playWavPrep(this)
         class(WaveChannel), intent(inout) :: this             
         integer              :: rc, micro
         ! Format
         character(40)        :: test
         integer              :: ind
-        logical              :: handler
 
         if (this%headerSet .EQV. .TRUE.) call this%destroyHeader()
 
         this%toneWaiting         = .FALSE.
         this%playing             = .TRUE.
+    
+        ! Header
+    
+        this%hdr%dwBytesRecorded = 0
+        this%hdr%dwUser          = 0
+        this%hdr%dwFlags         = 0
+        this%hdr%dwLoops         = 0
+        this%hdr%lpNext          = 0
+        this%hdr%reserved        = 0
+
+    end subroutine
+
+    subroutine openOut(this, handler)
+        class(WaveChannel), intent(inout) :: this             
+        logical                           :: handler
+        integer(1)                        :: rc 
 
         this%fmt%wFormatTag      = WAVE_FORMAT_PCM
         this%fmt%nChannels       = 1
@@ -588,15 +675,8 @@ MODULE wavePlayer
         end if    
 
         if (rc /= MMSYSERR_NOERROR) call displayDebug("Failed to open wave output!")
-    
-        ! Header
-    
-        this%hdr%dwBytesRecorded = 0
-        this%hdr%dwUser          = 0
-        this%hdr%dwFlags         = 0
-        this%hdr%dwLoops         = 0
-        this%hdr%lpNext          = 0
-        this%hdr%reserved        = 0
+
+        this%waveOpened = .TRUE.
 
     end subroutine
 
@@ -607,7 +687,7 @@ MODULE wavePlayer
         character(40)        :: test
         integer              :: ind
 
-        call this%playWavPrep(.FALSE.)
+        call this%playWavPrep()
 
         this%hdr%lpData          = loc(this%buffer)
         this%hdr%dwBufferLength  = this%L * 2
@@ -619,10 +699,13 @@ MODULE wavePlayer
         micro = this%hdr%dwBufferLength * 1000000_8 / RATE
         call this%timer%timerStart(micro)
 
+        !call displayDebug("Prep#2")
         rc = waveOutPrepareHeader( &
                 this%hWave, this%hdr, sizeof(this%hdr))
 
         if (rc /= MMSYSERR_NOERROR) call displayDebug("Failed to prepare wave header!")   
+
+        call prepWavHeader(this)
         this%headerSet = .TRUE.
 
 34      rc = waveOutWrite( &
