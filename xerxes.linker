@@ -19,6 +19,7 @@
 "D:\winteracter\projects\xerxes\adlib.obj"
 "D:\winteracter\projects\xerxes\vgm.obj"
 "D:\winteracter\projects\xerxes\inputreader.obj"
+"D:\winteracter\projects\xerxes\imagefactory.obj"
 -out:"xerxes.exe"
 -subsystem:windows
 -machine:x86

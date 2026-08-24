@@ -15,9 +15,10 @@ MODULE engineConstants
                 2048, 1536  &  ! QXGA
                 /), shape(standards), order=(/2,1/))
 
+    integer(2), parameter         :: numOfColors = 256 
     INTEGER(KIND=1), PARAMETER    :: maxNumberOfScreenSizes = 9
-    INTEGER(kind=2)               :: wOfScreenBuffer        = 2048, &
-                                     hOfScreenBuffer        = 1536  
+    INTEGER(kind=2)               :: wOfScreenBuffer        = 640, &
+                                     hOfScreenBuffer        = 480  
     INTEGER(KIND = 1), PARAMETER  :: MFPS = 120             ! Maximum frames per second
     INTEGER, PARAMETER            :: MAX_PATH_LEN = 255
     integer, parameter            :: NAME_MAX_LEN = 25
@@ -26,7 +27,8 @@ MODULE engineConstants
     integer(4), parameter         :: chunkSize = 32767
     character(4), parameter       :: OPL2_FILE_TYPE   = 'OPL2', &
                                      TIA_FILE_TYPE    = 'TIA ', &
-                                     CONF_FILE_TYPE   = 'CONF'
+                                     CONF_FILE_TYPE   = 'CONF', &
+                                     IMG_FILE_TYPE    = 'IMG '                
 
     integer(1), parameter         :: IND_KEY_LEFT           = 1 , &  
                                      IND_KEY_RIGHT          = 2 , &  
@@ -52,5 +54,8 @@ MODULE engineConstants
 
     integer(1), parameter            :: configVersion       = 0
     character(8), parameter          :: configName          = "conf.xxc"    
+
+    integer(1), parameter            :: NO_FILTER           = 0, &
+                                        FILTER_RAINBOW      = 1
 
 END MODULE engineConstants

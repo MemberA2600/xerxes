@@ -13,7 +13,7 @@ MODULE dataLoader
       PRIVATE
       PUBLIC :: loadbinary, read4CharFromBin, readIntFromBin, copyBytes, copyBytesHalf, &
                 writeChars2Bin, writeBytes2Bin, writeBin2File, bin2Char, WriteInt8ToData, &
-                ReadInt8FromData
+                ReadInt8FromData, read2CharFromBin
 
       CONTAINS
       
@@ -176,6 +176,25 @@ MODULE dataLoader
 
       end subroutine
 
+      subroutine read2CharFromBin(d, s, offset, res)
+          integer(2), allocatable              :: d (:)
+          integer(8)                           :: s
+          integer(8)                           :: ind, charInd
+          integer(8)  , intent(inout)          :: offset       
+          character(2), intent(out)            :: res   
+                      
+          res     = ""
+          charInd = 0  
+
+          do ind = offset, offset + 1, 1
+             charInd   = charInd + 1 
+             write(res(charInd:charInd), "(A)") char(d(ind))
+          end do  
+
+          offset = offset + 2  
+
+      end subroutine
+
       subroutine readIntFromBin(d, s, offset, res, L)
           integer(2), allocatable              :: d (:)
           integer(8)                           :: s, L
@@ -199,7 +218,7 @@ MODULE dataLoader
 
           offset = offset + L
           
-          res = transfer(temp, 4)  
+          res = transfer(temp, L)  
 
       end subroutine
 

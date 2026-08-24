@@ -9,7 +9,7 @@ MODULE screen
 
     PRIVATE
     PUBLIC    :: initScreenBuff, eraseBuff, initRealScreen,  &
-                 getGameScreenSize, buffer2Real
+                 getGameScreenSize, buffer2Real, setBufferPixel
              
     INTEGER(KIND = 4), DIMENSION(:,:,:), &
                        ALLOCATABLE  :: screenBuffers
@@ -70,7 +70,7 @@ MODULE screen
               slow = slow + 1
               slow = mod(slow, 13)
 
-              screenBuffers(0,x,y) = getColorValue(test) 
+              screenBuffers(1,x,y) = getColorValue(test) 
               !write(msgString, '("Starter: ", I0, " | ", I0, "|", A)') x, y, getColorHEX(test) 
               !call displayDebug(msgString) 
            end do
@@ -92,10 +92,10 @@ MODULE screen
            do x = 1, wOfScreenBuffer, 1
 
               if (mod(x, 8) == 0) then
-                 screenBuffers(0,x,y) = getColorValue(test)
+                 screenBuffers(1,x,y) = getColorValue(test)
 
               else
-                 screenBuffers(0,x,y) = getColorValue(1)    
+                 screenBuffers(1,x,y) = getColorValue(1)    
               end if  
 
            end do
@@ -118,9 +118,9 @@ MODULE screen
            do x = 1, wOfScreenBuffer, 1
 
               if (test > 256) then
-                  screenBuffers(0,x,y) = getColorValue(mod((y + (test - 256)) / 8, 256) + 1)
+                  screenBuffers(1,x,y) = getColorValue(mod((y + (test - 256)) / 8, 256) + 1)
               else
-                  screenBuffers(0,x,y) = getColorValue(mod((x +  test)        / 8, 256) + 1)
+                  screenBuffers(1,x,y) = getColorValue(mod((x +  test)        / 8, 256) + 1)
               end if 
 
            end do
@@ -128,6 +128,13 @@ MODULE screen
 
 
     END SUBROUTINE testPattern3
+
+    subroutine setBufferPixel(n, x, y, c)
+        integer(2) :: n, x, y, c
+
+        screenBuffers(n, x, y) = getColorValue(c)
+
+    end subroutine
 
     SUBROUTINE initRealScreen(w, h)
         INTEGER(KIND = 4) :: w, h  
@@ -171,18 +178,22 @@ MODULE screen
     END FUNCTION
 
     SUBROUTINE buffer2Real()
-        INTEGER(kind=4), DIMENSION(2048, 1536) :: five2One 
+        INTEGER(kind=4), DIMENSION(640, 480) :: five2One 
         INTEGER(kind=4)  :: layerIndex, lineIndex, pixelIndex, srcLineIndex, srcPixelIndex          
         INTEGER          :: counter 
+        !character(40)    :: test
 
         !call testPattern3()
 
-        five2One = -1 
-
+        five2One = -1       
+                                
         do layerIndex       =  1, layers          , 1
            do lineIndex     =  1, hOfScreenBuffer , 1 
               do pixelIndex =  1, wOfScreenBuffer , 1         
                  
+                 !write(test, "(I0, ' ', I0, ' ', I0)") layerIndex, lineIndex, pixelIndex     
+                 !call displayDebug(test)
+
                  if (screenBuffers(layerIndex, pixelIndex, lineIndex) /= -1) then
                      five2One     (pixelIndex, lineIndex) = &
                      screenBuffers(layerIndex, pixelIndex, lineIndex)
@@ -193,22 +204,25 @@ MODULE screen
               end do
            end do
         end do
-
+            
+    
         counter = 0
-             
         do lineIndex       =  1, screenSize(2), 1 
           do pixelIndex    =  1, screenSize(1), 1 
-                 
-             srcPixelIndex = (pixelIndex * wOfScreenBuffer) / screenSize(1)
-             srcLineIndex  = (lineIndex  * hOfScreenBuffer) / screenSize(2)
+                
+             !if (screenSize(1) <= wOfScreenBuffer) then
+             srcPixelIndex = (pixelIndex * wOfScreenBuffer) / screenSize(1) + 1
+             srcLineIndex  = (lineIndex  * hOfScreenBuffer) / screenSize(2) + 1
+             !else
+    
+             !end if
 
              counter             = counter + 1 
              screenData(counter) = five2One  (srcPixelIndex, srcLineIndex)
- 
+     
           end do                       
         end do
-
-
+            
         call WBitmapGetData(onlyBitMap,screenData)
         CALL WBitmapPut(onlyBitMap)
 

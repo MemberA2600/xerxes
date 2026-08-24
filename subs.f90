@@ -47,7 +47,7 @@ MODULE subs
             character(MAX_PATH_LEN)                 :: fname  
             logical                                 :: sav
             integer                                 :: iflags, ind             
-            character(25), dimension(4,3)           :: typeList         
+            character(25), dimension(5,3)           :: typeList         
             character(4)                            :: typ
             character(40)                           :: title, ftyp 
 
@@ -66,6 +66,10 @@ MODULE subs
             typeList(4,1) = 'xxa '
             typelist(4,2) = 'Adlib Files|*.xxa|'
             typelist(4,3) = 'Xerxes Adlib File'
+
+            typeList(5,1) = 'bmp '
+            typelist(5,2) = 'Bitmap Files|*.bmp|'
+            typelist(5,3) = 'Windows Bitmap'
 
             iflags = 8 + 32
 

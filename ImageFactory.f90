@@ -1,0 +1,283 @@
+MODULE ImageFactory
+
+    USE debugWindow
+    USE dataLoader
+    USE WINTERACTER
+    USE RESID
+    USE subs
+    USE engineConstants
+    USE winapis
+    use IFPORT
+    use screen
+    use colors
+
+    implicit none
+
+    private
+    public                  :: loadBMP
+
+    !
+    !   Images are pretty complex and compact.
+    !   The beginning is typical: 
+    !   'IMG ', lenght of name (1 byte), name.
+    !
+    !   Size of screen, each two bytes 
+    !   (max: wOfScreenBuffer and hOfScreenBuffer)
+    !   
+    !   transpColor: This color is used for transparency, so should be a color that is
+    !                not present on the picture. If 0, since black cannot be transparent,
+    !                it means the picture is not transparent. By deafult, it's the top-left pixel
+    !                of the first frame.
+    !
+    !   The number of frames. One byte, n+1 is the number, so it can go up to 256.    
+    !
+    !   The first frame (key) is always exact, so the file always holds all the pixels. The next ones
+    !   holds only the number you have to add to the previous one the get the current one. This makes
+    !   gzip more efficient with the lot of unchanged ones (0).
+    !
+    !
+
+    type imageData
+         integer(2)                                :: numOfFrames, transpColor, &
+                                                      width, height
+         integer(2), dimension(:,:,:), allocatable :: frames
+
+    end type
+
+    type imageFile
+         character(4)                              :: header = IMG_FILE_TYPE
+         character(NAME_MAX_LEN)                   :: name 
+         integer(1)                                :: nameLen
+         character(MAX_PATH_LEN)                   :: fileName 
+         type(imageData), allocatable              :: img
+
+         contains
+
+         procedure                                 :: dropImage         => dropImage      
+         procedure                                 :: addToScreenBuffer => addToScreenBuffer 
+
+    end type
+
+    type(imageFile)                                :: imageLoader
+
+    contains
+    
+    subroutine loadBMP()
+         character(MAX_PATH_LEN)               :: fname, newFname
+         integer(2)                            :: numOfFrames, dotPoz, ind, rc
+         logical                               :: ex       
+
+         call imageLoader%dropImage()            
+
+         fname = FileDialog("", .FALSE., "bmp ")
+         if (fname == "") return
+
+         do ind = len_trim(fname), 1, -1
+            if (fname(ind:ind) == ".") then
+                dotPoz = ind
+                exit    
+            end if
+         end do       
+
+         numOfFrames = 1
+
+         if (fname(dotPoz - 3 : dotPoz - 1) == "000") then
+             do ind = 1, 255, 1
+                newFname = insertNum(fname, dotPoz - 3, ind)
+
+                inquire(file=newFname, exist = ex)
+                if (ex .EQV. .FALSE.) exit
+                numOfFrames = numOfFrames + 1
+             end do
+
+         end if
+
+        allocate(imageLoader%img, stat = rc) 
+        if (rc /= 0) call displayDebug("Failed to allocate image data for tester!")
+
+        imageLoader%img%numOfFrames = numOfFrames 
+
+        call extractBMP(fname, 1)
+        imageLoader%img%transpColor = imageLoader%img%frames(1, 1, 1)  
+
+        call imageLoader%addToScreenBuffer(1, 1, 1, 1, NO_FILTER)
+            
+        if (numOfFrames > 1) then
+             do ind = 1, 255, 1
+                newFname = insertNum(fname, dotPoz - 3, ind)
+
+                inquire(file=newFname, exist = ex)
+                if (ex .EQV. .FALSE.) exit
+                call extractBMP(fname, ind + 1)
+
+             end do
+        end if 
+
+    end subroutine
+
+    subroutine addToScreenBuffer(this, frameNum, bufferNum, x, y, filter)
+        class(imageFile), intent(inout) :: this
+        integer(2)                      :: frameNum, bufferNum, x, y, filter
+        integer(2)                      :: xPix, yPix, color, xOnBuff, yOnBuff
+        
+        integer(2)                      :: theTime
+
+        theTime = int(getTime(), 8)
+
+        do yPix = 1, this%img%height, 1
+           do xPix = 1, this%img%width, 1
+              color = this%img%frames(frameNum, xPix, yPix)  
+            
+              if (this%img%transpColor > 0 .AND. this%img%transpColor == color) cycle
+
+              xOnBuff = xPix + x - 1 
+              yOnBuff = yPix + y - 1 
+
+              select case(filter)
+              case(FILTER_RAINBOW)
+                   color = modulo(color + theTime, 257)
+              end select
+
+              if (xOnBuff <= wOfScreenBuffer .AND. yOnBuff <= hOfScreenBuffer) then   
+                  call setBufferPixel(bufferNum, xOnBuff, yOnBuff, color)   
+              end if
+
+           end do 
+        end do
+
+    end subroutine    
+
+    subroutine extractBMP(fname, frameNum)
+        character(MAX_PATH_LEN)               :: fname
+        integer(2)                            :: frameNum
+        integer(2)                            :: red, blue, green
+        character(2)                          :: BM   
+        integer(4)                            :: dataOffset, infoHeaderSize, w, h, bitsPerPixel, &
+                                                 compr, wInd, hInd      
+        character(40)                         :: test   
+        integer(2), dimension(:), allocatable :: d
+        integer(8)                            :: offset, s   
+        integer(1)                            :: rc
+
+        offset = 1
+        call loadBinary(fname, d, s, .FALSE.)        
+        call read2CharFromBin(d, s, offset, BM)    
+
+        if (BM /= "BM") then
+            call displayDebug("Invalid BMP file!")
+        else
+            offset = 11
+            
+            call readIntFromBin(d, s, offset, dataOffset, 4)
+            dataOffset = dataOffset + 1
+
+            !write(test, "(Z4.4)") dataOffset
+            !call displayDebug(test)
+
+            call readIntFromBin(d, s, offset, infoHeaderSize, 4)
+            if (infoHeaderSize /= 40) then 
+                call displayDebug("Header type is not for Windows!")
+            else
+                call readIntFromBin(d, s, offset, w, 4)
+                call readIntFromBin(d, s, offset, h, 4)
+
+                !write(test, "(I0, ' | ', I0)") w, h
+                !call displayDebug(test)
+
+                if (frameNum == 1) then
+                    imageLoader%img%width  = w 
+                    imageLoader%img%height = h 
+                else
+                    if (imageLoader%img%width /= w .OR. imageLoader%img%height /= h) then  
+                        call displayDebug("Image W & H is different from frame #1!")
+                        return
+                    end if
+                end if
+
+                offset = offset + 2
+                call readIntFromBin(d, s, offset, bitsPerPixel  , 2)
+
+                !write(test, "(I0)") bmpType
+                !call displayDebug(test)       
+
+                if (bitsPerPixel /= 24) then
+                    call displayDebug("Must be a 24bit bitmap!")
+                    return
+                end if
+
+                call readIntFromBin(d, s, offset, compr, 4)
+                if (compr /= 0) then
+                    call displayDebug("24bit bitmaps cannot be compressed!")
+                    return
+                end if    
+                ! 
+                ! The others are not required
+                !
+
+                offset = dataOffset
+
+                if (frameNum == 1) then
+                    allocate(imageLoader%img%frames( &
+                             imageLoader%img%numOfFrames, &
+                             w, h), stat = rc)
+                    if (rc /= 0) call displayDebug("Failed to allocate image frames!")
+
+                end if
+
+                if (allocated(imageLoader%img%frames)) then
+                    do    hInd = h, 1, -1
+                       do wInd = 1, w,  1 
+                          !call readIntFromBin(d, s, offset, bgr, 3)
+                          blue  = d(offset    )
+                          green = d(offset + 1)
+                          red   = d(offset + 2)
+                                                     
+                          imageLoader%img%frames(frameNum, wInd, hInd) = &
+                          getClosestColor(red, green, blue)    
+                    
+                          offset = offset + 3  
+                        
+                       end do 
+                    end do
+
+                end if
+
+            end if
+        end if
+
+    end subroutine    
+
+    function insertNum(original, start, num) result(new)
+         character(MAX_PATH_LEN)               :: original
+         integer(2)                            :: start, num
+         character(MAX_PATH_LEN)               :: new
+         character(3)                          :: numText
+         
+         write(numText, "(I3.3)") num
+
+         new = original(1 : start - 1) // numText // original(start + 3 : MAX_PATH_LEN )
+         !call displayDebug(trim(new))    
+
+    end function 
+
+    subroutine dropImage(this)
+         class(imageFile), intent(inout)  :: this
+         integer(1)                       :: rc
+
+         if (allocated(this%img)) then
+             if (allocated(this%img%frames)) then
+                 deallocate(this%img%frames, stat = rc)   
+                        
+                 if (rc /= 0) call displayDebug("Failed to deallocate image frames!")
+             end if
+
+             deallocate(this%img, stat = rc)   
+                        
+             if (rc /= 0) call displayDebug("Failed to deallocate image data!")           
+
+         end if
+
+
+    end subroutine
+
+END MODULE ImageFactory

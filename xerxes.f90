@@ -29,6 +29,7 @@
       USE inpout  
       USE inputReader
       USE config  
+      USE imagefactory  
 
       IMPLICIT NONE
 !
@@ -39,7 +40,7 @@
       INTEGER(KIND=2), DIMENSION (2) :: scr
       LOGICAL                        :: editMode, firstTime = .TRUE.
       CHARACTER(20)                  :: msgString
-      INTEGER                        :: intDummy, beepF, stat
+      INTEGER                        :: intDummy, beepF
         
       !CHARACTER(255)                 :: fname  
 
@@ -119,6 +120,8 @@
        !else
        !    call displayDebug("It tells you to f*** off!") 
        !end if  
+
+       call loadBMP() 
 
 !
 !   Load the config!

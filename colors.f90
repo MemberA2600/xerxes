@@ -3,15 +3,18 @@ MODULE colors
    USE WINTERACTER
    USE RESID
    USE debugWindow
+   USE engineConstants  
+   USE subs
+   USE winapis
 
    IMPLICIT NONE
 
    PRIVATE
-   PUBLIC               :: generateColors, getColorRGB,   &
-                           getColorValue,  getColorHex,   &
-                           getColorBlue,   getColorGreen, &
-                           getColorRed
-
+   PUBLIC               :: generateColors, getColorRGB,    &
+                           getColorValue,  getColorHex,    &
+                           getColorBlue,   getColorGreen,  &
+                           getColorRed,    getClosestColor 
+                           
    !
    !  Redefine 8bit palette for Spectrum Extra. :) 
    !
@@ -23,7 +26,7 @@ MODULE colors
 
    END TYPE colorHolder
 
-   TYPE(colorHolder), DIMENSION(256) :: colorList
+   TYPE(colorHolder), DIMENSION(numOfColors) :: colorList
 
    CONTAINS
 
@@ -75,6 +78,46 @@ MODULE colors
 
    END FUNCTION
 
+   FUNCTION getClosestColor(r, g, b) result(closest)
+        integer(2)              :: closest
+        integer(8)              :: diff, smallestDiff
+        integer(2)              :: ind
+        integer(2)              :: r , g , b
+        integer(2)              :: r2, g2, b2
+
+        character(60)           :: test
+
+        closest      = 0
+        smallestDiff = 9223372036854775807
+
+        do ind = 1, numOfColors, 1
+           r2 = getColorRed(  ind)
+           b2 = getColorBlue( ind)
+           g2 = getColorGreen(ind)
+
+           diff = (30 * (abs(r - r2) ** 2) ) + &
+                  (59 * (abs(g - g2) ** 2) ) + &
+                  (11 * (abs(b - b2) ** 2) )            
+
+           !write(test, "(I0, '|', I0, '|', I0, '|', I0, '|', I0, '|', I0, '|', I0, '|', I0)") &
+           !              ind, r, g, b, r2, g2, b2, diff
+            
+           !call displayDebug(test) 
+
+           if (diff == 0) then
+               closest = ind  
+               exit
+           end if  
+
+           if (diff < smallestDiff) then
+               smallestDiff = diff 
+               closest      = ind     
+           end if 
+        end do
+       
+
+   END FUNCTION 
+
    SUBROUTINE generateColors
        INTEGER(KIND = 2)                 :: theIndex, putHere, smallPoz 
        INTEGER(KIND = 2)                 :: br, R, G, B
@@ -109,11 +152,11 @@ MODULE colors
           end do
        end do
 
-       do putHere = 1, 256, 1
+       do putHere = 1, numOfColors, 1
           smallest = 99999999       
           smallPoz = 0
   
-          do theIndex = putHere, 256, 1
+          do theIndex = putHere, numOfColors, 1
              otherWay = colorList(theIndex)%RGB(1) * 255 * 255 + &
                         colorList(theIndex)%RGB(2) * 255       + &
                         colorList(theIndex)%RGB(3) 
