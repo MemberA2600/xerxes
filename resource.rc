@@ -8,20 +8,20 @@
 //
 // Winteracter resource script
 //
-// Modified : 22/aug./2026 20:50:51
+// Modified : 25/aug./2026 14:51:09
 //
 ///////////////////////////////////////////////////
 //
 // Number of resources
 //
 //*WN* NMENU       1
-//*WN* NITEM       23
-//*WN* NDIALOG     6
-//*WN* NFIELD      89
+//*WN* NITEM       24
+//*WN* NDIALOG     7
+//*WN* NFIELD      103
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
-//*WN* NIDENTIFIER 128
+//*WN* NIDENTIFIER 143
 //*WN* NINCLUDE    0
 //*WN* NOPTROW     0
 ///////////////////////////////////////////////////
@@ -152,6 +152,21 @@
 #define ID_AssignSpell2Joy     1086
 #define ID_AssignSpell3Joy     1087
 #define ID_AssignMenuJoy       1088
+#define ID_BMP2XXP            40024
+#define ID_BMPLoad             1089
+#define IDD_BMP2XXP             108
+#define ID_XXPSave             1090
+#define ID_XXPName             1091
+#define IDF_SpriteIndex        1092
+#define IDF_XXPLABEL1          1093
+#define IDF_ANIM               1094
+#define IDF_XXPLABEL2          1095
+#define IDF_TRANS              1096
+#define IDF_TransColor         1097
+#define IDF_ColorPick          1098
+#define IDF_XXPLABEL3          1099
+#define IDF_FilterInd          1100
+#define IDF_TransTrk           1101
 
 ///////////////////////////////////////////////////
 //
@@ -330,6 +345,47 @@ BEGIN
 ,0
 END
 
+IDD_BMP2XXP DIALOG 0,0,189,160
+STYLE WS_POPUP | WS_BORDER | WS_DLGFRAME | WS_SYSMENU | DS_3DLOOK | DS_MODALFRAME
+FONT 8, "MS Shell Dlg"
+CAPTION "BMP to XXP"
+BEGIN
+  CONTROL "Load",ID_BMPLoad,"BUTTON",WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,48,141,40,14
+  CONTROL "Save",ID_XXPSave,"BUTTON",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,95,141,40,14
+  CONTROL "Sexy Sprite",ID_XXPName,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_LEFT,7,6,169,14
+  CONTROL "String",IDF_STRING4,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_LEFT,266,172,40,14
+  CONTROL "1",IDF_SpriteIndex,"INTEGERSPIN",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,80,27,31,14
+  CONTROL "Frame Index:",IDF_XXPLABEL1,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,8,30,50,8
+  CONTROL "Transparent Color:",IDF_XXPLABEL2,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,8,56,64,8
+  CONTROL "Transparent",IDF_TRANS,"BUTTON",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_GROUP | WS_TABSTOP | BS_AUTOCHECKBOX | BS_TEXT,9,68,58,14
+  CONTROL "Pick a Color!",IDF_ColorPick,"BUTTON",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,116,68,58,14
+  CONTROL "2",IDF_TransColor,"INTEGERSPIN",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,80,68,31,14
+  CONTROL "Test Filter:",IDF_XXPLABEL3,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,8,122,64,8
+  CONTROL "0",IDF_FilterInd,"INTEGERSPIN",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,80,119,31,14
+  CONTROL "Animate",IDF_ANIM,"BUTTON",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_GROUP | WS_TABSTOP | BS_AUTOCHECKBOX | BS_TEXT,116,28,58,14
+  CONTROL "2",IDF_TransTrk,"MSCTLS_TRACKBAR32",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | TBS_NOTICKS,8,88,166,20
+END
+
+IDD_BMP2XXP RCDATA
+BEGIN
+"[Checks] \n"
+"1096 0 \n"
+"1094 0 \n"
+"[Ranges] \n"
+"1092 1 256 \n"
+"1097 2 256 \n"
+"1100 0 1 \n"
+"1101 2 256 \n"
+"[Trackbars] \n"
+"1101          5          1         10          0          0 \n"
+"[Lengths] \n"
+"1091 25 \n"
+"1092 3 \n"
+"1097 3 \n"
+"1100 3 \n"
+,0
+END
+
 ///////////////////////////////////////////////////
 //
 // Menus
@@ -366,6 +422,7 @@ BEGIN
   BEGIN
     MENUITEM "TIA Noise Maker",ID_TIA_Noiser
     MENUITEM "VGM to XXA",ID_VGM2XXA
+    MENUITEM "BMP to XXP",ID_BMP2XXP
   END
 END
 
@@ -399,5 +456,5 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FORTSAVE    1
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
-//*WI* LASTTYPE    1
-//*WI* LASTRES     1
+//*WI* LASTTYPE    100
+//*WI* LASTRES     0

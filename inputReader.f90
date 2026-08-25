@@ -14,13 +14,14 @@ MODULE inputReader
     use IFWINTY
     USE KERNEL32, WinSleep => Sleep
     USE WINMM
+    USE colors
 
     implicit none
 
     private
     public              :: inputWindow, checkOnInputSettings, readInput, openJoyDLL, closeJoyDLL, &
                            restoreKeyButtons, restoreJoyButtons, getControllerSettings, &
-                           setControllerSettings
+                           setControllerSettings, pickColorFromScreen
 
     logical             :: canKill, justACancel
     integer(2)          :: lastPressedKey
@@ -89,6 +90,8 @@ MODULE inputReader
 
     integer(4), parameter    :: joycenter = 32767
     integer(4)               :: joydiff   = 15, joyDiffSaved = 15
+
+    integer(2)               :: pixelColor = -1
 
     logical :: joyUp
     logical :: joyDown
@@ -214,12 +217,13 @@ MODULE inputReader
        CALL WDialogLoad(IDD_InputSetter)
 
        buttonsOld  = buttons 
-       justACancel = .FALSE. 
 
        call WDialogPutInteger( IDF_JoySenseVal, joyDiffSaved)
        call WDialogPutTrackbar(IDF_JoySenseTrk, joyDiffSaved)
        call addTextToKeyButtons() 
        call addTextToJoyButtons() 
+
+       justACancel = .FALSE. 
 
 321    do
           CALL WDialogSelect(IDD_InputSetter)
@@ -251,9 +255,84 @@ MODULE inputReader
               end if
        end do 
 
-       if (justACancel .EQV. .TRUE.) goto 321  
+       if (justACancel .EQV. .TRUE.) then
+           justACancel = .FALSE. 
+           goto 321 
+       end if  
 
        canKill = .TRUE. 
+
+    end subroutine
+
+    function pickColorFromScreen() result(r)
+        integer(2)              :: r
+
+        r = 0
+        pixelColor = -1 
+
+        call WindowOutStatusBar(1, "Press Mouse to pick a Color (or ESC to Cancel)!")       
+
+        lastPressedKey = 0
+        DO
+            call WinSleep(10)
+            call readInput()
+            call getPixelColor()
+
+            if (lastPressedKey /= 0) then
+
+                select case(getKeyName(lastPressedKey))
+                case("ESC")
+                      r = 0  
+                      exit
+                case("MOUSE LEFT")  
+                      if (pixelColor > 1) then
+                          r = pixelColor         
+                          exit  
+                      end if  
+                end select
+            end if
+        END DO
+
+        call WindowOutStatusBar(1, "")       
+
+    end function
+
+    subroutine getPixelColor()
+        USE IFWIN
+
+        type(T_POINT)   :: mousePos
+        integer(BOOL)   :: rc
+        integer(HANDLE) :: hWnd
+
+        integer             :: X , Y
+        real                :: rX, rY
+        character(40)       :: text
+
+        rc = GetCursorPos(mousePos)
+        
+        if (rc /= 0) then
+            hWnd = GetActiveWindow()
+            rc = ScreenToClient(hWnd, mousePos)
+
+            if (rc /= 0) then
+                X  = mousePos%x        
+                Y  = mousePos%y 
+
+                call IGrUnitsFromPixels(X, Y, rX, rY)   
+                rY = 1.0 - rY
+ 
+                if (rx >= 0.0 .AND. rx <= 1.0 .AND. rY >= 0.0 .AND. rY <= 1.0) then
+    
+                    pixelColor = c24btoC256(IGRGetPixel(rX, rY))
+                
+                    write(text, "('X: ', I0, '| Y: ', I0, '| C: ', I0 )") X, Y, pixelColor
+                    call WindowOutStatusBar(1, trim(text))  
+                else
+                    call WindowOutStatusBar(1, "Press Mouse to pick a Color (or ESC to Cancel)!")       
+                end if
+  
+            end if
+        end if
 
     end subroutine
 
@@ -265,10 +344,13 @@ MODULE inputReader
         buttonArrayID          = buttonID - ID_AssignLeftKey + 1
         call WindowOutStatusBar(1, "Press a Button (or ESC to Cancel)!")       
 
-        pressed = .FALSE.
+        pressed     = .FALSE.
 
+        lastPressedKey = 0
         DO
             call WinSleep(10)
+            call readInput()
+
             if (lastPressedKey /= 0) then
                 If (getKeyName(lastPressedKey) /= "ESC") then 
                     do ind = 1, 10, 1
@@ -287,6 +369,7 @@ MODULE inputReader
 
                 exit
             end if
+
         END DO
 
         if (pressed .EQV. .TRUE.) CALL WDialogPutString(buttonID, getKeyName(buttons(buttonArrayID)))  
@@ -308,8 +391,11 @@ MODULE inputReader
         !write(tt, "(I0)") buttonArrayID
         !call displayDebug(tt)
 
+        lastPressedKey = 0
         DO
             call WinSleep(10)
+            call readInput()
+
             if (lastPressedKey /= 0) then
                 If (getKeyName(lastPressedKey) == "ESC") then 
                     justACancel = .TRUE.

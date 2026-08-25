@@ -10,11 +10,13 @@ MODULE ImageFactory
     use IFPORT
     use screen
     use colors
+    USE inputReader
+    USE KERNEL32, WinSleep => Sleep
 
     implicit none
 
     private
-    public                  :: loadBMP
+    public                  :: bitMapWindow, checkImageWindowFields
 
     !
     !   Images are pretty complex and compact.
@@ -59,6 +61,8 @@ MODULE ImageFactory
     end type
 
     type(imageFile)                                :: imageLoader
+    logical                                        :: canKill = .FALSE., pickerActive = .FALSE., &
+                                                      justACancel  
 
     contains
     
@@ -99,9 +103,7 @@ MODULE ImageFactory
 
         call extractBMP(fname, 1)
         imageLoader%img%transpColor = imageLoader%img%frames(1, 1, 1)  
-
-        call imageLoader%addToScreenBuffer(1, 1, 1, 1, NO_FILTER)
-            
+           
         if (numOfFrames > 1) then
              do ind = 1, 255, 1
                 newFname = insertNum(fname, dotPoz - 3, ind)
@@ -120,22 +122,24 @@ MODULE ImageFactory
         integer(2)                      :: frameNum, bufferNum, x, y, filter
         integer(2)                      :: xPix, yPix, color, xOnBuff, yOnBuff
         
-        integer(2)                      :: theTime
-
-        theTime = int(getTime(), 8)
-
         do yPix = 1, this%img%height, 1
            do xPix = 1, this%img%width, 1
               color = this%img%frames(frameNum, xPix, yPix)  
-            
-              if (this%img%transpColor > 0 .AND. this%img%transpColor == color) cycle
 
               xOnBuff = xPix + x - 1 
               yOnBuff = yPix + y - 1 
+            
+              if (this%img%transpColor > 1 .AND. this%img%transpColor == color) then
+                  if (xOnBuff <= wOfScreenBuffer .AND. yOnBuff <= hOfScreenBuffer) then   
+                      call setBufferPixel(bufferNum, xOnBuff, yOnBuff, -1)
+                      cycle   
+                  end if
+              end if
 
               select case(filter)
               case(FILTER_RAINBOW)
-                   color = modulo(color + theTime, 257)
+                   color = modulo(color + getUpTo256(), 256) + 1
+                    
               end select
 
               if (xOnBuff <= wOfScreenBuffer .AND. yOnBuff <= hOfScreenBuffer) then   
@@ -279,5 +283,190 @@ MODULE ImageFactory
 
 
     end subroutine
+
+    subroutine bitMapWindow()
+       INTEGER                                 :: ITYPE
+       TYPE(WIN_MESSAGE)                       :: MESSAGE
+       !character(10)                  :: msgString
+       integer(2)                              :: c 
+
+       canKill      = .FALSE.   
+       pickerActive = .FALSE.
+
+       do
+         if (WInfoDialog(CurrentDialog) == 0) exit
+         call sleep(1)
+       end do 
+
+       CALL WDialogLoad(IDD_BMP2XXP)
+       call imageLoader%dropImage()            
+       call onlyRunAfterLoad() 
+       justACancel = .FALSE.     
+
+721    do
+          CALL WDialogSelect(IDD_BMP2XXP)
+          CALL WDialogShow(ITYPE=Modal)     
+    
+          if (WinfoDialog(CurrentDialog) == IDD_BMP2XXP) then 
+              SELECT CASE (WinfoDialog(ExitButton))  
+                  CASE(ExitField) 
+                     EXIT
+                  CASE(ID_BMPLoad)
+                     call loadBMP()
+                     call setTrans()
+                     call onlyRunAfterLoad()
+
+                  CASE(ID_XXPSave)
+
+                  CASE(IDF_ColorPick)
+                     pickerActive = .TRUE.
+                     call WCursorShape(CurCrossHair)
+                     call waitAndDraw()
+
+                     c = pickColorFromScreen()   
+                     pickerActive = .FALSE.
+                     call WCursorShape(CurArrow)
+
+                     if (c > 0) then 
+                         imageLoader%img%transpColor = c 
+                         call setTrans()
+                         call onlyRunAfterLoad()
+                     else
+                         justACancel = .TRUE.
+                     end if
+
+                  END SELECT
+              end if
+       end do 
+
+       if (justACancel .EQV. .TRUE.) then   
+           justACancel = .FALSE.     
+           goto 721 
+       end if 
+
+       canKill = .TRUE.        
+
+    END SUBROUTINE
+
+    subroutine waitAndDraw()
+       integer                   :: index, filter
+
+        call WDialogGetInteger(IDF_SpriteIndex, index)
+        call WDialogGetInteger(IDF_FilterInd  , filter)
+
+        call imageLoader%addToScreenBuffer(index, 1, 1, 1, filter)
+        CALL buffer2Real()   
+
+    end subroutine
+
+    subroutine setTrans()
+        if (imageLoader%img%transpColor == 1) then
+            call WDialogPutCheckBox(IDF_Trans , DISABLED)                    
+            call WDialogPutInteger(IDF_TransColor , 2)
+            call WDialogPutTrackbar(IDF_TransTrk  , 2)
+        else
+            call WDialogPutCheckBox(IDF_Trans , ENABLED)                    
+            call WDialogPutInteger( IDF_TransColor, imageLoader%img%transpColor)
+            call WDialogPutTrackbar(IDF_TransTrk  , imageLoader%img%transpColor)
+        end if
+
+    end subroutine
+
+    subroutine onlyRunAfterLoad()
+       integer(1)                  :: state, state2 
+
+       if (allocated(imageLoader%img)) then
+           state  = ENABLED
+           if (imageLoader%img%numOfFrames > 1) then  
+               state2 = ENABLED
+           else
+               state2 = DISABLED 
+           end if 
+ 
+       else  
+           state  = DISABLED
+           state2 = DISABLED 
+       end if
+
+       CALL WDialogFieldState(ID_XXPSave     , state)  
+       CALL WDialogFieldState(IDF_ColorPick  , state)
+       CALL WDialogFieldState(IDF_Trans      , state) 
+       CALL WDialogFieldState(IDF_Anim       , state2)    
+       CALL WDialogFieldState(IDF_FilterInd  , state)  
+
+       call WDialogPutInteger(IDF_SpriteIndex, 1)
+       call WDialogPutInteger(IDF_FilterInd  , 0)
+
+    end subroutine 
+
+    subroutine checkImageWindowFields()
+       character(NAME_MAX_LEN)   :: name
+       integer                   :: index, filter, animSet, transSet, t1, t2
+
+       if (pickerActive == .FALSE.) then
+ 
+           call WDialogGetString(     ID_XXAName, name   )
+    
+           if (allocated(imageLoader%img)) then 
+               if (imageLoader%img%numOfFrames > 1) then  
+                   call WDialogGetCheckBox(IDF_Anim   , animSet)
+                   CALL WDialogFieldState(IDF_SpriteIndex, 1 - animSet)
+               else
+                   animSet = 0  
+               end if 
+    
+               call WDialogGetCheckBox(IDF_Trans     , transSet)
+               CALL WDialogFieldState(IDF_TransColor , transSet) 
+               CALL WDialogFieldState(IDF_TransTrk   , transSet) 
+
+               if (transSet == 1) then
+                   CALL WDialogGetInteger( IDF_TransColor, t1)
+                   CALL WDialogGetTrackbar(IDF_TransTrk, t2)
+                   
+                   if (t1 /= imageLoader%img%transpColor) then
+                       imageLoader%img%transpColor = t1 
+                       CALL WDialogPutTrackbar(IDF_TransTrk, t1)
+                   end if 
+
+                   if (t2 /= imageLoader%img%transpColor) then
+                       imageLoader%img%transpColor = t2 
+                       CALL WDialogPutInteger(IDF_TransColor, t2)
+                   end if 
+
+               else
+                   imageLoader%img%transpColor = 1 
+               end if  
+    
+               call WDialogGetInteger(IDF_SpriteIndex, index)
+               call WDialogGetInteger(IDF_FilterInd  , filter)
+    
+               call imageLoader%addToScreenBuffer(index, 1, 1, 1, filter)
+               CALL setUpTo256()
+               CALL buffer2Real()    
+        
+               if (animSet == 1) then
+                   if (stupidTimerEnded() .EQV. .TRUE.) then
+                       CALL WDialogPutInteger(IDF_SpriteIndex, modulo(index + 1, imageLoader%img%numOfFrames + 1))
+                   end if 
+               end if 
+           
+           else 
+               CALL WDialogFieldState(IDF_SpriteIndex, DISABLED) 
+               CALL WDialogFieldState(IDF_TransColor , DISABLED) 
+               CALL WDialogFieldState(IDF_TransTrk   , DISABLED) 
+
+           end if  
+    
+           if (canKill .EQV. .TRUE.) then 
+               call eraseBuff() 
+               call imageLoader%dropImage()    
+               CALL WDialogUnLoad()
+               canKill = .FALSE.
+           end if
+
+        end if
+
+    end subroutine
+ 
 
 END MODULE ImageFactory

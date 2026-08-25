@@ -181,7 +181,7 @@ MODULE screen
         INTEGER(kind=4), DIMENSION(640, 480) :: five2One 
         INTEGER(kind=4)  :: layerIndex, lineIndex, pixelIndex, srcLineIndex, srcPixelIndex          
         INTEGER          :: counter 
-        !character(40)    :: test
+        character(40)    :: test
 
         !call testPattern3()
 
@@ -198,28 +198,27 @@ MODULE screen
                      five2One     (pixelIndex, lineIndex) = &
                      screenBuffers(layerIndex, pixelIndex, lineIndex)
                  else
-                     if (layerIndex == layers) five2One (pixelIndex, lineIndex) = 0
+                     if (layerIndex == layers) five2One (pixelIndex, lineIndex) = 1
                  end if
 
               end do
            end do
         end do
-            
-    
+             
         counter = 0
         do lineIndex       =  1, screenSize(2), 1 
           do pixelIndex    =  1, screenSize(1), 1 
                 
              !if (screenSize(1) <= wOfScreenBuffer) then
-             srcPixelIndex = (pixelIndex * wOfScreenBuffer) / screenSize(1) + 1
-             srcLineIndex  = (lineIndex  * hOfScreenBuffer) / screenSize(2) + 1
+             srcPixelIndex = (pixelIndex * wOfScreenBuffer) / screenSize(1) 
+             srcLineIndex  = (lineIndex  * hOfScreenBuffer) / screenSize(2) 
              !else
     
              !end if
 
              counter             = counter + 1 
              screenData(counter) = five2One  (srcPixelIndex, srcLineIndex)
-     
+                 
           end do                       
         end do
             
@@ -227,32 +226,5 @@ MODULE screen
         CALL WBitmapPut(onlyBitMap)
 
     END SUBROUTINE buffer2Real
-
-
-!    FUNCTION RGB2LIN(RGB) result(lin)
-!        INTEGER(KIND = 2)     :: RGB
-!        REAL(KIND=4)          :: lin, temp
-!
-!        temp = RGB / 255   
-!        if (temp <= 0.04045) then 
-!            lin = temp / 12.92
-!        else
-!            lin = ((temp + 0.055) / 1.055) ** 2.4   
-!        end if    
-!
-!    END FUNCTION RGB2LIN
-!
-!    FUNCTION LIN2RGB(lin) result(RGB)
-!        INTEGER(KIND = 2)     :: RGB
-!        REAL(KIND=4)          :: lin, temp
-!
-!        if (lin <= 0.0031308) then 
-!            temp = lin * 12.92;
-!        else 
-!            temp = 1.055 * (lin ** (1.0/2.4)) - 0.055; 
-!        end if
-!
-!        RGB = temp * 255     
-!    END FUNCTION LIN2RGB 
  
 END MODULE screen

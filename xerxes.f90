@@ -53,7 +53,9 @@
       inquire(file="xerxes.f90", exist=editMode)
       if (editMode .EQV. .FALSE.) call WMenuSetState(ID_DEV, ItemEnabled, 0)  
 
-      CALL setCWD()  
+      CALL setCWD() 
+      CALL setdbgBin(CWD()) 
+      CALL start256Timer()  
       CALL WInitialise()
       CALL IGrColourModel(24,ColModelDef)
       CALL WBitmapAlloc(1)
@@ -121,8 +123,7 @@
        !    call displayDebug("It tells you to f*** off!") 
        !end if  
 
-       call loadBMP() 
-
+       !call loadBMP() 
 !
 !   Load the config!
 !
@@ -143,6 +144,7 @@
         END IF  
 
         CALL WMessagePeek(ITYPE,MESSAGE)   
+        CALL setUpTo256()
 
         SELECT CASE (ITYPE)
           CASE (TimerExpired) 
@@ -185,6 +187,8 @@
               CASE (ID_InputSettings)
                     call inputWindow()  
                     call saveConfig()
+              CASE (ID_BMP2XXP)
+                    call bitMapWindow()  
             END SELECT 
 
           CASE (CloseRequest)            ! Close window (e.g. Alt/F4)
@@ -290,8 +294,8 @@
                     call playMusic()
               case("allOthers")  
                     call soundChannelLoop()
-                    call dialogChecker()
                     call readInput()
+                    call dialogChecker()
               end select  
            end if
         end subroutine
@@ -310,6 +314,8 @@
                 call checkForSoundSettingUpdates()
             case(IDD_InputSetter)
                 call checkOnInputSettings()
+            case(IDD_BMP2XXP)
+                call checkImageWindowFields()
             end select
 
         end subroutine

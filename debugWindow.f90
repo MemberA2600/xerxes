@@ -4,12 +4,20 @@ MODULE debugWindow
    IMPLICIT NONE
 
    PRIVATE 
-   PUBLIC        :: displayDebug, appendDebug
+   PUBLIC        :: displayDebug, appendDebug, setdbgBin
 
    TYPE(WIN_MESSAGE) :: MESSAGE
    INTEGER           :: ITYPE 
 
+   character(255) :: dbgBin 
+
    CONTAINS 
+
+   subroutine setdbgBin(cwd)
+         character(*)        :: cwd
+
+         dbgbin = trim(CWD) // '\debug.bin'
+   end subroutine
 
    SUBROUTINE displayDebug(txt)
       CHARACTER(LEN = *), intent(in)   :: txt
@@ -27,10 +35,12 @@ MODULE debugWindow
         integer(1)          :: b
         integer(1)          :: rc
         
-        open(34, FILE = 'debug.bin', iostat = rc, access='stream', form='unformatted', &
+        !call displayDebug(trim(CWD) // '\debug.bin')
+
+        open(34, FILE = dbgbin, iostat = rc, access='stream', form='unformatted', &
              status='old', position='append')
 
-        if (rc /= 0) open(34, FILE = 'debug.bin', iostat = rc, access='stream', form='unformatted', &
+        if (rc /= 0) open(34, FILE = dbgbin, iostat = rc, access='stream', form='unformatted', &
                           status='replace', position='append')
         if (rc /= 0) call displayDebug("Failed to append a byte to debug!")
         

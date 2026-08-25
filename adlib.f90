@@ -149,7 +149,8 @@ MODULE adlib
 
         if (ind2 == 0) return
         
-        call loadBinary("adlib\" // adlibList(ind)%filename, d, adlibList(ind)%dataLen, .TRUE.)
+        call loadBinary(trim(CWD()) // "\adlib\" // adlibList(ind)%filename, &
+                        d, adlibList(ind)%dataLen, .TRUE.)
 
         offset = adlibList(ind)%firstDataByte
 

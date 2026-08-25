@@ -10,11 +10,13 @@ MODULE colors
    IMPLICIT NONE
 
    PRIVATE
-   PUBLIC               :: generateColors, getColorRGB,    &
-                           getColorValue,  getColorHex,    &
-                           getColorBlue,   getColorGreen,  &
-                           getColorRed,    getClosestColor 
-                           
+   PUBLIC               :: generateColors, getColorRGB,     &
+                           getColorValue,  getColorHex,     &
+                           getColorBlue,   getColorGreen,   &
+                           getColorRed,    getClosestColor, & 
+                           setUpTo256,     getUpTo256,      &
+                           start256Timer,  stupidTimerEnded,&
+                           c24btoC256  
    !
    !  Redefine 8bit palette for Spectrum Extra. :) 
    !
@@ -26,9 +28,36 @@ MODULE colors
 
    END TYPE colorHolder
 
+   TYPE(counterTimer)                        :: timer256
+
    TYPE(colorHolder), DIMENSION(numOfColors) :: colorList
+   integer(2)                                :: upTo256 = 0
 
    CONTAINS
+
+   subroutine start256Timer()
+        call timer256%timerStart(50000)
+   end subroutine  
+
+   SUBROUTINE setUpTo256()
+        if (timer256%timerEnded() .EQV. .TRUE.) then
+            upTo256 = modulo(upTo256 + 1, 257) 
+            call timer256%timerRestart()
+        end if
+   end subroutine   
+
+   FUNCTION stupidTimerEnded() result(r)
+        logical :: r
+
+        r = timer256%timerEnded() 
+
+   end FUNCTION 
+
+   FUNCTION getUpTo256() result(r)
+        integer(2)      :: r
+        r = upTo256 
+
+   end FUNCTION 
 
    FUNCTION getColorRGB(num) result(RGB)
        INTEGER(KIND=2)               :: num
@@ -77,6 +106,22 @@ MODULE colors
        val = colorList(num)%RGB(1)
 
    END FUNCTION
+
+   FUNCTION c24btoC256(bit24) result(r)
+        integer         :: bit24
+        integer(4)      :: ind
+        integer(2)      :: r
+
+        r = -1
+        
+        do ind = 1, numOfColors, 1
+           if (colorList(ind)%trueValue == bit24) then
+               r = ind  
+               exit 
+            end if
+        end do
+
+   end function 
 
    FUNCTION getClosestColor(r, g, b) result(closest)
         integer(2)              :: closest
