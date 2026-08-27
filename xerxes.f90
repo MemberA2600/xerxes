@@ -189,6 +189,8 @@
                     call saveConfig()
               CASE (ID_BMP2XXP)
                     call bitMapWindow()  
+              CASE (ID_DisplayPalette)
+                    call displayPalette()  
             END SELECT 
 
           CASE (CloseRequest)            ! Close window (e.g. Alt/F4)

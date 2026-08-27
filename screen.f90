@@ -9,7 +9,8 @@ MODULE screen
 
     PRIVATE
     PUBLIC    :: initScreenBuff, eraseBuff, initRealScreen,  &
-                 getGameScreenSize, buffer2Real, setBufferPixel
+                 getGameScreenSize, buffer2Real, setBufferPixel, &
+                 displayPalette
              
     INTEGER(KIND = 4), DIMENSION(:,:,:), &
                        ALLOCATABLE  :: screenBuffers
@@ -129,6 +130,36 @@ MODULE screen
 
     END SUBROUTINE testPattern3
 
+    SUBROUTINE displayPalette()
+        integer(2)      :: gridX, gridY, w, h, c, cI
+        integer(2)      :: x, y
+        character(40)   :: t
+
+        c = (numOfColors / 16)
+
+        h = (hOfScreenBuffer / c)
+        w = (wOfScreenBuffer / c)
+
+        !write(t, '(I0, " ", I0)') h, hOfScreenBuffer 
+        !call displayDebug(t)
+
+        do y = 0,     hOfScreenBuffer - 1, 1
+            do x = 0, wOfScreenBuffer - 1, 1
+               gridX = x / w 
+               gridY = y / h 
+ 
+               cI = (gridX + (c * gridY)) + 1
+
+               screenBuffers(1 ,x + 1 ,y + 1) = getColorValue(cI)
+            end do
+
+            !write(t, '(I0, " ", I0)') y, gridY 
+            !call displayDebug(t)
+
+        end do
+
+    END SUBROUTINE 
+
     subroutine setBufferPixel(n, x, y, c)
         integer(2) :: n, x, y, c
 
@@ -183,8 +214,6 @@ MODULE screen
         INTEGER          :: counter 
         character(40)    :: test
 
-        !call testPattern3()
-
         five2One = -1       
                                 
         do layerIndex       =  1, layers          , 1
@@ -221,7 +250,8 @@ MODULE screen
                  
           end do                       
         end do
-            
+
+        CALL WBitmapclear(onlyBitMap)           
         call WBitmapGetData(onlyBitMap,screenData)
         CALL WBitmapPut(onlyBitMap)
 

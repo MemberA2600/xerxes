@@ -55,7 +55,19 @@ MODULE engineConstants
     integer(1), parameter            :: configVersion       = 0
     character(8), parameter          :: configName          = "conf.xxc"    
 
-    integer(1), parameter            :: NO_FILTER           = 0, &
-                                        FILTER_RAINBOW      = 1
-
+    integer(1), parameter            :: NO_FILTER           = 0,  &
+                                        FILTER_RAINBOW      = 1,  &
+                                        FILTER_NIGHT        = 2,  &
+                                        FILTER_RED0         = 3,  &
+                                        FILTER_RED1         = 4,  &
+                                        FILTER_RED2         = 5,  &
+                                        FILTER_BLUE0        = 6,  &
+                                        FILTER_BLUE1        = 7,  &
+                                        FILTER_BLUE2        = 8,  &
+                                        FILTER_GREEN0       = 9,  &
+                                        FILTER_GREEN1       = 10, &
+                                        FILTER_GREEN2       = 11, &
+                                        FILTER_YELLOW0      = 12, &
+                                        FILTER_YELLOW1      = 13, &
+                                        FILTER_YELLOW2      = 14
 END MODULE engineConstants

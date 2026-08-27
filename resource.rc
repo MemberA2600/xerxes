@@ -8,20 +8,20 @@
 //
 // Winteracter resource script
 //
-// Modified : 25/aug./2026 14:51:09
+// Modified : 27/aug./2026 23:02:28
 //
 ///////////////////////////////////////////////////
 //
 // Number of resources
 //
 //*WN* NMENU       1
-//*WN* NITEM       24
+//*WN* NITEM       25
 //*WN* NDIALOG     7
 //*WN* NFIELD      103
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
-//*WN* NIDENTIFIER 143
+//*WN* NIDENTIFIER 144
 //*WN* NINCLUDE    0
 //*WN* NOPTROW     0
 ///////////////////////////////////////////////////
@@ -167,6 +167,7 @@
 #define IDF_XXPLABEL3          1099
 #define IDF_FilterInd          1100
 #define IDF_TransTrk           1101
+#define ID_DisplayPalette     40025
 
 ///////////////////////////////////////////////////
 //
@@ -372,9 +373,9 @@ BEGIN
 "1096 0 \n"
 "1094 0 \n"
 "[Ranges] \n"
-"1092 1 256 \n"
+"1092 0 256 \n"
 "1097 2 256 \n"
-"1100 0 1 \n"
+"1100 0 32 \n"
 "1101 2 256 \n"
 "[Trackbars] \n"
 "1101          5          1         10          0          0 \n"
@@ -423,6 +424,7 @@ BEGIN
     MENUITEM "TIA Noise Maker",ID_TIA_Noiser
     MENUITEM "VGM to XXA",ID_VGM2XXA
     MENUITEM "BMP to XXP",ID_BMP2XXP
+    MENUITEM "Display Palette",ID_DisplayPalette
   END
 END
 
@@ -456,5 +458,5 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FORTSAVE    1
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
-//*WI* LASTTYPE    100
-//*WI* LASTRES     0
+//*WI* LASTTYPE    2
+//*WI* LASTRES     7

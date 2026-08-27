@@ -93,7 +93,6 @@ MODULE subs
             fname = dir    
 
             call WSelectFile(trim(ftyp), iflags, fname, trim(title))
-
             if (WinFoDialog(4) /= CommonOK) fname = ""  
 
       end function    

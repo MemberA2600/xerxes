@@ -16,7 +16,8 @@ MODULE colors
                            getColorRed,    getClosestColor, & 
                            setUpTo256,     getUpTo256,      &
                            start256Timer,  stupidTimerEnded,&
-                           c24btoC256  
+                           c24btoC256,     indexToGridVals, &
+                           gridValsToIndex,getNightColor
    !
    !  Redefine 8bit palette for Spectrum Extra. :) 
    !
@@ -25,15 +26,66 @@ MODULE colors
       INTEGER(KIND=2), DIMENSION(3) :: RGB 
       INTEGER                       :: trueValue
       CHARACTER (6)                 :: hexValue
-
+      integer(2)                    :: night  
    END TYPE colorHolder
 
    TYPE(counterTimer)                        :: timer256
 
+
    TYPE(colorHolder), DIMENSION(numOfColors) :: colorList
-   integer(2)                                :: upTo256 = 0
+   integer(2)                                :: upTo256 = 0, upTo256_C = 0
 
    CONTAINS
+
+   function getNightColor(ind) result(r)
+        integer(2)          :: ind
+        integer(2)          :: r
+
+        r = colorList(ind)%night  
+
+   end function 
+
+   function indexToGridVals(ind) result(r)
+        integer(2)               :: ind
+        integer(2), dimension(3) :: r
+
+        integer(2)               :: group, red, green, blue
+
+        group = (ind - 1) / 64
+        
+        red   = (group + 4 * mod((ind-1) / 16, 4))
+        green = (group + 4 * mod((ind-1) /  4, 4))
+        blue  = (group + 4 * mod((ind-1),      4))
+
+        r = (/ red, green, blue /)
+
+   end function 
+
+    function gridValsToIndex(red, green, blue) result(ind)
+        integer(2), intent(in) :: red, green, blue
+        integer(2)             :: ind
+        integer(2)             :: group
+        integer(2)             :: redDigit, greenDigit, blueDigit
+    
+        ! All three values must belong to the same palette group.
+        group = mod(red, 4)
+    
+        if (mod(green, 4) /= group .or. &
+            mod(blue,  4) /= group) then
+            ind = 0  
+            call displayDebug("Color not in palette!")
+            return
+        end if
+    
+        redDigit   = (red   - group) / 4
+        greenDigit = (green - group) / 4
+        blueDigit  = (blue  - group) / 4
+    
+        ind = group         * 64 + &
+              redDigit      * 16 + &
+              greenDigit    * 4  + &
+              blueDigit          + 1
+    end function
 
    subroutine start256Timer()
         call timer256%timerStart(50000)
@@ -49,7 +101,8 @@ MODULE colors
    FUNCTION stupidTimerEnded() result(r)
         logical :: r
 
-        r = timer256%timerEnded() 
+        r = (upTo256 /= upTo256_C)
+        upTo256_C = upTo256        
 
    end FUNCTION 
 
@@ -133,7 +186,7 @@ MODULE colors
         character(60)           :: test
 
         closest      = 0
-        smallestDiff = 9223372036854775807
+        smallestDiff = 9223372036854775807!
 
         do ind = 1, numOfColors, 1
            r2 = getColorRed(  ind)
@@ -167,9 +220,11 @@ MODULE colors
        INTEGER(KIND = 2)                 :: theIndex, putHere, smallPoz 
        INTEGER(KIND = 2)                 :: br, R, G, B
        INTEGER(KIND = 2)                 :: R2, G2, B2
-       CHARACTER (20)                    :: msgString
+       CHARACTER (40)                    :: msgString
        INTEGER                           :: smallest, otherWay
        TYPE(colorHolder)                 :: tempc 
+
+       !open(19, FILE = "colorCodes.txt", action = 'WRITE', STATUS = "REPLACE") 
 
        theIndex = 0
        do br = 0, 3, 1
@@ -192,10 +247,17 @@ MODULE colors
                    !write(msgString, '(I0, " | ", A)') theIndex, colorList(theIndex)%hexValue  
                    !call displayDebug(msgString)     
 
+                   !write(msgString, "(I3.3, ' ', I3.3, ' ', I3.3, ' ', I3.3)") theIndex, R2, G2, B2
+                   !write(19, '(A)') msgString
+        
+                   colorList(theIndex)%night         = getClosestColor(R2 / 12, G2 / 4, B2) 
+
                 end do
              end do
           end do
        end do
+
+       !close(19) 
 
        do putHere = 1, numOfColors, 1
           smallest = 99999999       

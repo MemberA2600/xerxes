@@ -62,19 +62,26 @@ MODULE ImageFactory
 
     type(imageFile)                                :: imageLoader
     logical                                        :: canKill = .FALSE., pickerActive = .FALSE., &
-                                                      justACancel  
+                                                      justACancel, pleaseStop = .TRUE.  
 
     contains
     
-    subroutine loadBMP()
+    function loadBMP() result(r)
          character(MAX_PATH_LEN)               :: fname, newFname
          integer(2)                            :: numOfFrames, dotPoz, ind, rc
-         logical                               :: ex       
+         logical                               :: ex, r       
+
+         r = .FALSE.
+
+         pleaseStop = .TRUE.
+         fname = FileDialog("", .FALSE., "bmp ")
+         if (fname == "") then
+             pleaseStop = (allocated(imageLoader%img) .EQV. .FALSE.)
+             return
+         end if
 
          call imageLoader%dropImage()            
-
-         fname = FileDialog("", .FALSE., "bmp ")
-         if (fname == "") return
+         call eraseBuff()   
 
          do ind = len_trim(fname), 1, -1
             if (fname(ind:ind) == ".") then
@@ -102,33 +109,41 @@ MODULE ImageFactory
         imageLoader%img%numOfFrames = numOfFrames 
 
         call extractBMP(fname, 1)
-        imageLoader%img%transpColor = imageLoader%img%frames(1, 1, 1)  
-           
+
+        if (imageLoader%img%width > wOfScreenBuffer .OR. imageLoader%img%height > hOfScreenBuffer) then
+            imageLoader%img%transpColor = 1
+        else  
+            imageLoader%img%transpColor = imageLoader%img%frames(1, 1, 1)  
+        end if
+   
         if (numOfFrames > 1) then
              do ind = 1, 255, 1
                 newFname = insertNum(fname, dotPoz - 3, ind)
 
                 inquire(file=newFname, exist = ex)
                 if (ex .EQV. .FALSE.) exit
-                call extractBMP(fname, ind + 1)
+                call extractBMP(newFname, ind + 1)
 
              end do
         end if 
+        r = .TRUE.
+        pleaseStop = .FALSE.
 
-    end subroutine
+    end function
 
     subroutine addToScreenBuffer(this, frameNum, bufferNum, x, y, filter)
         class(imageFile), intent(inout) :: this
         integer(2)                      :: frameNum, bufferNum, x, y, filter
         integer(2)                      :: xPix, yPix, color, xOnBuff, yOnBuff
-        
+        integer(2), dimension(3)        :: rgb        
+
         do yPix = 1, this%img%height, 1
            do xPix = 1, this%img%width, 1
               color = this%img%frames(frameNum, xPix, yPix)  
 
               xOnBuff = xPix + x - 1 
-              yOnBuff = yPix + y - 1 
-            
+              yOnBuff = yPix + y - 1  
+ 
               if (this%img%transpColor > 1 .AND. this%img%transpColor == color) then
                   if (xOnBuff <= wOfScreenBuffer .AND. yOnBuff <= hOfScreenBuffer) then   
                       call setBufferPixel(bufferNum, xOnBuff, yOnBuff, -1)
@@ -138,8 +153,48 @@ MODULE ImageFactory
 
               select case(filter)
               case(FILTER_RAINBOW)
-                   color = modulo(color + getUpTo256(), 256) + 1
+                   color = color + getUpTo256()
+                   if (color > numOfColors) color = color - numOfColors
                     
+              case(FILTER_NIGHT)
+                   color = getNightColor(color)  
+
+              case(FILTER_RED0)
+                   color = changeRGB(color, 1,  0,  0)
+
+              case(FILTER_RED1)
+                   color = changeRGB(color, 2, -1, -1)
+
+              case(FILTER_RED2)
+                   color = changeRGB(color, 4, -2, -3)
+
+              case(FILTER_BLUE0)
+                   color = changeRGB(color,  0,  0, 1)
+
+              case(FILTER_BLUE1)
+                   color = changeRGB(color, -2, -1, 2)
+
+              case(FILTER_BLUE2)
+                   color = changeRGB(color, -4, -2, 2)
+
+              case(FILTER_GREEN0)
+                   color = changeRGB(color,  0, 1, 0)
+
+              case(FILTER_GREEN1)
+                   color = changeRGB(color, -1, 1, -1)
+
+              case(FILTER_GREEN2)
+                   color = changeRGB(color, -1, 2, -1)
+
+              case(FILTER_YELLOW0)
+                   color = changeRGB(color,  1, 1, 0)
+
+              case(FILTER_YELLOW1)
+                   color = changeRGB(color,  2, 1, -1)
+
+              case(FILTER_YELLOW2)
+                   color = changeRGB(color,  4, 2, -1)
+
               end select
 
               if (xOnBuff <= wOfScreenBuffer .AND. yOnBuff <= hOfScreenBuffer) then   
@@ -151,6 +206,31 @@ MODULE ImageFactory
 
     end subroutine    
 
+    function changeRGB(ind, redShift, greenShift, blueShift) result(newInd)
+        integer(2), intent(in) :: ind
+        integer(2), intent(in) :: redShift, greenShift, blueShift
+        integer(2)             :: newInd
+    
+        integer(2) :: n, group
+        integer(2) :: redDigit, greenDigit, blueDigit
+    
+        n = ind - 1
+    
+        group      =     n / 64
+        redDigit   = mod(n / 16, 4)
+        greenDigit = mod(n / 4,  4)
+        blueDigit  = mod(n,      4)
+    
+        redDigit   = max(0_2, min(3_2, redDigit   + redShift))
+        greenDigit = max(0_2, min(3_2, greenDigit + greenShift))
+        blueDigit  = max(0_2, min(3_2, blueDigit  + blueShift))
+    
+        newInd = group      * 64  + &
+                 redDigit   * 16  + &
+                 greenDigit * 4   + &
+                 blueDigit        + 1
+    end function
+
     subroutine extractBMP(fname, frameNum)
         character(MAX_PATH_LEN)               :: fname
         integer(2)                            :: frameNum
@@ -158,10 +238,11 @@ MODULE ImageFactory
         character(2)                          :: BM   
         integer(4)                            :: dataOffset, infoHeaderSize, w, h, bitsPerPixel, &
                                                  compr, wInd, hInd      
-        character(40)                         :: test   
+        !character(40)                         :: test   
         integer(2), dimension(:), allocatable :: d
         integer(8)                            :: offset, s   
-        integer(1)                            :: rc
+        integer(1)                            :: rc, rowPadding  
+        !integer(1)                            :: t
 
         offset = 1
         call loadBinary(fname, d, s, .FALSE.)        
@@ -229,21 +310,25 @@ MODULE ImageFactory
                 end if
 
                 if (allocated(imageLoader%img%frames)) then
+                    rowPadding = modulo(4 - modulo(w * 3, 4), 4)
+
                     do    hInd = h, 1, -1
                        do wInd = 1, w,  1 
-                          !call readIntFromBin(d, s, offset, bgr, 3)
                           blue  = d(offset    )
                           green = d(offset + 1)
                           red   = d(offset + 2)
                                                      
                           imageLoader%img%frames(frameNum, wInd, hInd) = &
                           getClosestColor(red, green, blue)    
-                    
+
                           offset = offset + 3  
                         
-                       end do 
-                    end do
+                       end do
 
+                  ! Skip the padding at the end of the BMP scanline
+                    offset = offset + rowPadding  
+
+                    end do
                 end if
 
             end if
@@ -272,15 +357,17 @@ MODULE ImageFactory
              if (allocated(this%img%frames)) then
                  deallocate(this%img%frames, stat = rc)   
                         
-                 if (rc /= 0) call displayDebug("Failed to deallocate image frames!")
+                 if (rc /= 0) then
+                     call displayDebug("Failed to deallocate image frames!")
+                 end if
              end if
-
+             
              deallocate(this%img, stat = rc)   
                         
-             if (rc /= 0) call displayDebug("Failed to deallocate image data!")           
-
+             if (rc /= 0) then
+                 call displayDebug("Failed to deallocate image data!")      
+             end if     
          end if
-
 
     end subroutine
 
@@ -299,10 +386,13 @@ MODULE ImageFactory
        end do 
 
        CALL WDialogLoad(IDD_BMP2XXP)
-       call imageLoader%dropImage()            
-       call onlyRunAfterLoad() 
-       justACancel = .FALSE.     
+       if (allocated(imageLoader%img)) call imageLoader%dropImage()            
 
+       call onlyRunAfterLoad()
+ 
+       justACancel = .FALSE.     
+       pleaseStop  = .TRUE.
+ 
 721    do
           CALL WDialogSelect(IDD_BMP2XXP)
           CALL WDialogShow(ITYPE=Modal)     
@@ -312,9 +402,10 @@ MODULE ImageFactory
                   CASE(ExitField) 
                      EXIT
                   CASE(ID_BMPLoad)
-                     call loadBMP()
-                     call setTrans()
-                     call onlyRunAfterLoad()
+                     if (loadBMP() .EQV. .TRUE.) then
+                         call setTrans()
+                         call onlyRunAfterLoad()
+                     end if
 
                   CASE(ID_XXPSave)
 
@@ -349,12 +440,12 @@ MODULE ImageFactory
     END SUBROUTINE
 
     subroutine waitAndDraw()
-       integer                   :: index, filter
+       integer                   :: ind, filter
 
-        call WDialogGetInteger(IDF_SpriteIndex, index)
+        call WDialogGetInteger(IDF_SpriteIndex, ind)
         call WDialogGetInteger(IDF_FilterInd  , filter)
 
-        call imageLoader%addToScreenBuffer(index, 1, 1, 1, filter)
+        call imageLoader%addToScreenBuffer(ind, 1, 1, 1, filter)
         CALL buffer2Real()   
 
     end subroutine
@@ -401,9 +492,9 @@ MODULE ImageFactory
 
     subroutine checkImageWindowFields()
        character(NAME_MAX_LEN)   :: name
-       integer                   :: index, filter, animSet, transSet, t1, t2
+       integer                   :: ind, filter, animSet, transSet, t1, t2
 
-       if (pickerActive == .FALSE.) then
+       if ((pickerActive .EQV. .FALSE.) .AND. (pleaseStop .EQV. .FALSE.)) then
  
            call WDialogGetString(     ID_XXAName, name   )
     
@@ -437,18 +528,23 @@ MODULE ImageFactory
                    imageLoader%img%transpColor = 1 
                end if  
     
-               call WDialogGetInteger(IDF_SpriteIndex, index)
+               call WDialogGetInteger(IDF_SpriteIndex, ind)
                call WDialogGetInteger(IDF_FilterInd  , filter)
-    
-               call imageLoader%addToScreenBuffer(index, 1, 1, 1, filter)
-               CALL setUpTo256()
-               CALL buffer2Real()    
-        
+
                if (animSet == 1) then
                    if (stupidTimerEnded() .EQV. .TRUE.) then
-                       CALL WDialogPutInteger(IDF_SpriteIndex, modulo(index + 1, imageLoader%img%numOfFrames + 1))
+                       ind = ind + 1 
                    end if 
-               end if 
+               end if     
+
+               if (ind > imageLoader%img%numOfFrames) ind = 1 
+               if (ind < 1) ind = imageLoader%img%numOfFrames 
+
+               CALL WDialogPutInteger(IDF_SpriteIndex, ind) 
+
+               call imageLoader%addToScreenBuffer(ind, 1, 1, 1, filter)
+               CALL setUpTo256()
+               CALL buffer2Real()    
            
            else 
                CALL WDialogFieldState(IDF_SpriteIndex, DISABLED) 
@@ -457,13 +553,14 @@ MODULE ImageFactory
 
            end if  
     
-           if (canKill .EQV. .TRUE.) then 
-               call eraseBuff() 
-               call imageLoader%dropImage()    
-               CALL WDialogUnLoad()
-               canKill = .FALSE.
-           end if
 
+        end if
+
+        if (canKill .EQV. .TRUE.) then 
+            call eraseBuff() 
+            call imageLoader%dropImage()    
+            CALL WDialogUnLoad()
+            canKill = .FALSE.
         end if
 
     end subroutine
