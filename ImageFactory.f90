@@ -156,44 +156,74 @@ MODULE ImageFactory
                    color = color + getUpTo256()
                    if (color > numOfColors) color = color - numOfColors
                     
-              case(FILTER_NIGHT)
-                   color = getNightColor(color)  
-
-              case(FILTER_RED0)
-                   color = changeRGB(color, 1,  0,  0)
+              case(FILTER_RED)
+                   color = changeRGB(color, 1, -1, -1)
 
               case(FILTER_RED1)
-                   color = changeRGB(color, 2, -1, -1)
+                   color = changeRGB(color, 2, -2, -2)
 
               case(FILTER_RED2)
-                   color = changeRGB(color, 4, -2, -3)
+                   color = changeRGB(color, 3, -3, -3)
 
-              case(FILTER_BLUE0)
-                   color = changeRGB(color,  0,  0, 1)
+              case(FILTER_BLUE)
+                   color = changeRGB(color, -1, -1, 1)
 
               case(FILTER_BLUE1)
-                   color = changeRGB(color, -2, -1, 2)
+                   color = changeRGB(color, -2, -2, 2)
 
               case(FILTER_BLUE2)
-                   color = changeRGB(color, -4, -2, 2)
+                   color = changeRGB(color, -3, -3, 3)
 
-              case(FILTER_GREEN0)
-                   color = changeRGB(color,  0, 1, 0)
-
-              case(FILTER_GREEN1)
+              case(FILTER_GREEN)
                    color = changeRGB(color, -1, 1, -1)
 
-              case(FILTER_GREEN2)
-                   color = changeRGB(color, -1, 2, -1)
+              case(FILTER_GREEN1)
+                   color = changeRGB(color, -2, 2, -2)
 
-              case(FILTER_YELLOW0)
-                   color = changeRGB(color,  1, 1, 0)
+              case(FILTER_GREEN2)
+                   color = changeRGB(color, -3, 3, -3)
+
+              case(FILTER_YELLOW)
+                   color = changeRGB(color,  1, 1, -1)
 
               case(FILTER_YELLOW1)
-                   color = changeRGB(color,  2, 1, -1)
+                   color = changeRGB(color,  2, 2, -2)
 
               case(FILTER_YELLOW2)
-                   color = changeRGB(color,  4, 2, -1)
+                   color = changeRGB(color,  3, 3, -3)
+
+              case(FILTER_DARK)
+                   color = changeRGB(color,  -1, -1, -1)
+
+              case(FILTER_DARK1)
+                   color = changeRGB(color,  -2, -2, -2)
+
+              case(FILTER_DARK2)
+                   color = changeRGB(color,  -3, -3, -3)
+
+              case(FILTER_LIGHT)
+                   color = changeRGB(color,   1,  1,  1)
+
+              case(FILTER_LIGHT1)
+                   color = changeRGB(color,   2,  2,  2)
+
+              case(FILTER_LIGHT2)
+                   color = changeRGB(color,   3,  3,  3)
+
+              case(FILTER_SHADOW)
+                   color = 1
+
+              case(FILTER_PINK)
+                   color = changeRGB(color,  1, -1, 1)
+
+              case(FILTER_PINK1)
+                   color = changeRGB(color,  2, -2, 2)
+
+              case(FILTER_PINK2)
+                   color = changeRGB(color,  3, -3, 3)
+
+              case(FILTER_TRANSP)
+                   if (modulo((xPix + yPix), 2) == 0) color = -1 
 
               end select
 

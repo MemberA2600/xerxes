@@ -57,17 +57,28 @@ MODULE engineConstants
 
     integer(1), parameter            :: NO_FILTER           = 0,  &
                                         FILTER_RAINBOW      = 1,  &
-                                        FILTER_NIGHT        = 2,  &
-                                        FILTER_RED0         = 3,  &
-                                        FILTER_RED1         = 4,  &
-                                        FILTER_RED2         = 5,  &
-                                        FILTER_BLUE0        = 6,  &
-                                        FILTER_BLUE1        = 7,  &
-                                        FILTER_BLUE2        = 8,  &
-                                        FILTER_GREEN0       = 9,  &
-                                        FILTER_GREEN1       = 10, &
-                                        FILTER_GREEN2       = 11, &
-                                        FILTER_YELLOW0      = 12, &
-                                        FILTER_YELLOW1      = 13, &
-                                        FILTER_YELLOW2      = 14
+                                        FILTER_RED          = 2,  &
+                                        FILTER_RED1         = 3,  &
+                                        FILTER_RED2         = 4,  &
+                                        FILTER_BLUE         = 5,  &
+                                        FILTER_BLUE1        = 6,  &
+                                        FILTER_BLUE2        = 7,  &
+                                        FILTER_GREEN        = 8,  &
+                                        FILTER_GREEN1       = 9,  &
+                                        FILTER_GREEN2       = 10, &
+                                        FILTER_YELLOW       = 11, &
+                                        FILTER_YELLOW1      = 12, &
+                                        FILTER_YELLOW2      = 13, &
+                                        FILTER_DARK         = 14, &
+                                        FILTER_DARK1        = 15, &
+                                        FILTER_DARK2        = 16, &
+                                        FILTER_LIGHT        = 17, &
+                                        FILTER_LIGHT1       = 18, &
+                                        FILTER_LIGHT2       = 19, &
+                                        FILTER_SHADOW       = 20, &
+                                        FILTER_TRANSP       = 21, &
+                                        FILTER_PINK         = 22, &
+                                        FILTER_PINK1        = 23, &
+                                        FILTER_PINK2        = 24
+
 END MODULE engineConstants
