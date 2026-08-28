@@ -79,6 +79,9 @@ MODULE engineConstants
                                         FILTER_TRANSP       = 21, &
                                         FILTER_PINK         = 22, &
                                         FILTER_PINK1        = 23, &
-                                        FILTER_PINK2        = 24
+                                        FILTER_PINK2        = 24, &
+                                        FILTER_TEAL         = 25, &
+                                        FILTER_TEAL1        = 26, &
+                                        FILTER_TEAL2        = 27
 
 END MODULE engineConstants

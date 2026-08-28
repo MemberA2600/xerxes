@@ -195,7 +195,7 @@ MODULE adlib
         integer(2), dimension(:), allocatable  :: d, temp
         integer(8)                             :: offset, dataLen
 
-        call loadBinary("adlib\" // fname, d, siz, .TRUE.)
+        call loadBinary(trim(CWD()) // "\adlib\" // fname, d, siz, .TRUE.)
 
         adlibList(num)%dataLen = size(d)
         

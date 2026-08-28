@@ -241,7 +241,7 @@ MODULE TIA
         integer(2)                             :: stat
         type(TIAHeader)                        :: header
 
-        call loadBinary("tia\" // fname, d, siz, .FALSE.)
+        call loadBinary(trim(CWD()) // "\tia\" // fname, d, siz, .FALSE.)
         call makeTiaHeader(d, temp, header, siz)
 
         call uncompressTIA(temp, header%numOfTones)        

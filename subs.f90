@@ -47,7 +47,7 @@ MODULE subs
             character(MAX_PATH_LEN)                 :: fname  
             logical                                 :: sav
             integer                                 :: iflags, ind             
-            character(25), dimension(5,3)           :: typeList         
+            character(25), dimension(6,3)           :: typeList         
             character(4)                            :: typ
             character(40)                           :: title, ftyp 
 
@@ -56,7 +56,7 @@ MODULE subs
             typelist(1,3) = 'Windows Wave File'
 
             typeList(2,1) = 'xxt '
-            typelist(2,2) = 'TIA Files|*.xxt|'
+            typelist(2,2) = 'TIA Files (XXT)|*.xxt|'
             typelist(2,3) = 'Xerxes TIA File'
 
             typeList(3,1) = 'vgm '
@@ -64,12 +64,16 @@ MODULE subs
             typelist(3,3) = 'Video Game Music'
 
             typeList(4,1) = 'xxa '
-            typelist(4,2) = 'Adlib Files|*.xxa|'
+            typelist(4,2) = 'Adlib Files (XXA)|*.xxa|'
             typelist(4,3) = 'Xerxes Adlib File'
 
             typeList(5,1) = 'bmp '
             typelist(5,2) = 'Bitmap Files|*.bmp|'
             typelist(5,3) = 'Windows Bitmap'
+
+            typeList(6,1) = 'xxp '
+            typelist(6,2) = 'Bitmap Files (XXP)|*.xxp|'
+            typelist(6,3) = 'Xerxes Bitmap File'
 
             iflags = 8 + 32
 
@@ -90,7 +94,8 @@ MODULE subs
                end if
             end do
 
-            fname = dir    
+            fname = trim(CWD()) // '\' // trim(dir)
+            !call displayDebug(fname)
 
             call WSelectFile(trim(ftyp), iflags, fname, trim(title))
             if (WinFoDialog(4) /= CommonOK) fname = ""  

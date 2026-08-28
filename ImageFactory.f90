@@ -16,7 +16,8 @@ MODULE ImageFactory
     implicit none
 
     private
-    public                  :: bitMapWindow, checkImageWindowFields
+    public                  :: bitMapWindow, checkImageWindowFields, dropImageList, dropAllImages, &
+                               initImageList, loadImageHeader, loadImageByName, addToSCRBuffByName
 
     !
     !   Images are pretty complex and compact.
@@ -27,16 +28,13 @@ MODULE ImageFactory
     !   (max: wOfScreenBuffer and hOfScreenBuffer)
     !   
     !   transpColor: This color is used for transparency, so should be a color that is
-    !                not present on the picture. If 0, since black cannot be transparent,
+    !                not present on the picture. If 1, since black cannot be transparent,
     !                it means the picture is not transparent. By deafult, it's the top-left pixel
     !                of the first frame.
     !
     !   The number of frames. One byte, n+1 is the number, so it can go up to 256.    
     !
-    !   The first frame (key) is always exact, so the file always holds all the pixels. The next ones
-    !   holds only the number you have to add to the previous one the get the current one. This makes
-    !   gzip more efficient with the lot of unchanged ones (0).
-    !
+    !   The comes the actual picture data.
     !
 
     type imageData
@@ -57,6 +55,7 @@ MODULE ImageFactory
 
          procedure                                 :: dropImage         => dropImage      
          procedure                                 :: addToScreenBuffer => addToScreenBuffer 
+         procedure                                 :: loadImage         => loadImage         
 
     end type
 
@@ -64,7 +63,77 @@ MODULE ImageFactory
     logical                                        :: canKill = .FALSE., pickerActive = .FALSE., &
                                                       justACancel, pleaseStop = .TRUE.  
 
+    type(imageFile), dimension(:), allocatable     :: imageList
+
     contains
+
+    subroutine addToSCRBuffByName(n, frameNum, bufferNum, x, y, filter)
+         integer(2)                      :: frameNum, bufferNum, x, y, filter
+         integer                         :: ind   
+         character(*)                    :: n   
+
+         do ind = 1, size(imageList), 1
+            if (imageList(ind)%name == n) then
+                call imageList(ind)%addToScreenBuffer(frameNum, bufferNum, x, y, filter)
+                exit
+            end if
+         end do
+
+    end subroutine
+
+    subroutine loadImageByName(n)
+         integer                                  :: ind   
+         character(*)                             :: n   
+
+         do ind = 1, size(imageList), 1
+            if (imageList(ind)%name == n) then
+                call imageList(ind)%loadImage()
+                exit
+            end if
+         end do
+
+    end subroutine
+
+    subroutine initImageList(n)
+        integer                                   :: n 
+        integer(1)                                :: rc
+
+        allocate(imageList(n), stat = rc) 
+        if (rc /= 0) call displayDebug("Failed to allocate imageList!")   
+
+    end subroutine
+
+    subroutine dropImageList()
+       integer(1)                                 :: rc
+
+       if (allocated(imageList)) then
+           call dropAllImages() 
+
+           deallocate(imageList, stat = rc) 
+           if (rc /= 0) call displayDebug("Failed to deallocate imageList!")     
+
+       end if 
+
+    end subroutine
+
+    subroutine dropAllImages()
+        integer                                    :: ind
+        integer(1)                                 :: rc
+
+        if (allocated(imageList)) then
+            do ind = 1, size(imageList), 1
+               if (allocated(imageList(ind)%img)) then 
+                   if (allocated(imageList(ind)%img%frames)) then
+                       deallocate(imageList(ind)%img%frames, stat = rc) 
+                       if (rc /= 0) call displayDebug("Failed to deallocate image frames of imageFile!")
+                   end if  
+                   deallocate(imageList(ind)%img, stat = rc) 
+                   if (rc /= 0) call displayDebug("Failed to deallocate image of imageFile!") 
+               end if 
+            end do
+        end if
+
+    end subroutine
     
     function loadBMP() result(r)
          character(MAX_PATH_LEN)               :: fname, newFname
@@ -210,9 +279,6 @@ MODULE ImageFactory
               case(FILTER_LIGHT2)
                    color = changeRGB(color,   3,  3,  3)
 
-              case(FILTER_SHADOW)
-                   color = 1
-
               case(FILTER_PINK)
                    color = changeRGB(color,  1, -1, 1)
 
@@ -221,6 +287,22 @@ MODULE ImageFactory
 
               case(FILTER_PINK2)
                    color = changeRGB(color,  3, -3, 3)
+
+              case(FILTER_TEAL)
+                   color = changeRGB(color,  -1, 1, 1)
+
+              case(FILTER_TEAL1)
+                   color = changeRGB(color,  -2, 2, 2)
+
+              case(FILTER_TEAL2)
+                   color = changeRGB(color,  -3, 3, 3)
+
+              case(FILTER_SHADOW)
+                   if (modulo((xPix + yPix), 2) == 0) then 
+                       color = -1 
+                   else 
+                       color =  1
+                   end if 
 
               case(FILTER_TRANSP)
                    if (modulo((xPix + yPix), 2) == 0) color = -1 
@@ -438,6 +520,7 @@ MODULE ImageFactory
                      end if
 
                   CASE(ID_XXPSave)
+                     call saveBMP2XXP()
 
                   CASE(IDF_ColorPick)
                      pickerActive = .TRUE.
@@ -582,7 +665,6 @@ MODULE ImageFactory
                CALL WDialogFieldState(IDF_TransTrk   , DISABLED) 
 
            end if  
-    
 
         end if
 
@@ -595,5 +677,153 @@ MODULE ImageFactory
 
     end subroutine
  
+    subroutine saveBMP2XXP()
+        integer(2), dimension(:), allocatable :: d
+        integer(2)                            :: rc
+        character(NAME_MAX_LEN)               :: name
+        character(MAX_PATH_LEN)               :: fname
+        integer(8)                            :: offset, s, f, x, y, fullS
+        character(40)                         :: t   
+
+        fname = FileDialog("img\", .TRUE., "xxp ")  
+        call WDialogGetString(ID_XXPName,  name)
+        if (fname == "") return
+        
+    !   4   bytes: 'IMG ' 
+    !   1   byte : Lenght of Name
+    !   lenOfName: Name 
+    !   2 bytes  : w       
+    !   2 bytes  : h       
+    !   1 bytes  : transpColor - 1     
+    !   1 bytes  : number of Frames - 1      
+    !   (w * h)  * number of Frames  
+
+        fullS = imageLoader%img%width
+        fullS = fullS * imageLoader%img%height
+        fullS = fullS * imageLoader%img%numOfFrames
+
+        s = 5 + len_trim(name) + 6 + fullS
+
+        allocate(d(s), stat = rc)
+        if (rc /= 0) call displayDebug("Failed to allocate XXP bytes!")
+
+        offset = 1
+
+        call writeChars2Bin(d, IMG_FILE_TYPE, 1, 4)
+
+        d(5) = len_trim(name)
+        
+        call writeChars2Bin(d, trim(name), 6, len_trim(name))
+        offset = 6 + len_trim(name)
+
+        call WriteInt2ToData(d, offset, imageLoader%img%width)
+        call WriteInt2ToData(d, offset, imageLoader%img%height)
+
+        d(offset    ) = imageLoader%img%transpColor - 1
+        d(offset + 1) = imageLoader%img%numOfFrames - 1
+        
+        offset = offset + 1
+
+        do f        = 1, imageLoader%img%numOfFrames, 1
+           do y     = 1, imageLoader%img%height     , 1
+               do x = 1, imageLoader%img%width      , 1
+                    offset    = offset + 1   
+                    d(offset) = imageLoader%img%frames(f, x, y) - 1
+               end do  
+           end do 
+        end do
+
+        !call writeBin2File(trim(CWD()) // "\img\test.xxp", d, .FALSE., .FALSE.)
+        call writeBin2File(fname, d, .TRUE., .TRUE.)
+
+    end subroutine
+
+    subroutine loadImageHeader(num, fname)
+        integer(1)                             :: rc
+        integer(2)                             :: num
+        character(*)                           :: fname
+        integer(8)                             :: siz
+        integer(2)                             :: stat
+        integer(2), dimension(:), allocatable  :: d, temp
+        integer(8)                             :: offset
+
+        call loadBinary(trim(CWD()) // "\img\" // fname, d, siz, .TRUE.)
+       
+        offset = 1
+        call read4CharFromBin(d, siz, offset, imageList(num)%header)  
+        if (imageList(num)%header /= IMG_FILE_TYPE) then
+            call displayDebug("This is not a valid bitmap file!")
+            return
+        end if    
+    
+        imageList(num)%nameLen = d(offset)
+        offset                 = offset + 1
+
+        call copyBytes(d, temp, offset, &
+                       offset + imageList(num)%nameLen - 1, &
+                       imageList(num)%nameLen) 
+
+        offset = offset + imageList(num)%nameLen
+
+        call bin2Char(imageList(num)%name, temp, imageList(num)%nameLen, .TRUE.) 
+        imageList(num)%fileName = fname    
+
+        deallocate(d, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to deallocate the loaded XXP!")
+
+    end subroutine
+
+    subroutine loadImage(this)
+        class(imageFile), intent(inout)        :: this
+        integer(8)                             :: siz
+        integer(2)                             :: stat
+        integer(2), dimension(:), allocatable  :: d
+        integer(8)                             :: offset, f, x, y
+        character(40)                          :: test
+
+        if (allocated(this%img)) call this%dropImage()
+
+        call loadBinary(trim(CWD()) // "\img\" // this%fileName, d, siz, .TRUE.)
+
+        offset = 6 + this%nameLen
+
+        allocate(this%img,  stat = stat)
+        if (stat /= 0) then
+            call displayDebug("Failed to allocate imageFile's ImageData!")
+        else    
+            this%img%width       = ReadInt2FromData(d, offset) 
+            this%img%height      = ReadInt2FromData(d, offset) 
+            this%img%transpColor = d(offset)     + 1
+            this%img%numOfFrames = d(offset + 1) + 1
+
+            !write(test, "(I0, ' ', I0, ' ', I0, ' ', I0)") this%img%width, this%img%height, &
+            !                                               this%img%transpColor, this%img%numOfFrames
+
+            !call displayDebug(test)
+
+            allocate(this%img%frames(this%img%numOfFrames, &
+                                     this%img%width      , &
+                                     this%img%height     ), stat = stat)
+
+            if (stat /= 0) then
+                call displayDebug("Failed to allocate imageFile's ImageData!")
+            else   
+                offset = offset + 1
+    
+                do f        = 1, this%img%numOfFrames, 1
+                   do y     = 1, this%img%height     , 1
+                       do x = 1, this%img%width      , 1
+                            offset                   = offset    + 1   
+                            this%img%frames(f, x, y) = d(offset) + 1
+                       end do  
+                   end do 
+                end do
+            end if
+        end if
+
+        deallocate(d, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to deallocate the loaded XXP! #2")
+
+    end subroutine
 
 END MODULE ImageFactory

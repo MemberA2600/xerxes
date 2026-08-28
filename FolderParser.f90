@@ -8,6 +8,8 @@ MODULE FolderParser
       use engineConstants  
       use TIA  
       use Adlib  
+      use subs
+      use imageFactory    
 
       IMPLICIT NONE  
 
@@ -28,7 +30,7 @@ MODULE FolderParser
           N = 0
           hndl = FILE$FIRST
           DO 
-             NN = GETFILEINFOQQ(trim(folder) // '\*.' // (trim(extension)),DIR_INFO, hndl)
+             NN = GETFILEINFOQQ(trim(CWD()) // '\' // trim(folder) // '\*.' // (trim(extension)),DIR_INFO, hndl)
 	        IF(hndl.eq.FILE$LAST.or.hndl.eq.FILE$ERROR.or.NN.eq.0)exit
              N = N + 1
           END DO
@@ -38,14 +40,15 @@ MODULE FolderParser
               call initTiaList(N)  
           case("xxa")
               call initAdlibList(N)  
-
+          case("xxp")
+              call initImageList(N) 
           end select
 
           hndl = FILE$FIRST
     
           N = 0  
           DO 
-             NN = GETFILEINFOQQ(trim(folder) // '\*.' // (trim(extension)),DIR_INFO, hndl)
+             NN = GETFILEINFOQQ(trim(CWD()) // '\' // trim(folder) // '\*.' // (trim(extension)),DIR_INFO, hndl)
 	        IF(hndl.eq.FILE$LAST.or.hndl.eq.FILE$ERROR.or.NN.eq.0)exit
              N = N + 1
 
@@ -54,6 +57,8 @@ MODULE FolderParser
                   call loadTIAFile(N, dir_info%name)
              case("xxa")
                   call loadAdlibHeader(N, dir_info%name)
+             case("xxp")
+                  call loadImageHeader(N, dir_info%name)
              end select
 
           END DO

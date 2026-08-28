@@ -124,12 +124,14 @@
        !end if  
 
        !call loadBMP() 
+
+    !call loadImageByName("Suika")
+    !call addToSCRBuffByName("Suika", 4, 1, 35, 55, 3)
 !
 !   Load the config!
 !
      call loadConfig()
      call playTIAbyName("StartUp", 0)  
-
 !
 !   Main message loop
 !
@@ -189,6 +191,8 @@
                     call saveConfig()
               CASE (ID_BMP2XXP)
                     call bitMapWindow()  
+                    call dropImageList()     
+                    call getFolder("img", "xxp")
               CASE (ID_DisplayPalette)
                     call displayPalette()  
             END SELECT 
@@ -219,6 +223,7 @@
       subroutine loadFolders()
            call getFolder("tia"  , "xxt")
            call getFolder("adlib", "xxa")
+           call getFolder("img"  , "xxp")
       end subroutine  
 
       function playAdlibT(lpParameter) result(rc)
