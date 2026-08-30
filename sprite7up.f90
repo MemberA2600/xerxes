@@ -24,6 +24,7 @@ MODULE sprite7up
          integer(1)               :: filter, bufferNum  
          integer(4)               :: ind
          logical                  :: solid, active
+         type(counterTimer)       :: timer
 
          contains 
          procedure                :: drawImage => drawImage 
@@ -100,12 +101,14 @@ MODULE sprite7up
 
         end if
 
-        if (stupidTimerEnded() .EQV. .TRUE. ) then   
+        if (this%timer%timerEnded() .EQV. .TRUE. ) then   
             if (this%spriteI >= this%imageF%img%numOfFrames) then
                 this%spriteI = 1
             else
                 this%spriteI = this%spriteI + 1
             end if
+
+            call this%timer%timerRestart()
         end if
     
 
@@ -206,6 +209,10 @@ MODULE sprite7up
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%name    = spriteName
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%typFlag = typFlag
 
+         if (layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%imageF%img%numOfFrames > 1) then
+             call layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%timer%timerStart(PERFECT_WAIT)
+         end if
+
     end subroutine
 
     subroutine initBlockMaps(n, w, h)
@@ -258,6 +265,9 @@ MODULE sprite7up
 
         layerDimensions(LAYER_WEATHER   ,1) =   BLOCKMAP_1        
         layerDimensions(LAYER_WEATHER   ,2) =   BLOCKMAP_FIX
+
+        layerDimensions(LAYER_FOREGROUND,1) =   BLOCKMAP_1
+        layerDimensions(LAYER_FOREGROUND,2) =   BLOCKMAP_FIX
 
         layerDimensions(LAYER_INTERFACE ,1) =   BLOCKMAP_INF         
         layerDimensions(LAYER_INTERFACE ,2) =   BLOCKMAP_FIX     

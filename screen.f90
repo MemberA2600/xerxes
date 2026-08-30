@@ -255,7 +255,8 @@ MODULE screen
              !end if
 
              counter             = counter + 1 
-             if (all2One(srcPixelIndex, srcLineIndex) == -1) call displayDebug("FASZOM!!")   
+             if (all2One(srcPixelIndex, srcLineIndex) == -1) &
+                 all2One(srcPixelIndex, srcLineIndex) = getColorValue(1)   
 
              screenData(counter) = all2One  (srcPixelIndex, srcLineIndex)
                  

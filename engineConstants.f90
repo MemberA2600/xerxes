@@ -15,13 +15,15 @@ MODULE engineConstants
                 2048, 1536  &  ! QXGA
                 /), shape(standards), order=(/2,1/))
 
-    integer(1), parameter         :: layerNum          = 5, &      
+    integer                       :: PERFECT_WAIT = 50000
+
+    integer(1), parameter         :: layerNum          = 6, &      
                                      LAYER_BACKGROUND  = 1, & 
                                      LAYER_PLAYGROUND  = 2, &
                                      LAYER_SKY         = 3, &   
                                      LAYER_WEATHER     = 4, &   
-                                     LAYER_INTERFACE   = 5
-    integer(1), parameter         :: maxAtSamePlace    = 5
+                                     LAYER_FOREGROUND  = 5, &  
+                                     LAYER_INTERFACE   = 6
 
     integer(2), parameter         :: numOfColors = 256 
     INTEGER(KIND=1), PARAMETER    :: maxNumberOfScreenSizes = 9

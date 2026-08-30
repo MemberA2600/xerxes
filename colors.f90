@@ -36,7 +36,7 @@ MODULE colors
    CONTAINS
 
    subroutine start256Timer()
-        call timer256%timerStart(50000)
+        call timer256%timerStart(PERFECT_WAIT)
    end subroutine  
 
    SUBROUTINE setUpTo256()
