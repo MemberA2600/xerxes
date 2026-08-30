@@ -8,20 +8,20 @@
 //
 // Winteracter resource script
 //
-// Modified : 28/aug./2026 10:53:28
+// Modified : 30/aug./2026 09:14:43
 //
 ///////////////////////////////////////////////////
 //
 // Number of resources
 //
 //*WN* NMENU       1
-//*WN* NITEM       25
+//*WN* NITEM       26
 //*WN* NDIALOG     7
 //*WN* NFIELD      103
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
-//*WN* NIDENTIFIER 144
+//*WN* NIDENTIFIER 145
 //*WN* NINCLUDE    0
 //*WN* NOPTROW     0
 ///////////////////////////////////////////////////
@@ -168,6 +168,7 @@
 #define IDF_FilterInd          1100
 #define IDF_TransTrk           1101
 #define ID_DisplayPalette     40025
+#define ID_STARTGAME          40026
 
 ///////////////////////////////////////////////////
 //
@@ -425,6 +426,7 @@ BEGIN
     MENUITEM "VGM to XXA",ID_VGM2XXA
     MENUITEM "BMP to XXP",ID_BMP2XXP
     MENUITEM "Display Palette",ID_DisplayPalette
+    MENUITEM "Start Game",ID_STARTGAME
   END
 END
 
@@ -458,5 +460,5 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FORTSAVE    1
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
-//*WI* LASTTYPE    2
-//*WI* LASTRES     7
+//*WI* LASTTYPE    1
+//*WI* LASTRES     1

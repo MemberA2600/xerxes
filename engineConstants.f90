@@ -15,6 +15,14 @@ MODULE engineConstants
                 2048, 1536  &  ! QXGA
                 /), shape(standards), order=(/2,1/))
 
+    integer(1), parameter         :: layerNum          = 5, &      
+                                     LAYER_BACKGROUND  = 1, & 
+                                     LAYER_PLAYGROUND  = 2, &
+                                     LAYER_SKY         = 3, &   
+                                     LAYER_WEATHER     = 4, &   
+                                     LAYER_INTERFACE   = 5
+    integer(1), parameter         :: maxAtSamePlace    = 5
+
     integer(2), parameter         :: numOfColors = 256 
     INTEGER(KIND=1), PARAMETER    :: maxNumberOfScreenSizes = 9
     INTEGER(kind=2)               :: wOfScreenBuffer        = 640, &
@@ -83,5 +91,6 @@ MODULE engineConstants
                                         FILTER_TEAL         = 25, &
                                         FILTER_TEAL1        = 26, &
                                         FILTER_TEAL2        = 27
+    integer(1), parameter            :: TYPE_EMPTY          = 0
 
 END MODULE engineConstants

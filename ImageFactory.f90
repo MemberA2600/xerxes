@@ -17,7 +17,8 @@ MODULE ImageFactory
 
     private
     public                  :: bitMapWindow, checkImageWindowFields, dropImageList, dropAllImages, &
-                               initImageList, loadImageHeader, loadImageByName, addToSCRBuffByName
+                               initImageList, loadImageHeader, loadImageByName, addToSCRBuffByName, &
+                               imageFile, assignSpriteToPointer
 
     !
     !   Images are pretty complex and compact.
@@ -56,16 +57,49 @@ MODULE ImageFactory
          procedure                                 :: dropImage         => dropImage      
          procedure                                 :: addToScreenBuffer => addToScreenBuffer 
          procedure                                 :: loadImage         => loadImage         
-
     end type
 
     type(imageFile)                                :: imageLoader
     logical                                        :: canKill = .FALSE., pickerActive = .FALSE., &
                                                       justACancel, pleaseStop = .TRUE.  
 
-    type(imageFile), dimension(:), allocatable     :: imageList
+    type(imageFile), dimension(:), &
+                           allocatable, target     :: imageList
 
     contains
+
+    subroutine assignSpriteToPointer(n, p)
+        character(*)                            :: n
+        type(imageFile), pointer, intent(inout) :: p
+        integer                                 :: ind, foundInd 
+        character(40)                           :: test        
+
+        foundInd = 0
+        nullify(p)
+
+         do ind = 1, size(imageList), 1
+
+            !write(test, "(A, '|', I0, '|', A, '|',I0)") &
+            !      trim(imageList(ind)%name), len_trim(imageList(ind)%name), trim(n), len_trim(n)  
+
+            !call displayDebug(test)
+
+            if (imageList(ind)%name == n) then
+                p => imageList(ind)
+                foundInd = ind
+                exit
+            end if
+         end do
+    
+         if (foundInd == 0) then 
+            call displayDebug("Image " // trim(n) // " not found!")
+         else   
+            if (allocated(imageList(foundInd)%img) .EQV. .FALSE.) then
+                call imageList(foundInd)%loadImage()
+            end if              
+         end if   
+
+    end subroutine
 
     subroutine addToSCRBuffByName(n, frameNum, bufferNum, x, y, filter)
          integer(2)                      :: frameNum, bufferNum, x, y, filter
@@ -205,20 +239,29 @@ MODULE ImageFactory
         integer(2)                      :: frameNum, bufferNum, x, y, filter
         integer(2)                      :: xPix, yPix, color, xOnBuff, yOnBuff
         integer(2), dimension(3)        :: rgb        
+        !character(40)                   :: test
 
         do yPix = 1, this%img%height, 1
            do xPix = 1, this%img%width, 1
+
               color = this%img%frames(frameNum, xPix, yPix)  
 
               xOnBuff = xPix + x - 1 
               yOnBuff = yPix + y - 1  
- 
-              if (this%img%transpColor > 1 .AND. this%img%transpColor == color) then
-                  if (xOnBuff <= wOfScreenBuffer .AND. yOnBuff <= hOfScreenBuffer) then   
+            
+              if (xOnBuff > wOfScreenBuffer .OR. yOnBuff > hOfScreenBuffer .OR. & 
+                  xOnBuff < 1               .OR. yOnBuff < 1) cycle    
+
+              !write(test, "(I0, ' | ', I0)") this%img%transpColor, color
+              !call displayDebug(test)  
+              if (pickerActive .EQV. .FALSE.) then  
+                  if (this%img%transpColor > 1 .AND. this%img%transpColor == color) then
+                      !if (xOnBuff <= wOfScreenBuffer .AND. yOnBuff <= hOfScreenBuffer) then   
                       call setBufferPixel(bufferNum, xOnBuff, yOnBuff, -1)
                       cycle   
+                      !end if
                   end if
-              end if
+              end if  
 
               select case(filter)
               case(FILTER_RAINBOW)
@@ -309,9 +352,12 @@ MODULE ImageFactory
 
               end select
 
-              if (xOnBuff <= wOfScreenBuffer .AND. yOnBuff <= hOfScreenBuffer) then   
-                  call setBufferPixel(bufferNum, xOnBuff, yOnBuff, color)   
-              end if
+              !write(test, '(I0)') color
+              !call displayDebug(test)  
+
+              !if (xOnBuff <= wOfScreenBuffer .AND. yOnBuff <= hOfScreenBuffer) then   
+              call setBufferPixel(bufferNum, xOnBuff, yOnBuff, color)   
+              !end if
 
            end do 
         end do
@@ -484,7 +530,7 @@ MODULE ImageFactory
     end subroutine
 
     subroutine bitMapWindow()
-       INTEGER                                 :: ITYPE
+       INTEGER                                 :: ITYPE, ind, filter
        TYPE(WIN_MESSAGE)                       :: MESSAGE
        !character(10)                  :: msgString
        integer(2)                              :: c 
@@ -524,6 +570,11 @@ MODULE ImageFactory
 
                   CASE(IDF_ColorPick)
                      pickerActive = .TRUE.
+
+                     call WDialogGetInteger(IDF_SpriteIndex, ind)
+                     call WDialogGetInteger(IDF_FilterInd  , filter)
+                     call imageLoader%addToScreenBuffer(ind, 1, 1, 1, filter)
+
                      call WCursorShape(CurCrossHair)
                      call waitAndDraw()
 

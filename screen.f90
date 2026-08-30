@@ -25,6 +25,7 @@ MODULE screen
     LOGICAL                         :: bitmapCreated = .FALSE.
 
     CONTAINS 
+
     SUBROUTINE initScreenBuff(numOfLayers)
         INTEGER(KIND = 2) :: numOfLayers    
         INTEGER(KIND = 4) :: stat
@@ -163,7 +164,11 @@ MODULE screen
     subroutine setBufferPixel(n, x, y, c)
         integer(2) :: n, x, y, c
 
-        screenBuffers(n, x, y) = getColorValue(c)
+        if (c == -1) then
+            screenBuffers(n, x, y) = -1
+        else
+            screenBuffers(n, x, y) = getColorValue(c)
+        end if
 
     end subroutine
 
@@ -209,25 +214,29 @@ MODULE screen
     END FUNCTION
 
     SUBROUTINE buffer2Real()
-        INTEGER(kind=4), DIMENSION(640, 480) :: five2One 
+        INTEGER(kind=4), DIMENSION(640, 480) :: all2One 
         INTEGER(kind=4)  :: layerIndex, lineIndex, pixelIndex, srcLineIndex, srcPixelIndex          
         INTEGER          :: counter 
         character(40)    :: test
 
-        five2One = -1       
-                                
+        all2One = -1       
+      
         do layerIndex       =  1, layers          , 1
            do lineIndex     =  1, hOfScreenBuffer , 1 
               do pixelIndex =  1, wOfScreenBuffer , 1         
                  
+                 !if (layerIndex > 1) then
                  !write(test, "(I0, ' ', I0, ' ', I0)") layerIndex, lineIndex, pixelIndex     
                  !call displayDebug(test)
+                 !end if
 
                  if (screenBuffers(layerIndex, pixelIndex, lineIndex) /= -1) then
-                     five2One     (pixelIndex, lineIndex) = &
+                     all2One     (pixelIndex, lineIndex) = &
                      screenBuffers(layerIndex, pixelIndex, lineIndex)
                  else
-                     if (layerIndex == layers) five2One (pixelIndex, lineIndex) = 1
+                     if (layerIndex == layers .AND. all2One(pixelIndex, lineIndex) == -1) then
+                         all2One (pixelIndex, lineIndex) = getColorValue(1)
+                     end if
                  end if
 
               end do
@@ -246,7 +255,9 @@ MODULE screen
              !end if
 
              counter             = counter + 1 
-             screenData(counter) = five2One  (srcPixelIndex, srcLineIndex)
+             if (all2One(srcPixelIndex, srcLineIndex) == -1) call displayDebug("FASZOM!!")   
+
+             screenData(counter) = all2One  (srcPixelIndex, srcLineIndex)
                  
           end do                       
         end do

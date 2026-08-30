@@ -30,7 +30,8 @@
       USE inputReader
       USE config  
       USE imagefactory  
-
+      USE sprite7up
+  
       IMPLICIT NONE
 !
 ! Declare variables to be returned by WMessage
@@ -71,7 +72,9 @@
       CALL generateColors() 
       scr  = getScreenSize()
       call autoSizeScreen()  
-      call initScreenBuff(1)  
+
+      call initScreenBuff(layerNum)  
+      call initBlockMaps (layerNum, wOfScreenBuffer, hOfScreenBuffer)  
 
       call WMEssageEnable(BorderSelect, Enabled)
       !CALL WMessageEnable(KeyDown,Enabled)
@@ -127,6 +130,10 @@
 
     !call loadImageByName("Suika")
     !call addToSCRBuffByName("Suika", 4, 1, 35, 55, 3)
+
+    call createSpriteObjPlayGround('Suika', 'Suika', 15, 10, TYPE_EMPTY, .TRUE., NO_FILTER)
+    call createSpriteObjBackground('Grass', 'Grass', NO_FILTER)
+
 !
 !   Load the config!
 !
@@ -195,6 +202,8 @@
                     call getFolder("img", "xxp")
               CASE (ID_DisplayPalette)
                     call displayPalette()  
+              CASE (ID_STARTGAME)
+                    editMode = .FALSE. 
             END SELECT 
 
           CASE (CloseRequest)            ! Close window (e.g. Alt/F4)
@@ -203,7 +212,7 @@
         END SELECT
         if (editMode .EQV. .FALSE.) then 
             call WMenuSetState(ID_DEV, ItemEnabled, 0)  
-            !call runGameLogic()
+            call putSpritesOnBuffer()
         end if
         !CALL soundChannelLoop()
         !call playAdlib()

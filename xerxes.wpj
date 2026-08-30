@@ -7,29 +7,30 @@ FC    11
 ESAME 1
 EXE   xerxes.exe
 MAXF  1000
-FILE    3 xerxes.f90
-FILE    7 config.f90
-FILE    7 inpout.f90
-FILE    7 threadmaster.f90
-FILE    7 gzip.f90
-FILE    7 engineconstants.f90
-FILE    5 resid.f90
-FILE    7 subs.f90
-FILE    7 winapis.f90
-FILE    7 screen.f90
-FILE    3 resource.rc
-FILE    7 debugwindow.f90
+FILE    7 adlib.f90
 FILE    7 colors.f90
+FILE    7 config.f90
+FILE    7 debugwindow.f90
 FILE    7 dataloader.f90
+FILE    7 engineconstants.f90
 FILE    7 folderparser.f90
+FILE    7 gzip.f90
+FILE    7 imagefactory.f90
+FILE    7 inpout.f90
+FILE    7 inputreader.f90
 FILE    7 opl3.f90
+FILE    5 resid.f90
+FILE    3 resource.rc
+FILE    7 screen.f90
+FILE    7 sprite7up.f90
+FILE    7 subs.f90
+FILE    7 threadmaster.f90
+FILE    7 tia.f90
+FILE    7 vgm.f90
 FILE    7 waveplayer.f90
 FILE    7 waveplayerwindow.f90
-FILE    7 tia.f90
-FILE    7 adlib.f90
-FILE    7 vgm.f90
-FILE    7 inputreader.f90
-FILE    7 imagefactory.f90
+FILE    7 winapis.f90
+FILE    3 xerxes.f90
 FCREL -c
 OPREL -O2
 LNREL -subsystem:windows -machine:x86

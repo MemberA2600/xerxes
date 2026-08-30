@@ -132,26 +132,13 @@ MODULE threadMaster
         TYPE(Thread), dimension(:), allocatable  :: tempList
         integer(2)                               :: ind
 
-        allocate(tempList(listSize), stat = RC)
+        allocate(tempList(listSize + addSize), stat = RC)
         if (rc /= 0) call displayDebug("Failed to allocate temp list of threads!")
 
-        do ind = 1, listSize, 1
-           tempList(ind) = threadList(ind)  
-        end do
+        tempList(1:listSize) = threadList(ind)
 
-        deallocate(threadList, stat = RC)
-        if (rc /= 0) call displayDebug("Failed to deallocate threadlist!")  
-
-        allocate(threadList(listSize + addSize), stat = RC)
-        if (rc /= 0) call displayDebug("Failed to allocate threadlist!")     
-
-        do ind = 1, listSize, 1
-           threadList(ind) = tempList(ind)  
-        end do        
-
-        deallocate(tempList, stat = RC)
-        if (rc /= 0) call displayDebug("Failed to deallocate tempList!")         
-
+        call move_alloc(tempList, threadList)
+        
     end subroutine 
 
     function getThreadNum(name) result(i)
