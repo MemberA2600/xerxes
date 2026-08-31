@@ -40,12 +40,12 @@ MODULE sprite7up
     type BlockMap
         type(SpriteObj), dimension(:), allocatable :: spriteList
         type(spritePoz), dimension(:), allocatable :: pozList
-        integer(4)                                 :: nextIndexS, nextIndexP
+        integer(4)                                 :: nextIndexS, nextIndexP, nextIndexS2
     end type
 
     type(BlockMap), dimension(layerNum)         :: layerBlocks
 
-    integer(2), dimension(layerNum, 2)          :: layerDimensions
+    integer(2), dimension(layerNum, 3)          :: layerDimensions
 
     integer(4)                                  :: XOffset, YOffset, wSize, hSize
 
@@ -101,15 +101,20 @@ MODULE sprite7up
 
         end if
 
-        if (this%timer%timerEnded() .EQV. .TRUE. ) then   
-            if (this%spriteI >= this%imageF%img%numOfFrames) then
-                this%spriteI = 1
-            else
+        if (this%imageF%img%numOfFrames > 1) then
+            if (this%timer%timerEnded() .EQV. .TRUE. ) then             
                 this%spriteI = this%spriteI + 1
+
+                if (this%spriteI >= this%imageF%img%numOfFrames) then
+                    this%spriteI = 1
+                end if
+                
+                call this%timer%timerStart(PERFECT_WAIT * getSpeed())
             end if
 
-            call this%timer%timerRestart()
-        end if
+        else
+            this%spriteI = 1
+        end if  
     
 
     end subroutine
@@ -210,7 +215,8 @@ MODULE sprite7up
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%typFlag = typFlag
 
          if (layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%imageF%img%numOfFrames > 1) then
-             call layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%timer%timerStart(PERFECT_WAIT)
+             call layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%timer%timerStart( &
+                  PERFECT_WAIT * getSpeed())
          end if
 
     end subroutine
@@ -256,21 +262,27 @@ MODULE sprite7up
 
         layerDimensions(LAYER_BACKGROUND,1) =   BLOCKMAP_1
         layerDimensions(LAYER_BACKGROUND,2) =   BLOCKMAP_FIX
+        layerDimensions(LAYER_BACKGROUND,3) =   NO_SHADOW
 
         layerDimensions(LAYER_PLAYGROUND,1) =   BLOCKMAP_INF       
         layerDimensions(LAYER_PLAYGROUND,2) =   BLOCKMAP_EXP     
-   
+        layerDimensions(LAYER_PLAYGROUND,3) =   NO_SHADOW     
+
         layerDimensions(LAYER_SKY       ,1) =   BLOCKMAP_INF         
         layerDimensions(LAYER_SKY       ,2) =   BLOCKMAP_EXP     
+        layerDimensions(LAYER_SKY       ,3) =   CAST_SHADOW    
 
         layerDimensions(LAYER_WEATHER   ,1) =   BLOCKMAP_1        
         layerDimensions(LAYER_WEATHER   ,2) =   BLOCKMAP_FIX
+        layerDimensions(LAYER_WEATHER   ,3) =   NO_SHADOW
 
         layerDimensions(LAYER_FOREGROUND,1) =   BLOCKMAP_1
         layerDimensions(LAYER_FOREGROUND,2) =   BLOCKMAP_FIX
+        layerDimensions(LAYER_FOREGROUND,3) =   NO_SHADOW
 
         layerDimensions(LAYER_INTERFACE ,1) =   BLOCKMAP_INF         
         layerDimensions(LAYER_INTERFACE ,2) =   BLOCKMAP_FIX     
+        layerDimensions(LAYER_INTERFACE ,3) =   NO_SHADOW     
 
     end subroutine
 
@@ -305,7 +317,6 @@ MODULE sprite7up
 
     subroutine reorderPoz(n)
          type(spritePoz), dimension(:), allocatable :: temp   
-         type(spriteObj), dimension(:), allocatable :: temo    
  
          integer                      :: from, to, sInd, smallest, smallestYh, smallestInd, last 
          integer(1)                   :: rc   
@@ -314,8 +325,8 @@ MODULE sprite7up
          allocate(temp(layerBlocks(n)%nextIndexP), stat = rc)
          if (rc /= 0) call displayDebug("Failed to allocate temp SpritePoz list!")
 
-         allocate(temo(layerBlocks(n)%nextIndexS), stat = rc)
-         if (rc /= 0) call displayDebug("Failed to allocate temp SpriteObj list!")
+         !allocate(temo(layerBlocks(n)%nextIndexS), stat = rc)
+         !if (rc /= 0) call displayDebug("Failed to allocate temp SpriteObj list!")
 
          smallest    = 0
          last        = 0
@@ -345,18 +356,18 @@ MODULE sprite7up
          layerBlocks(n)%nextIndexP = last
          call move_alloc(temp, layerBlocks(n)%pozList)
 
-         to = 0
-         do from = 1, layerBlocks(n)%nextIndexS, 1
-            if (layerBlocks(n)%spriteList(from)%active .EQV. .TRUE.) then              
-                to       = to + 1
-                temo(to) = layerBlocks(n)%spriteList(from)
-            else
-                nullify(layerBlocks(n)%spriteList(from)%imageF)        
-            end if
-         end do 
+         !to = 0
+         !do from = 1, layerBlocks(n)%nextIndexS, 1
+         !   if (layerBlocks(n)%spriteList(from)%active .EQV. .TRUE.) then              
+         !       to       = to + 1
+         !       temo(to) = layerBlocks(n)%spriteList(from)
+         !   else
+         !       nullify(layerBlocks(n)%spriteList(from)%imageF)        
+         !   end if
+         !end do 
 
-         layerBlocks(n)%nextIndexS = to
-         call move_alloc(temo, layerBlocks(n)%spriteList)         
+         !layerBlocks(n)%nextIndexS = to
+         !call move_alloc(temo, layerBlocks(n)%spriteList)         
 
     end subroutine
 

@@ -18,7 +18,7 @@ MODULE ImageFactory
     private
     public                  :: bitMapWindow, checkImageWindowFields, dropImageList, dropAllImages, &
                                initImageList, loadImageHeader, loadImageByName, addToSCRBuffByName, &
-                               imageFile, assignSpriteToPointer
+                               imageFile, assignSpriteToPointer, setSpeedScreen, testSpeedLoop
 
     !
     !   Images are pretty complex and compact.
@@ -65,6 +65,9 @@ MODULE ImageFactory
 
     type(imageFile), dimension(:), &
                            allocatable, target     :: imageList
+    type(CounterTimer)                             :: counttimer
+
+    integer                                        :: testIndex    
 
     contains
 
@@ -529,6 +532,108 @@ MODULE ImageFactory
 
     end subroutine
 
+    subroutine setSpeedScreen(editMode)
+       INTEGER                                 :: ITYPE, oldSpeed
+       TYPE(WIN_MESSAGE)                       :: MESSAGE
+       LOGICAL                                 :: editMode
+
+       canKill      = .FALSE.   
+
+       do
+         if (WInfoDialog(CurrentDialog) == 0) exit
+         call sleep(1)
+       end do 
+
+       CALL WDialogLoad(IDD_SpeedSetter)
+
+       oldSpeed  = 16 - getSpeed() 
+       testIndex = 1
+   
+       call WDialogPutTrackbar(IDF_SpeedTrk, oldSpeed  )
+       call WDialogPutInteger( IDF_SpeedVal, oldSpeed  )
+
+       if (editMode .EQV. .TRUE.) then 
+           if (allocated(imageLoader%img)) call imageLoader%dropImage()            
+
+           imageLoader%name     = "Suika"  
+           imageLoader%nameLen  = len_trim(imageLoader%name)
+           imageLoader%fileName = "suika.xxp"
+
+           call imageLoader%loadImage()
+
+       end if 
+        
+       call counttimer.timerStart(PERFECT_WAIT * getSpeed()) 
+ 
+       do
+          CALL WDialogSelect(IDD_SpeedSetter)
+          CALL WDialogShow(ITYPE=Modal)     
+    
+          if (WinfoDialog(CurrentDialog) == IDD_SpeedSetter) then 
+              SELECT CASE (WinfoDialog(ExitButton))  
+                  CASE(ExitField) 
+                     call setSpeed(oldSpeed)
+                     EXIT
+                  CASE(ID_SpeedCancel) 
+                     call setSpeed(oldSpeed)
+                     EXIT
+
+                  CASE(ID_SpeedOK)
+                     EXIT
+                  END SELECT
+              end if
+       end do 
+
+       canKill = .TRUE.        
+
+    end subroutine
+
+    subroutine testSpeedLoop(editMode)
+         logical            :: editMode
+         integer            :: s, v, t
+
+         call WDialogGetInteger( IDF_SpeedVal, v)
+         call WDialogGetTrackbar(IDF_SpeedTrk, t)
+
+         s = 16 - getSpeed()
+
+         if (v /= s) then
+            !s = v
+            call WDialogPutTrackbar(IDF_SpeedTrk, v)
+            call setSpeed(16 - v)
+         end if
+
+         if (t /= s) then
+            !t = v
+            call WDialogPutInteger(IDF_SpeedVal, t)
+            call setSpeed(16 - t)
+         end if
+
+         if (editMode .EQV. .TRUE.) then
+            if (counttimer.timerEnded() .EQV. .TRUE.) then
+               testIndex = testIndex + 1 
+               call counttimer.timerStart(PERFECT_WAIT * getSpeed())
+            end if 
+
+            if (testIndex > imageLoader%img%numOfFrames) testIndex = 1 
+            if (testIndex < 1) testIndex = imageLoader%img%numOfFrames 
+    
+            call imageLoader%addToScreenBuffer(testIndex , 1, 1, 1, NO_FILTER)
+         end if   
+
+         CALL setUpTo256()
+         CALL buffer2Real() 
+    
+         if (canKill .EQV. .TRUE.) then 
+            if (editMode .EQV. .TRUE.) call eraseBuff() 
+            call imageLoader%dropImage()    
+            CALL WDialogUnLoad()
+            canKill = .FALSE.
+        end if
+
+
+    end subroutine 
+
     subroutine bitMapWindow()
        INTEGER                                 :: ITYPE, ind, filter
        TYPE(WIN_MESSAGE)                       :: MESSAGE
@@ -545,6 +650,8 @@ MODULE ImageFactory
 
        CALL WDialogLoad(IDD_BMP2XXP)
        if (allocated(imageLoader%img)) call imageLoader%dropImage()            
+
+       call counttimer.timerStart(PERFECT_WAIT * getSpeed()) 
 
        call onlyRunAfterLoad()
  
@@ -696,8 +803,9 @@ MODULE ImageFactory
                call WDialogGetInteger(IDF_FilterInd  , filter)
 
                if (animSet == 1) then
-                   if (stupidTimerEnded() .EQV. .TRUE.) then
+                   if (counttimer.timerEnded() .EQV. .TRUE.) then
                        ind = ind + 1 
+                       call counttimer.timerStart(PERFECT_WAIT * getSpeed())
                    end if 
                end if     
 
@@ -832,15 +940,16 @@ MODULE ImageFactory
         integer(8)                             :: offset, f, x, y
         character(40)                          :: test
 
-        if (allocated(this%img)) call this%dropImage()
+        if (allocated(this%img) .EQV. .TRUE.) call this%dropImage()
 
-        call loadBinary(trim(CWD()) // "\img\" // this%fileName, d, siz, .TRUE.)
+        call loadBinary(trim(CWD()) // "\img\" // trim(this%fileName), d, siz, .TRUE.)
 
         offset = 6 + this%nameLen
 
         allocate(this%img,  stat = stat)
         if (stat /= 0) then
-            call displayDebug("Failed to allocate imageFile's ImageData!")
+            write(test, "(I0)") stat
+            call displayDebug("Failed to allocate imageFile's ImageData! (" // trim(test) // ")")
         else    
             this%img%width       = ReadInt2FromData(d, offset) 
             this%img%height      = ReadInt2FromData(d, offset) 
@@ -849,15 +958,19 @@ MODULE ImageFactory
 
             !write(test, "(I0, ' ', I0, ' ', I0, ' ', I0)") this%img%width, this%img%height, &
             !                                               this%img%transpColor, this%img%numOfFrames
-
-            !call displayDebug(test)
+            !
+            !call displayDebug(trim(this%fileName) // " " // test)
 
             allocate(this%img%frames(this%img%numOfFrames, &
                                      this%img%width      , &
                                      this%img%height     ), stat = stat)
 
             if (stat /= 0) then
-                call displayDebug("Failed to allocate imageFile's ImageData!")
+                !write(test, "(I0, '|', I0, '|', I0)") this%img%numOfFrames, this%img%width, this%img%height
+                !call displayDebug("Dimensions: " // trim(test))
+
+                write(test, "(I0)") stat
+                call displayDebug("Failed to allocate imageFile's frames! (" // trim(test) // ")")
             else   
                 offset = offset + 1
     

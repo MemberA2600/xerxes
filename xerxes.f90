@@ -82,7 +82,7 @@
       CALL IGrArea(0.0,0.0,1.0,1.0)
       CALL IGrAreaClear() 
       CALL IGrPlotMode(' ')  
-      call setSpeed(1)
+      call setSpeed(5)
       CALL WMessageTimer(1000/MFPS,IREPEAT=Enabled)  
       call WindowClear(RGB=RGB_BLACK)
 
@@ -128,9 +128,6 @@
 
        !call loadBMP() 
 
-    !call loadImageByName("Suika")
-    !call addToSCRBuffByName("Suika", 4, 1, 35, 55, 3)
-
     call createSpriteObjPlayGround('Suika', 'Suika', 15, 10, TYPE_EMPTY, .TRUE., NO_FILTER)
     call createSpriteObjBackground('Grass', 'Grass', NO_FILTER)
 
@@ -146,8 +143,6 @@
         if (firstTime) then
            if (allOpened()) then 
                if (editMode .EQV. .TRUE.) call WMenuSetState(ID_DEV, ItemEnabled, 1)  
-               call WMenuSetState(ID_SCREENSIZE, ItemEnabled, 1)  
-               call WMenuSetState(ID_SPEED     , ItemEnabled, 1)  
                call WMenuSetState(ID_SoundInput, ItemEnabled, 1)  
            end if
         END IF  
@@ -157,20 +152,11 @@
 
         SELECT CASE (ITYPE)
           CASE (TimerExpired) 
-            if (timer < 1) then
-                CALL setResolutionMenu() 
-                CALL buffer2Real() 
-                timer = speed
-            else
-                timer = timer - 1
-            end if 
-
-          !CASE (KeyDown)
-          !      call setLastKey(MESSAGE%VALUE1)  
+            CALL setResolutionMenu() 
+            CALL buffer2Real() 
 
           CASE (BorderSelect,Expose,Resize)
             call buffer2Real()
-            timer = speed
 
           CASE (MenuSelect)              ! Menu item selected
             SELECT CASE (MESSAGE%VALUE1)
@@ -178,10 +164,10 @@
                     call autoSizeScreen()  
               CASE (ID_320x240:ID_2048x1536)  
                     call setScreenSize(MESSAGE%VALUE1) 
-                    call saveConfig()
-              CASE (ID_SPEED1:ID_SPEED5)  
-                    call setSpeed(MESSAGE%VALUE1 - ID_SPEED) 
-                    call saveConfig()                
+                    call saveConfig()  
+              CASE (ID_SPEED)  
+                    call setSpeedScreen(editMode) 
+                    call saveConfig()               
               CASE (ID_TIA_Noiser)              
                     call tiaMaker()
                     call dropTIAList() 
@@ -332,6 +318,10 @@
                 call checkOnInputSettings()
             case(IDD_BMP2XXP)
                 call checkImageWindowFields()
+            case(IDD_SpeedSetter)
+                call testSpeedLoop(editMode)
+                if (editMode .EQV. .FALSE.) call putSpritesOnBuffer()
+
             end select
 
         end subroutine

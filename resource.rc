@@ -8,16 +8,16 @@
 //
 // Winteracter resource script
 //
-// Modified : 30/aug./2026 09:14:43
+// Modified : 31/aug./2026 13:01:53
 //
 ///////////////////////////////////////////////////
 //
 // Number of resources
 //
 //*WN* NMENU       1
-//*WN* NITEM       26
-//*WN* NDIALOG     7
-//*WN* NFIELD      103
+//*WN* NITEM       21
+//*WN* NDIALOG     8
+//*WN* NFIELD      107
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
@@ -49,12 +49,12 @@
 #define ID_1400x1050          40009
 #define ID_1600x1200          40010
 #define ID_2048x1536          40011
+#define IDF_SpeedTrk           1102
+#define IDD_SpeedSetter         109
+#define IDF_SpeedVal           1103
+#define ID_SpeedOK             1104
+#define ID_SpeedCancel         1105
 #define ID_SPEED              40012
-#define ID_SPEED1             40013
-#define ID_SPEED2             40014
-#define ID_SPEED3             40015
-#define ID_SPEED4             40016
-#define ID_SPEED5             40017
 #define ID_DEV                40018
 #define ID_TIA_Noiser         40019
 #define IDD_GENBEEP             101
@@ -388,35 +388,52 @@ BEGIN
 ,0
 END
 
+IDD_SpeedSetter DIALOG 0,0,227,52
+STYLE WS_POPUP | WS_BORDER | WS_DLGFRAME | WS_SYSMENU | DS_3DLOOK | DS_MODALFRAME
+FONT 8, "MS Shell Dlg"
+CAPTION "Speed Settings"
+BEGIN
+  CONTROL "5",IDF_SpeedTrk,"MSCTLS_TRACKBAR32",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | TBS_AUTOTICKS,10,7,156,20
+  CONTROL "5",IDF_SpeedVal,"INTEGERSPIN",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,174,7,32,14
+  CONTROL "OK",ID_SpeedOK,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,64,32,40,14
+  CONTROL "Cancel",ID_SpeedCancel,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,109,32,40,14
+END
+
+IDD_SpeedSetter RCDATA
+BEGIN
+"[Menus] \n"
+"[Ranges] \n"
+"1102 1 10 \n"
+"1103 1 10 \n"
+"[Trackbars] \n"
+"1102          1          1          1          0          0 \n"
+"[Lengths] \n"
+"1103 3 \n"
+,0
+END
+
 ///////////////////////////////////////////////////
 //
 // Menus
 //
 IDM_MAIN MENU
 BEGIN
-  POPUP "Resolution",GRAYED
+  POPUP "Settings",GRAYED
   BEGIN
-    MENUITEM "Auto",ID_AUTO
-    MENUITEM "320x240",ID_320x240
-    MENUITEM "640x480",ID_640x480
-    MENUITEM "800x600",ID_800x600
-    MENUITEM "1024x768",ID_1024x768
-    MENUITEM "1152x864",ID_1152x864
-    MENUITEM "1280x960",ID_1280x960
-    MENUITEM "1400x1050",ID_1400x1050
-    MENUITEM "1600x1200",ID_1600x1200
-    MENUITEM "2048x1536",ID_2048x1536
-  END
-  POPUP "Screen Refresh",GRAYED
-  BEGIN
-    MENUITEM "Lightning",ID_SPEED1
-    MENUITEM "Rocket",ID_SPEED2
-    MENUITEM "Cheetah",ID_SPEED3
-    MENUITEM "Hare",ID_SPEED4
-    MENUITEM "Snail",ID_SPEED5
-  END
-  POPUP "Sound / Input",GRAYED
-  BEGIN
+    POPUP "Resolution"
+    BEGIN
+      MENUITEM "Auto",ID_AUTO
+      MENUITEM "320x240",ID_320x240
+      MENUITEM "640x480",ID_640x480
+      MENUITEM "800x600",ID_800x600
+      MENUITEM "1024x768",ID_1024x768
+      MENUITEM "1152x864",ID_1152x864
+      MENUITEM "1280x960",ID_1280x960
+      MENUITEM "1400x1050",ID_1400x1050
+      MENUITEM "1600x1200",ID_1600x1200
+      MENUITEM "2048x1536",ID_2048x1536
+    END
+    MENUITEM "Game Speed",ID_SPEED
     MENUITEM "SFX / Music",ID_SoundSettings
     MENUITEM "Keyboard / Controller",ID_InputSettings
   END
@@ -432,10 +449,9 @@ END
 
 IDM_MAIN RCDATA
 BEGIN
-ID_SCREENSIZE,1,0,
-ID_SPEED,2,0,
-ID_SoundInput,3,0,
-ID_DEV,4,0,
+ID_SoundInput,1,0,
+ID_SCREENSIZE,1,1,0,
+ID_DEV,2,0,
 0
 END
 
@@ -460,5 +476,5 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FORTSAVE    1
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
-//*WI* LASTTYPE    1
-//*WI* LASTRES     1
+//*WI* LASTTYPE    2
+//*WI* LASTRES     8

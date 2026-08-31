@@ -14,7 +14,7 @@ MODULE subs
 
       PRIVATE
       PUBLIC            :: getScreenSize, autoSizeScreen, setResolutionMenu, &
-                           getWindowDim, setScreenSize, timer, speed, setSpeed, &
+                           getWindowDim, setScreenSize, timer, setSpeed, &
                            randInt, getTime, FileDialog, countCharInString, &
                            getNextPoz, dFile, f2bitsTo1Bit, getNullTermString, &
                            CWD, setCWD, getScreenSizeId, getSpeed

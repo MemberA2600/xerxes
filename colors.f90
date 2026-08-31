@@ -15,8 +15,8 @@ MODULE colors
                            getColorBlue,   getColorGreen,   &
                            getColorRed,    getClosestColor, & 
                            setUpTo256,     getUpTo256,      &
-                           start256Timer,  stupidTimerEnded,&
-                           c24btoC256
+                           start256Timer,  c24btoC256       
+                           
    !
    !  Redefine 8bit palette for Spectrum Extra. :) 
    !
@@ -30,29 +30,21 @@ MODULE colors
    TYPE(counterTimer)                                :: timer256
 
    TYPE(colorHolder), DIMENSION(numOfColors), target  :: colorList
-   integer(2)                                         :: upTo256 = 0, upTo256_C = 0
+   integer(2)                                         :: upTo256 = 0
        
 
    CONTAINS
 
    subroutine start256Timer()
-        call timer256%timerStart(PERFECT_WAIT)
+        call timer256%timerStart(PERFECT_WAIT * getSpeed())
    end subroutine  
 
    SUBROUTINE setUpTo256()
         if (timer256%timerEnded() .EQV. .TRUE.) then
             upTo256 = modulo(upTo256 + 1, 257) 
-            call timer256%timerRestart()
+            call timer256%timerStart(PERFECT_WAIT * getSpeed())
         end if
    end subroutine   
-
-   FUNCTION stupidTimerEnded() result(r)
-        logical :: r
-
-        r = (upTo256 /= upTo256_C)
-        upTo256_C = upTo256        
-
-   end FUNCTION 
 
    FUNCTION getUpTo256() result(r)
         integer(2)      :: r
