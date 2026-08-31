@@ -164,9 +164,7 @@ MODULE screen
     subroutine setBufferPixel(n, x, y, c)
         integer(2) :: n, x, y, c
 
-        if (c == -1) then
-            screenBuffers(n, x, y) = -1
-        else
+        if (c > 0) then
             screenBuffers(n, x, y) = getColorValue(c)
         end if
 

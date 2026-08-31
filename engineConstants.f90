@@ -24,8 +24,6 @@ MODULE engineConstants
                                      LAYER_WEATHER     = 4, &   
                                      LAYER_FOREGROUND  = 5, &  
                                      LAYER_INTERFACE   = 6
-    integer(1), parameter         :: NO_SHADOW            = 0, &  
-                                     CAST_SHADOW          = 1   
 
     integer(2), parameter         :: numOfColors = 256 
     INTEGER(KIND=1), PARAMETER    :: maxNumberOfScreenSizes = 9

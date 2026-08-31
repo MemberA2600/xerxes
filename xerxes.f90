@@ -74,7 +74,7 @@
       call autoSizeScreen()  
 
       call initScreenBuff(layerNum)  
-      call initBlockMaps (layerNum, wOfScreenBuffer, hOfScreenBuffer)  
+      call initBlockMaps (layerNum, wOfScreenBuffer * 2, hOfScreenBuffer * 2)  
 
       call WMEssageEnable(BorderSelect, Enabled)
       !CALL WMessageEnable(KeyDown,Enabled)
@@ -128,8 +128,17 @@
 
        !call loadBMP() 
 
-    call createSpriteObjPlayGround('Suika', 'Suika', 15, 10, TYPE_EMPTY, .TRUE., NO_FILTER)
+    call createSpriteObjPlayGround('Tree',  'Tree', 425, -60, TYPE_EMPTY, .TRUE., NO_FILTER)
+    call createSpriteObjPlayGround('Tree',  'Tree', 575, 190, TYPE_EMPTY, .TRUE., NO_FILTER)
+    call createSpriteObjPlayGround('Tree',  'Tree', 201, 10, TYPE_EMPTY, .TRUE., NO_FILTER)
+    call createSpriteObjPlayGround('Tree',  'Tree', 289, 320, TYPE_EMPTY, .TRUE., NO_FILTER)
+
+    call createSpriteObjPlayGround('Suika', 'Suika', 250, 100, TYPE_EMPTY, .TRUE., NO_FILTER)
     call createSpriteObjBackground('Grass', 'Grass', NO_FILTER)
+    call createSpriteObjPlayGround('Tree',  'Tree', 300, 140, TYPE_EMPTY, .TRUE., NO_FILTER)
+    call createSpriteObjPlayGround('Tree',  'Tree', 22, -70, TYPE_EMPTY, .TRUE., NO_FILTER)
+    call createSpriteObjPlayGround('Tree',  'Tree', 380, 20, TYPE_EMPTY, .TRUE., NO_FILTER)
+    call createSpriteObjPlayGround('Tree',  'Tree', 35, 325, TYPE_EMPTY, .TRUE., NO_FILTER)
 
 !
 !   Load the config!
