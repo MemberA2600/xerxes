@@ -18,7 +18,8 @@ MODULE sprite7up
     public                        :: initBlockMaps, putSpritesOnBuffer, createSpriteObjPlayGround,        &
                                      createSpriteObjBackGround, setOffset, addToOffset,                   &
                                      createSpriteObjSky, addTempFilter, getAllIndByName, getAllIndByType, &
-                                     addTempFiltertoAllByName, addTempFiltertoAllByType       
+                                     addTempFiltertoAllByName, addTempFiltertoAllByType,                  &
+                                     setWeather       
 
     type SpriteObj 
          integer(2)               :: w, h, spriteI
@@ -71,6 +72,8 @@ MODULE sprite7up
     integer(1), parameter, dimension(6)         :: tempFilterValueChangers = &
                 (/ 0, 1, 2, 2, 1 , 0/)                            
 
+    integer(1)                                  :: defaultFilter = NO_FILTER
+
     contains
 
     !       
@@ -83,7 +86,7 @@ MODULE sprite7up
         
         if (this%tempFilter == -1 .OR. this%tempFilterCountDown <= t) then 
             this%tempFilter          = f
-            this%tempFilterCountDown = t
+            this%tempFilterCountDown = t * FILTER_MULTI
         end if
 
     end subroutine       
@@ -103,7 +106,7 @@ MODULE sprite7up
             if (this%tempFilterCountDown == 0) then
                 this%tempFilter = -1
             else
-                filter = this%tempFilter + tempFilterValueChangers(this%tempFilterCountDown / 4)
+                filter = this%tempFilter + tempFilterValueChangers(this%tempFilterCountDown * FILTER_MULTI)
                 this%tempFilterCountDown = this%tempFilterCountDown - 1
             end if
         end if
@@ -374,6 +377,50 @@ MODULE sprite7up
 
     end subroutine
 
+    subroutine setWeather(w)
+        integer(1)      :: w
+        integer(4)      :: bufferN, ind
+
+        layerBlocks(LAYER_WEATHER)%spriteList(1)%active = .FALSE.
+        
+        select case(w)
+        case(WEATHER_DAY_NORM)    
+             defaultFilter = NO_FILTER
+
+        case(WEATHER_NIGHT_NORM)    
+             defaultFilter = FILTER_BLUE
+
+        case(WEATHER_DAY_RAIN)    
+             defaultFilter = NO_FILTER
+             call createSpriteObjWeather("Rain", "Rain", defaultFilter)
+
+        case(WEATHER_NIGHT_RAIN)    
+             defaultFilter = FILTER_BLUE                
+             call createSpriteObjWeather("Rain", "Rain", defaultFilter)
+
+        end select
+
+        do bufferN = 1, layerNum, 1
+           if (bufferN /= LAYER_FOREGROUND .AND. bufferN /= LAYER_INTERFACE) then
+               do ind = 1, layerBlocks(bufferN)%nextIndexS, 1 
+                  if ((layerBlocks(bufferN)%spriteList(ind)%active .EQV. .TRUE.) .AND. &
+          (associated(layerBlocks(bufferN)%spriteList(ind)%imageF) .EQV. .TRUE.)) then
+                       layerBlocks(bufferN)%spriteList(ind)%filter = defaultFilter 
+                  end if      
+               end do
+           end if 
+        end do
+
+    end subroutine  
+
+    subroutine createSpriteObjWeather(spriteName, imageName, filter)
+         character(*)  :: imageName, spriteName   
+         integer(1)    :: filter
+
+         call createSpriteObj(spriteName, imageName, LAYER_WEATHER, 1, 1, TYPE_EMPTY, .FALSE., filter, 0)
+
+    end subroutine 
+
     subroutine createSpriteObjSky(spriteName, imageName, x, y, typFlag, solid, filter, fly)
          character(*)  :: imageName, spriteName   
          integer(4)    :: x, y
@@ -409,12 +456,11 @@ MODULE sprite7up
          call createSpriteObj(spriteName, imageName, LAYER_BACKGROUND, 1, 1, TYPE_FLOOR, .FALSE., filter, 0)
 
     end subroutine 
-
-    
+   
 
     subroutine createSpriteObj(spriteName, imageName, bufferNum, x, y, typFlag, solid, filter, fly)
          character(*)  :: imageName, spriteName   
-         integer(4)    :: x, y
+         integer(4)    :: x, y, f
          integer(1)    :: filter, bufferNum  
          integer(4)    :: typFlag
          logical       :: solid
@@ -425,7 +471,13 @@ MODULE sprite7up
          type(spritePoz), dimension(:), allocatable :: pozListTemp
 
          integer(4)    :: ind
-         character(50) :: test
+         !character(50) :: test
+
+         if (bufferNum /= LAYER_FOREGROUND .AND. bufferNum /= LAYER_INTERFACE) then
+             if (filter == NO_FILTER) then
+                 f = defaultFilter 
+             end if      
+         end if
 
          if (layerDimensions(bufferNum,1) /= BLOCKMAP_1) then
              do ind = 1, layerBlocks(bufferNum)%nextIndexS, 1
@@ -476,7 +528,7 @@ MODULE sprite7up
          layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%imageF%img%height  
 
          layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%spriteI    = 1
-         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%filter     = filter
+         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%filter     = f
          layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%tempFilter    = -1
          layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%tempFilterCountDown = 0
 

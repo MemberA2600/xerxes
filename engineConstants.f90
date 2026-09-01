@@ -91,12 +91,18 @@ MODULE engineConstants
                                         FILTER_PINK2        = 24, &
                                         FILTER_TEAL         = 25, &
                                         FILTER_TEAL1        = 26, &
-                                        FILTER_TEAL2        = 27, &
-                                        FILTER_TIME_1       = 1,  &
-                                        FILTER_TIME_2       = 24 
+                                        FILTER_TEAL2        = 27
 
+    integer(1), parameter            :: FILTER_TIME_1       = 1,  &
+                                        FILTER_TIME_2       = 6,  &
+                                        FILTER_MULTI        = 1 
 
     integer(1), parameter            :: TYPE_EMPTY          = 0   ,&
                                         TYPE_FLOOR          = 1
+
+    integer(1), parameter            :: WEATHER_DAY_NORM    = 0,  &
+                                        WEATHER_NIGHT_NORM  = 1,  &
+                                        WEATHER_DAY_RAIN    = 2,  &
+                                        WEATHER_NIGHT_RAIN  = 3   
 
 END MODULE engineConstants

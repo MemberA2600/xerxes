@@ -128,6 +128,8 @@
 
        !call loadBMP() 
 
+    call setWeather(WEATHER_NIGHT_RAIN)
+
     call createSpriteObjSky(       'Bird',  'Bird', 222, 65, TYPE_EMPTY, .TRUE., NO_FILTER, 60)
     call createSpriteObjSky(       'Bird',  'Bird', 444, 401, TYPE_EMPTY, .TRUE., NO_FILTER, 90)
 
@@ -219,12 +221,12 @@
 
             intDummy = intDummy + 1
 
-            if (intDummy > 255) intdummy = 1 
+            if (intDummy > 256) intdummy = 1 
 
             if ((intDummy / 16) > 7) call addToOffset(-1,-1)
             if ((intDummy / 16) < 8) call addToOffset( 1, 1)
 
-            if ((intDummy / 16) == 1) call &
+            if ( intDummy == 1) call &
                  addTempFiltertoAllByName(LAYER_PLAYGROUND, "Bird", FILTER_YELLOW, FILTER_TIME_2)
 
             call putSpritesOnBuffer()
