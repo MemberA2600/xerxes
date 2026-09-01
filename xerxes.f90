@@ -145,8 +145,9 @@
     call createSpriteObjSky(       'Bird',  'Bird', 47, 150, TYPE_EMPTY, .TRUE., NO_FILTER, 80)
     call createSpriteObjPlayGround('Tree',  'Tree', 680, 10, TYPE_EMPTY, .TRUE., NO_FILTER)
     call createSpriteObjPlayGround('Tree',  'Tree', 720, 455, TYPE_EMPTY, .TRUE., NO_FILTER)
-    call createSpriteObjSky(       'Bird',  'Bird', 677, 322, TYPE_EMPTY, .TRUE., NO_FILTER, 120)
+    call createSpriteObjSky(       'Bird',  'Bird', 688, 322, TYPE_EMPTY, .TRUE., NO_FILTER, 120)
     call createSpriteObjPlayGround('Tree',  'Tree', 666, 510, TYPE_EMPTY, .TRUE., NO_FILTER)
+    call createSpriteObjSky(       'Bird',  'Bird', 625, 425, TYPE_EMPTY, .TRUE., NO_FILTER, 120)
 
 !
 !   Load the config!
@@ -222,6 +223,9 @@
 
             if ((intDummy / 16) > 7) call addToOffset(-1,-1)
             if ((intDummy / 16) < 8) call addToOffset( 1, 1)
+
+            if ((intDummy / 16) == 1) call &
+                 addTempFiltertoAllByName(LAYER_PLAYGROUND, "Bird", FILTER_YELLOW, FILTER_TIME_2)
 
             call putSpritesOnBuffer()
         end if

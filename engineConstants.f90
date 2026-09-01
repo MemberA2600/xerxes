@@ -17,13 +17,12 @@ MODULE engineConstants
 
     integer                       :: PERFECT_WAIT = 5000
 
-    integer(1), parameter         :: layerNum          = 6, &      
+    integer(1), parameter         :: layerNum          = 5, &      
                                      LAYER_BACKGROUND  = 1, & 
                                      LAYER_PLAYGROUND  = 2, &
-                                     LAYER_SKY         = 3, &   
-                                     LAYER_WEATHER     = 4, &   
-                                     LAYER_FOREGROUND  = 5, &  
-                                     LAYER_INTERFACE   = 6
+                                     LAYER_WEATHER     = 3, &   
+                                     LAYER_FOREGROUND  = 4, &  
+                                     LAYER_INTERFACE   = 5
 
     integer(2), parameter         :: numOfColors = 256 
     INTEGER(KIND=1), PARAMETER    :: maxNumberOfScreenSizes = 9
@@ -92,7 +91,12 @@ MODULE engineConstants
                                         FILTER_PINK2        = 24, &
                                         FILTER_TEAL         = 25, &
                                         FILTER_TEAL1        = 26, &
-                                        FILTER_TEAL2        = 27
-    integer(1), parameter            :: TYPE_EMPTY          = 0
+                                        FILTER_TEAL2        = 27, &
+                                        FILTER_TIME_1       = 1,  &
+                                        FILTER_TIME_2       = 24 
+
+
+    integer(1), parameter            :: TYPE_EMPTY          = 0   ,&
+                                        TYPE_FLOOR          = 1
 
 END MODULE engineConstants

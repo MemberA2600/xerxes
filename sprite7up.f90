@@ -15,21 +15,24 @@ MODULE sprite7up
     implicit None
 
     private    
-    public                        :: initBlockMaps, putSpritesOnBuffer, createSpriteObjPlayGround, &
-                                     createSpriteObjBackGround, setOffset, addToOffset, &
-                                     createSpriteObjSky       
+    public                        :: initBlockMaps, putSpritesOnBuffer, createSpriteObjPlayGround,        &
+                                     createSpriteObjBackGround, setOffset, addToOffset,                   &
+                                     createSpriteObjSky, addTempFilter, getAllIndByName, getAllIndByType, &
+                                     addTempFiltertoAllByName, addTempFiltertoAllByType       
 
     type SpriteObj 
          integer(2)               :: w, h, spriteI
          type(imageFile), pointer :: imageF       
-         integer(1)               :: filter, bufferNum  
+         integer(1)               :: filter, bufferNum, tempFilter, tempFilterCountDown  
          integer(4)               :: ind
          logical                  :: solid, active
          type(counterTimer)       :: timer
 
          contains 
-         procedure                :: drawImage    => drawImage 
-         procedure                :: drawDrawDraw => drawDrawDraw
+         procedure                :: drawImage     => drawImage 
+         procedure                :: drawDrawDraw  => drawDrawDraw  
+         procedure                :: addTempFilter => addTempFilter       
+
     end type
 
     type spritePoz
@@ -37,6 +40,10 @@ MODULE sprite7up
          integer(4)               :: typFlag
          integer(4)               :: x, y, yh, ind 
          integer(2)               :: fly     
+         integer(1)               :: bufferNum
+
+         contains        
+
     end type 
 
     type BlockMap
@@ -60,30 +67,61 @@ MODULE sprite7up
 
     integer(1), parameter                       :: SIZE_INIT      = 64, &
                                                    SIZE_ADD       = 32
+
+    integer(1), parameter, dimension(6)         :: tempFilterValueChangers = &
+                (/ 0, 1, 2, 2, 1 , 0/)                            
+
+    contains
+
     !       
     !   SpriteObj Things
     !
-    contains
 
-    subroutine drawDrawDraw(this, x, y, fly)
+    subroutine addTempFilter(this, f, t)
+        class(SpriteObj)        :: this
+        integer(1)              :: f, t
+        
+        if (this%tempFilter == -1 .OR. this%tempFilterCountDown <= t) then 
+            this%tempFilter          = f
+            this%tempFilterCountDown = t
+        end if
+
+    end subroutine       
+
+    subroutine drawDrawDraw(this, x, y, fly, typ)
         class(SpriteObj)        :: this
         integer(4)              :: x, y
-        integer(2)              :: fly
-    
-        if (this%bufferNum == 2) then
+        integer(2)              :: fly, typ, b
+        integer(1)              :: filter    
+
+        filter = this%filter
+        
+        b = this%bufferNum
+        if (typ == TYPE_FLOOR) b = LAYER_BACKGROUND
+
+        if (this%tempFilter > 0) then
+            if (this%tempFilterCountDown == 0) then
+                this%tempFilter = -1
+            else
+                filter = this%tempFilter + tempFilterValueChangers(this%tempFilterCountDown / 4)
+                this%tempFilterCountDown = this%tempFilterCountDown - 1
+            end if
+        end if
+
+        if (b == 2) then
             if (fly > 0) then
-                call this%imageF%addToScreenBuffer(this%spriteI, this%bufferNum-1, &
+                call this%imageF%addToScreenBuffer(this%spriteI, b - 1, &
                                                    x, y, FILTER_SHADOW)
     
-                call this%imageF%addToScreenBuffer(this%spriteI, this%bufferNum, &
-                                                   x, y - fly, this%filter)                
+                call this%imageF%addToScreenBuffer(this%spriteI, b, &
+                                                   x, y - fly, filter)                
             else
-                call this%imageF%addToScreenBuffer(this%spriteI, this%bufferNum, &
-                                                   x, y, this%filter)
+                call this%imageF%addToScreenBuffer(this%spriteI, b, &
+                                                   x, y, filter)
             end if
         else
-            call this%imageF%addToScreenBuffer(this%spriteI, this%bufferNum, &
-                                               x, y, this%filter)
+            call this%imageF%addToScreenBuffer(this%spriteI, b, &
+                                               x, y, filter)
         end if
     end subroutine
 
@@ -105,7 +143,7 @@ MODULE sprite7up
 
     subroutine drawImage(this)
         class(SpriteObj)        :: this
-        integer(4)              :: x, y, pozInd
+        integer(4)              :: x, y, pozInd, typ
         character(40)           :: test
         integer(2)              :: fly
 
@@ -116,12 +154,14 @@ MODULE sprite7up
         !call DisplayDebug(test) 
 
         pozInd = getPozInd(this%ind, this%bufferNum)
+
         if (layerDimensions(this%bufferNum,1) /= BLOCKMAP_1) then  
 
             x   = layerBlocks(this%bufferNum)%pozList(pozInd)%x
             y   = layerBlocks(this%bufferNum)%pozList(pozInd)%y
             fly = layerBlocks(this%bufferNum)%pozList(pozInd)%fly
-
+            typ = layerBlocks(this%bufferNum)%pozList(pozInd)%typFlag
+        
             if (layerDimensions(this%bufferNum,2) /= BLOCKMAP_FIX) then
                 if ((x + this%w - 1 < XOffset) .OR. (x > XOffset + wSize)  .OR. & 
                     (y + this%h - 1 < YOffset) .OR. (Y > YOffset + hSize)) return
@@ -131,7 +171,7 @@ MODULE sprite7up
             end if
 
 
-            call this%drawDrawDraw(x, y, fly)
+            call this%drawDrawDraw(x, y, fly, typ)
     
         else
             do y = layerBlocks(this%bufferNum)%pozList(pozInd)%y -   & 
@@ -146,7 +186,7 @@ MODULE sprite7up
 
                     call this%drawDrawDraw(x - modulo(XOffset, layerBlocks(this%bufferNum)%spriteList(this%ind)%w) &
                                          , y - modulo(YOffset, layerBlocks(this%bufferNum)%spriteList(this%ind)%h) &
-                                         , 0)
+                                         , 0, typ)
 
                 end do
             end do
@@ -174,6 +214,135 @@ MODULE sprite7up
     !
     !   BlockMap Stuff
     !
+
+    subroutine addTempFiltertoAllByName(b, n, f, t)
+        integer(1)                           :: f, t, b
+        character(*)                         :: n
+        integer                              :: ind, rc        
+
+        integer, dimension(:,:), allocatable :: l
+        character(40)                        :: test    
+
+        call getAllIndByName(b, n, l)
+
+        do ind = 1, size(l, 1), 1
+           call layerBlocks(b)%spriteList(l(ind, 2))%addTempFilter(f, t) 
+        end do
+
+        deallocate(l, stat = RC)
+        if (rc /= 0) call displayDebug("Failed to dealloc list of indexes!")
+
+    end subroutine  
+
+    subroutine addTempFiltertoAllByType(b, typ, f, t)
+        integer(1)                           :: f, t, b
+        integer                              :: typ
+        integer                              :: ind, rc        
+
+        integer, dimension(:,:), allocatable :: l
+
+        call getAllIndByType(b, typ, l)
+        do ind = 1, size(l, 1), 1
+           call layerBlocks(b)%spriteList(l(ind, 2))%addTempFilter(f, t) 
+        end do
+
+        deallocate(l, stat = RC)
+        if (rc /= 0) call displayDebug("Failed to dealloc list of indexes!")
+    end subroutine       
+
+    subroutine getAllIndByName(b, n, r) 
+        integer(1)                                        :: b
+
+        integer, dimension(:,:), allocatable, intent(out) :: r
+        integer, dimension(:,:), allocatable              :: temp
+
+        integer                                           :: l, i, iP
+        integer(1)                                        :: rc
+        character(*)                                      :: n
+ 
+        l = 0
+
+        if (allocated(r)) then
+            deallocate(r, stat = RC)
+            if (rc /= 0) call displayDebug("Failed to deallocate temp for All finder!")                 
+        end if 
+
+        allocate(temp(layerBlocks(b)%nextIndexP, 2), stat = RC)
+        if (rc /= 0) call displayDebug("Failed to allocate temp for All finder!")                 
+
+        do i = 1, layerBlocks(b)%nextIndexP, 1
+           iP = layerBlocks(b)%pozList(i)%ind  
+
+           if (layerBlocks(b)%pozList(i)%name /= n) cycle 
+                        
+           if ((layerBlocks(b)%spriteList(ip)%active             .EQV. .TRUE.) .AND. &
+               (associated(layerBlocks(b)%spriteList(ip)%imageF) .EQV. .TRUE.)) then    
+                l = l + 1    
+                temp(l, 1) = i
+                temp(l, 2) = iP
+            end if
+
+        end do
+
+        allocate(r(l, 2), stat = RC)
+        if (rc /= 0) call displayDebug("Failed to allocate result for All finder!")                 
+        
+        do i = 1, l, 1
+           r(i, 1) = temp(i, 1)
+           r(i, 2) = temp(i, 2)
+        end do
+      
+        deallocate(temp, stat = RC)
+        if (rc /= 0) call displayDebug("Failed to deallocate temp for All finder!")   
+
+    end subroutine 
+
+    subroutine getAllIndByType(b, t, r) 
+        integer(1)                                        :: b
+
+        integer, dimension(:,:), allocatable, intent(out) :: r
+        integer, dimension(:,:), allocatable              :: temp
+
+        integer                                           :: l, i, iP    
+        integer(1)                                        :: rc
+        integer(4)                                        :: t
+ 
+        l = 0
+
+        if (allocated(r)) then
+            deallocate(r, stat = RC)
+            if (rc /= 0) call displayDebug("Failed to deallocate temp for All finder!")                 
+        end if 
+
+        allocate(temp(layerBlocks(b)%nextIndexP, 2), stat = RC)
+        if (rc /= 0) call displayDebug("Failed to allocate temp for All finder!")                 
+
+        do i = 1, layerBlocks(b)%nextIndexP, 1
+           iP = layerBlocks(b)%pozList(i)%ind  
+
+           if (layerBlocks(b)%pozList(i)%typFlag /= t) cycle 
+
+           if ((layerBlocks(b)%spriteList(ip)%active             .EQV. .TRUE.) .AND. &
+               (associated(layerBlocks(b)%spriteList(ip)%imageF) .EQV. .TRUE.)) then    
+                l = l + 1    
+                temp(l, 1) = i
+                temp(l, 2) = iP
+            end if
+
+        end do
+
+        allocate(r(l, 2), stat = RC)
+        if (rc /= 0) call displayDebug("Failed to allocate result for All finder!")                 
+
+        do i = 1, l, 1
+           r(i, 1) = temp(i, 1)
+           r(i, 2) = temp(i, 2)
+        end do
+      
+        deallocate(temp, stat = RC)
+        if (rc /= 0) call displayDebug("Failed to deallocate temp for All finder!")   
+
+    end subroutine 
 
     subroutine offSetCorr()
 
@@ -237,7 +406,7 @@ MODULE sprite7up
          character(*)  :: imageName, spriteName   
          integer(1)    :: filter
 
-         call createSpriteObj(spriteName, imageName, LAYER_BACKGROUND, 1, 1, TYPE_EMPTY, .FALSE., filter, 0)
+         call createSpriteObj(spriteName, imageName, LAYER_BACKGROUND, 1, 1, TYPE_FLOOR, .FALSE., filter, 0)
 
     end subroutine 
 
@@ -260,7 +429,7 @@ MODULE sprite7up
 
          if (layerDimensions(bufferNum,1) /= BLOCKMAP_1) then
              do ind = 1, layerBlocks(bufferNum)%nextIndexS, 1
-                if ((layerBlocks(bufferNum)%spriteList(ind)%active .EQV. .FALSE.) .OR. &
+                if ((layerBlocks(bufferNum)%spriteList(ind)%active             .EQV. .FALSE.) .OR. &
                     (associated(layerBlocks(bufferNum)%spriteList(ind)%imageF) .EQV. .FALSE.)) then
                      layerBlocks(bufferNum)%nextIndexS = ind - 1   
                      exit   
@@ -306,8 +475,11 @@ MODULE sprite7up
          layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%h = &
          layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%imageF%img%height  
 
-         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%spriteI   = 1
-         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%filter    = filter
+         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%spriteI    = 1
+         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%filter     = filter
+         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%tempFilter    = -1
+         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%tempFilterCountDown = 0
+
          layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%bufferNum = bufferNum   
          layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%solid     = solid
          layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%active    = .TRUE.
@@ -323,9 +495,10 @@ MODULE sprite7up
          layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%ind = &
          layerBlocks(bufferNum)%nextIndexS
 
-         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%fly     = fly
-         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%name    = spriteName
-         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%typFlag = typFlag
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%fly      = fly
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%name     = spriteName
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%typFlag  = typFlag
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%bufferNum = bufferNum   
 
          if (layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%imageF%img%numOfFrames > 1) then
              call layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%timer%timerStart( &
@@ -387,10 +560,6 @@ MODULE sprite7up
         layerDimensions(LAYER_PLAYGROUND,2) =   BLOCKMAP_EXP     
         layerDimensions(LAYER_PLAYGROUND,3) =   BLOCKMAP_REAL    
 
-        layerDimensions(LAYER_SKY       ,1) =   BLOCKMAP_INF         
-        layerDimensions(LAYER_SKY       ,2) =   BLOCKMAP_EXP     
-        layerDimensions(LAYER_SKY       ,3) =   BLOCKMAP_DUMMY     
-
         layerDimensions(LAYER_WEATHER   ,1) =   BLOCKMAP_1        
         layerDimensions(LAYER_WEATHER   ,2) =   BLOCKMAP_FIX
         layerDimensions(LAYER_WEATHER   ,3) =   BLOCKMAP_REAL    
@@ -440,7 +609,7 @@ MODULE sprite7up
          type(spritePoz), dimension(:), allocatable :: temp   
  
          integer                      :: from, to, sInd, smallest, smallestYh, smallestInd, last 
-         integer(1)                   :: rc   
+         integer(1)                   :: rc, filter    
          integer(1)                   :: n
          !character(40)                :: test    
          integer(4)                   :: yhf 
@@ -473,9 +642,8 @@ MODULE sprite7up
              smallestInd = 2147483647
 
              do from = to, layerBlocks(n)%nextIndexP, 1
-                yhf = layerBlocks(n)%pozList(from)%yh - & 
-                      merge(1, 0, layerBlocks(n)%pozList(from)%fly > 0)
-
+                yhf = layerBlocks(n)%pozList(from)%yh 
+ 
                 if ((yhf  < smallestYh)                               .OR. &
                     (yhf == smallestYh                               .AND. &
                      layerBlocks(n)%pozList(from)%ind < smallestInd)) then
