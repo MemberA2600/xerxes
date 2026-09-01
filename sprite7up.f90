@@ -16,7 +16,8 @@ MODULE sprite7up
 
     private    
     public                        :: initBlockMaps, putSpritesOnBuffer, createSpriteObjPlayGround, &
-                                     createSpriteObjBackGround, setOffset, addToOffset    
+                                     createSpriteObjBackGround, setOffset, addToOffset, &
+                                     createSpriteObjSky       
 
     type SpriteObj 
          integer(2)               :: w, h, spriteI
@@ -52,10 +53,10 @@ MODULE sprite7up
 
     integer(1), parameter                       :: BLOCKMAP_1     = 0, &
                                                    BLOCKMAP_INF   = 1, & 
+                                                   BLOCKMAP_REAL  = 0, &
+                                                   BLOCKMAP_DUMMY = 1, & 
                                                    BLOCKMAP_FIX   = 0, &
-                                                   BLOCKMAP_EXP   = 1, &                                                                                              
-                                                   NO_SHADOW      = 0, &  
-                                                   CAST_SHADOW    = 1                                                   
+                                                   BLOCKMAP_EXP   = 1                                                
 
     integer(1), parameter                       :: SIZE_INIT      = 64, &
                                                    SIZE_ADD       = 32
@@ -68,14 +69,18 @@ MODULE sprite7up
         class(SpriteObj)        :: this
         integer(4)              :: x, y
         integer(2)              :: fly
-
-        if (layerDimensions(this%bufferNum, 3) == CAST_SHADOW) then
-            if (fly > 0) &
-            call this%imageF%addToScreenBuffer(this%spriteI, this%bufferNum-1, &
-                                               x, y, FILTER_SHADOW)
-
-            call this%imageF%addToScreenBuffer(this%spriteI, this%bufferNum, &
-                                               x, y - fly, this%filter)
+    
+        if (this%bufferNum == 2) then
+            if (fly > 0) then
+                call this%imageF%addToScreenBuffer(this%spriteI, this%bufferNum-1, &
+                                                   x, y, FILTER_SHADOW)
+    
+                call this%imageF%addToScreenBuffer(this%spriteI, this%bufferNum, &
+                                                   x, y - fly, this%filter)                
+            else
+                call this%imageF%addToScreenBuffer(this%spriteI, this%bufferNum, &
+                                                   x, y, this%filter)
+            end if
         else
             call this%imageF%addToScreenBuffer(this%spriteI, this%bufferNum, &
                                                x, y, this%filter)
@@ -139,8 +144,8 @@ MODULE sprite7up
                        layerBlocks(this%bufferNum)%spriteList(this%ind)%w 
    
 
-                    call this%drawDrawDraw(x + modulo(XOffset, layerBlocks(this%bufferNum)%spriteList(this%ind)%w) &
-                                         , y + modulo(YOffset, layerBlocks(this%bufferNum)%spriteList(this%ind)%h) &
+                    call this%drawDrawDraw(x - modulo(XOffset, layerBlocks(this%bufferNum)%spriteList(this%ind)%w) &
+                                         , y - modulo(YOffset, layerBlocks(this%bufferNum)%spriteList(this%ind)%h) &
                                          , 0)
 
                 end do
@@ -170,17 +175,23 @@ MODULE sprite7up
     !   BlockMap Stuff
     !
 
-    subroutine setOffset(x, y)
-        integer(4)          :: x, y
-        
-        xOffset = x
-        yOffset = y
+    subroutine offSetCorr()
 
         if (xOffset < 0) xOffset = 0
         if (yOffset < 0) yOffset = 0
 
         if (xOffset > wSize - wOfScreenBuffer) xOffset = wSize - wOfScreenBuffer
         if (yOffset > hSize - hOfScreenBuffer) yOffset = hSize - hOfScreenBuffer
+
+    end subroutine
+
+    subroutine setOffset(x, y)
+        integer(4)          :: x, y
+        
+        xOffset = x
+        yOffset = y
+
+        call offsetCorr()
 
     end subroutine
 
@@ -190,13 +201,26 @@ MODULE sprite7up
         xOffset = xOffset + x
         yOffset = yOffset + y
 
-        if (xOffset < 0) xOffset = 0
-        if (yOffset < 0) yOffset = 0
-
-        if (xOffset > wSize - wOfScreenBuffer) xOffset = wSize - wOfScreenBuffer
-        if (yOffset > hSize - hOfScreenBuffer) yOffset = hSize - hOfScreenBuffer
+        call offsetCorr()
 
     end subroutine
+
+    subroutine createSpriteObjSky(spriteName, imageName, x, y, typFlag, solid, filter, fly)
+         character(*)  :: imageName, spriteName   
+         integer(4)    :: x, y
+         integer(1)    :: filter
+         integer(4)    :: typFlag
+         logical       :: solid
+         integer(2)    :: fly
+        
+      !
+      !  Sky units are basically ground units. If fly = 0, the main unit is the creature, but if it flies,
+      !  the shadow becomes the main unit and the creature is just drawn on the SKY layer.
+      !
+
+         call createSpriteObj(spriteName, imageName, LAYER_PLAYGROUND, x, y, typFlag, solid, filter, fly)
+
+    end subroutine 
 
     subroutine createSpriteObjPlayGround(spriteName, imageName, x, y, typFlag, solid, filter)
          character(*)  :: imageName, spriteName   
@@ -332,21 +356,23 @@ MODULE sprite7up
            layerBlocks(ind)%nextIndexS = 0
            layerBlocks(ind)%nextIndexP = 0
 
-           select case(layerDimensions(ind,1))
-           case(BLOCKMAP_1)  
-                allocate(layerBlocks(ind)%spriteList(1), stat = rc)
-                if (rc /= 0) call displayDebug("Failed to allocate spriteList!") 
-
-                allocate(layerBlocks(ind)%pozList   (1), stat = rc)
-                if (rc /= 0) call displayDebug("Failed to allocate pozList!") 
-
-           case(BLOCKMAP_INF) 
-                allocate(layerBlocks(ind)%spriteList(SIZE_INIT), stat = rc)
-                if (rc /= 0) call displayDebug("Failed to allocate spriteList!") 
-
-                allocate(layerBlocks(ind)%pozList   (SIZE_INIT), stat = rc)
-                if (rc /= 0) call displayDebug("Failed to allocate spriteList!") 
-           end select 
+           if (layerDimensions(ind,3) /= BLOCKMAP_DUMMY) then
+               select case(layerDimensions(ind,1))
+               case(BLOCKMAP_1)  
+                    allocate(layerBlocks(ind)%spriteList(1), stat = rc)
+                    if (rc /= 0) call displayDebug("Failed to allocate spriteList!") 
+    
+                    allocate(layerBlocks(ind)%pozList   (1), stat = rc)
+                    if (rc /= 0) call displayDebug("Failed to allocate pozList!") 
+    
+               case(BLOCKMAP_INF) 
+                    allocate(layerBlocks(ind)%spriteList(SIZE_INIT), stat = rc)
+                    if (rc /= 0) call displayDebug("Failed to allocate spriteList!") 
+    
+                    allocate(layerBlocks(ind)%pozList   (SIZE_INIT), stat = rc)
+                    if (rc /= 0) call displayDebug("Failed to allocate pozList!") 
+               end select 
+            end if
         end do 
 
     end subroutine
@@ -355,27 +381,27 @@ MODULE sprite7up
 
         layerDimensions(LAYER_BACKGROUND,1) =   BLOCKMAP_1
         layerDimensions(LAYER_BACKGROUND,2) =   BLOCKMAP_FIX
-        layerDimensions(LAYER_BACKGROUND,3) =   NO_SHADOW
+        layerDimensions(LAYER_BACKGROUND,3) =   BLOCKMAP_REAL
 
         layerDimensions(LAYER_PLAYGROUND,1) =   BLOCKMAP_INF       
         layerDimensions(LAYER_PLAYGROUND,2) =   BLOCKMAP_EXP     
-        layerDimensions(LAYER_PLAYGROUND,3) =   NO_SHADOW     
+        layerDimensions(LAYER_PLAYGROUND,3) =   BLOCKMAP_REAL    
 
         layerDimensions(LAYER_SKY       ,1) =   BLOCKMAP_INF         
         layerDimensions(LAYER_SKY       ,2) =   BLOCKMAP_EXP     
-        layerDimensions(LAYER_SKY       ,3) =   CAST_SHADOW    
+        layerDimensions(LAYER_SKY       ,3) =   BLOCKMAP_DUMMY     
 
         layerDimensions(LAYER_WEATHER   ,1) =   BLOCKMAP_1        
         layerDimensions(LAYER_WEATHER   ,2) =   BLOCKMAP_FIX
-        layerDimensions(LAYER_WEATHER   ,3) =   NO_SHADOW
+        layerDimensions(LAYER_WEATHER   ,3) =   BLOCKMAP_REAL    
 
         layerDimensions(LAYER_FOREGROUND,1) =   BLOCKMAP_1
         layerDimensions(LAYER_FOREGROUND,2) =   BLOCKMAP_FIX
-        layerDimensions(LAYER_FOREGROUND,3) =   NO_SHADOW
+        layerDimensions(LAYER_FOREGROUND,3) =   BLOCKMAP_REAL    
 
         layerDimensions(LAYER_INTERFACE ,1) =   BLOCKMAP_INF         
         layerDimensions(LAYER_INTERFACE ,2) =   BLOCKMAP_FIX     
-        layerDimensions(LAYER_INTERFACE ,3) =   NO_SHADOW     
+        layerDimensions(LAYER_INTERFACE ,3) =   BLOCKMAP_REAL    
 
     end subroutine
 
@@ -416,41 +442,14 @@ MODULE sprite7up
          integer                      :: from, to, sInd, smallest, smallestYh, smallestInd, last 
          integer(1)                   :: rc   
          integer(1)                   :: n
-         character(40)                :: test    
+         !character(40)                :: test    
+         integer(4)                   :: yhf 
+
          type(spritePoz)              :: tempPoz   
 
 
          allocate(temp(layerBlocks(n)%nextIndexP), stat = rc)
          if (rc /= 0) call displayDebug("Failed to allocate temp SpritePoz list!")
-
-         last        = 0
-
-         do to = 1, layerBlocks(n)%nextIndexP-1, 1
-             smallest    = 0
-             smallestYh  = 2147483647
-             smallestInd = 2147483647
-
-             do from = to, layerBlocks(n)%nextIndexP, 1
-                if ((layerBlocks(n)%pozList(from)%yh  < smallestYh)    .OR. &
-                    (layerBlocks(n)%pozList(from)%yh == smallestYh    .AND. &
-                     layerBlocks(n)%pozList(from)%ind < smallestInd)) then
-                     smallest    = from
-                     smallestYh  = layerBlocks(n)%pozList(from)%yh
-                     smallestInd = layerBlocks(n)%pozList(from)%ind 
-                end if
-            end do
-
-            if (smallest == 0) exit   
-
-            tempPoz                          = layerBlocks(n)%pozList(smallest)
-            layerBlocks(n)%pozList(smallest) = layerBlocks(n)%pozList(to)
-            layerBlocks(n)%pozList(to)       = tempPoz
-
-             !write(test, "(A, ' ', I0, ' ', I0)") & 
-             !      layerBlocks(n)%pozList(smallest)%name, smallestYh, smallestInd 
-             !call displayDebug(test)
-
-         end do
 
          to = 0
          do from = 1, layerBlocks(n)%nextIndexP, 1
@@ -466,6 +465,37 @@ MODULE sprite7up
    
          layerBlocks(n)%nextIndexP = last
          call move_alloc(temp, layerBlocks(n)%pozList)  
+
+         last        = 0
+         do to = 1, layerBlocks(n)%nextIndexP-1, 1
+             smallest    = 0
+             smallestYh  = 2147483647
+             smallestInd = 2147483647
+
+             do from = to, layerBlocks(n)%nextIndexP, 1
+                yhf = layerBlocks(n)%pozList(from)%yh - & 
+                      merge(1, 0, layerBlocks(n)%pozList(from)%fly > 0)
+
+                if ((yhf  < smallestYh)                               .OR. &
+                    (yhf == smallestYh                               .AND. &
+                     layerBlocks(n)%pozList(from)%ind < smallestInd)) then
+                     smallest    = from
+                     smallestYh  = yhf
+                     smallestInd = layerBlocks(n)%pozList(from)%ind 
+                end if
+            end do
+
+            if (smallest == 0) exit   
+
+            tempPoz                          = layerBlocks(n)%pozList(smallest)
+            layerBlocks(n)%pozList(smallest) = layerBlocks(n)%pozList(to)
+            layerBlocks(n)%pozList(to)       = tempPoz
+
+             !write(test, "(A, ' ', I0, ' ', I0)") & 
+             !      layerBlocks(n)%pozList(smallest)%name, smallestYh, smallestInd 
+             !call displayDebug(test)
+
+         end do
 
     end subroutine
 

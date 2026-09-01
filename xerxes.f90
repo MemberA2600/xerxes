@@ -128,6 +128,9 @@
 
        !call loadBMP() 
 
+    call createSpriteObjSky(       'Bird',  'Bird', 222, 65, TYPE_EMPTY, .TRUE., NO_FILTER, 60)
+    call createSpriteObjSky(       'Bird',  'Bird', 444, 401, TYPE_EMPTY, .TRUE., NO_FILTER, 90)
+
     call createSpriteObjPlayGround('Tree',  'Tree', 425, -60, TYPE_EMPTY, .TRUE., NO_FILTER)
     call createSpriteObjPlayGround('Tree',  'Tree', 575, 190, TYPE_EMPTY, .TRUE., NO_FILTER)
     call createSpriteObjPlayGround('Tree',  'Tree', 201, 10, TYPE_EMPTY, .TRUE., NO_FILTER)
@@ -139,6 +142,11 @@
     call createSpriteObjPlayGround('Tree',  'Tree', 22, -70, TYPE_EMPTY, .TRUE., NO_FILTER)
     call createSpriteObjPlayGround('Tree',  'Tree', 380, 20, TYPE_EMPTY, .TRUE., NO_FILTER)
     call createSpriteObjPlayGround('Tree',  'Tree', 35, 325, TYPE_EMPTY, .TRUE., NO_FILTER)
+    call createSpriteObjSky(       'Bird',  'Bird', 47, 150, TYPE_EMPTY, .TRUE., NO_FILTER, 80)
+    call createSpriteObjPlayGround('Tree',  'Tree', 680, 10, TYPE_EMPTY, .TRUE., NO_FILTER)
+    call createSpriteObjPlayGround('Tree',  'Tree', 720, 455, TYPE_EMPTY, .TRUE., NO_FILTER)
+    call createSpriteObjSky(       'Bird',  'Bird', 677, 322, TYPE_EMPTY, .TRUE., NO_FILTER, 120)
+    call createSpriteObjPlayGround('Tree',  'Tree', 666, 510, TYPE_EMPTY, .TRUE., NO_FILTER)
 
 !
 !   Load the config!
@@ -207,6 +215,14 @@
         END SELECT
         if (editMode .EQV. .FALSE.) then 
             call WMenuSetState(ID_DEV, ItemEnabled, 0)  
+
+            intDummy = intDummy + 1
+
+            if (intDummy > 255) intdummy = 1 
+
+            if ((intDummy / 16) > 7) call addToOffset(-1,-1)
+            if ((intDummy / 16) < 8) call addToOffset( 1, 1)
+
             call putSpritesOnBuffer()
         end if
         !CALL soundChannelLoop()
@@ -336,3 +352,4 @@
         end subroutine
 
       END PROGRAM XERXES
+
