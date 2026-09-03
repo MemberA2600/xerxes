@@ -12,6 +12,7 @@ FILE    7 colors.f90
 FILE    7 config.f90
 FILE    7 debugwindow.f90
 FILE    7 dataloader.f90
+FILE    7 dict.f90
 FILE    7 engineconstants.f90
 FILE    7 folderparser.f90
 FILE    7 gzip.f90

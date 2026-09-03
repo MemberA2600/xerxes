@@ -15,6 +15,7 @@ MODULE wavePlayerWindow
     USE TIA
     USE Waveplayer
     USE inpout
+    use dict
 
     implicit none
 
@@ -203,6 +204,22 @@ MODULE wavePlayerWindow
 
        CALL WDialogLoad(IDD_SoundSettings)
     
+       CALL WDialogTitle(getWordInCurrentLang("sfXAndMusicSettings")) 
+       CALL WDialogPutString(ID_SoundOK, getWordInCurrentLang("ok")) 
+       CALL WDialogPutString(ID_SoundCancel, getWordInCurrentLang("cancel")) 
+       CALL WDialogPutString(ID_SoundReset, getWordInCurrentLang("reset")) 
+
+       CALL WDialogPutString(IDF_LABELSfxVol, getWordInCurrentLang("volumeOfSoundEffects")) 
+       CALL WDialogPutString(ID_SoundTest, getWordInCurrentLang("test")) 
+       CALL WDialogPutString(IDF_MusicRadio1, getWordInCurrentLang("opl2Emulation")) 
+       CALL WDialogPutString(IDF_LABELMusicVol, getWordInCurrentLang("volumeOfMusic")) 
+       CALL WDialogPutString(ID_MusicStop, getWordInCurrentLang("stop")) 
+       CALL WDialogPutString(ID_MusicTest, getWordInCurrentLang("test")) 
+       CALL WDialogPutString(IDF_MusicRadio2, getWordInCurrentLang("realOPL2LPT")) 
+       CALL WDialogPutString(IDF_HEX, getWordInCurrentLang("lptHEXAddress")) 
+       CALL WDialogPutString(ID_MusicTest2, getWordInCurrentLang("test")) 
+       CALL WDialogPutString(ID_MusicStop2, getWordInCurrentLang("stop")) 
+
        sfxVolumeOld   = sfxVolume 
        musicVolumeOld = musicVolume
        LPTAddressOld  = LPTAddress

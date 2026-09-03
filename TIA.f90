@@ -12,6 +12,7 @@ MODULE TIA
     USE RESID
     USE subs
     USE engineConstants
+    USE dict 
 
     implicit none
 
@@ -573,6 +574,12 @@ MODULE TIA
        end do 
 
        CALL WDialogLoad(IDD_TIA)
+
+       CALL WDialogTitle(getWordInCurrentLang("tiaNoiseMaker")) 
+       CALL WDialogPutString(ID_TIAErase, getWordInCurrentLang("erase")) 
+       CALL WDialogPutString(ID_TIALoad, getWordInCurrentLang("load")) 
+       CALL WDialogPutString(ID_TIASave, getWordInCurrentLang("save")) 
+       CALL WDialogPutString(ID_TIAPlay, getWordInCurrentLang("play")) 
 
        do
           CALL WDialogSelect(IDD_TIA)

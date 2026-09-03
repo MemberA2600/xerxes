@@ -52,8 +52,8 @@ MODULE winAPIs
         class(CounterTimer), intent(inout) :: this    
         integer(8)                         :: diffCheck
 
-        this%diffCheck = diffCheck 
         call this%timerRestart()
+        this%diffCheck = diffCheck 
 
      end subRoutine     
 

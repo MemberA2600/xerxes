@@ -105,4 +105,8 @@ MODULE engineConstants
                                         WEATHER_DAY_RAIN    = 2,  &
                                         WEATHER_NIGHT_RAIN  = 3   
 
+    integer(1), parameter            :: LANG_ENG    = 0,  &
+                                        LANG_HUN    = 1,  &
+                                        LANG_DEU    = 2
+
 END MODULE engineConstants

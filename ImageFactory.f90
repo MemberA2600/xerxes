@@ -12,6 +12,7 @@ MODULE ImageFactory
     use colors
     USE inputReader
     USE KERNEL32, WinSleep => Sleep
+    USE dict
 
     implicit none
 
@@ -545,6 +546,10 @@ MODULE ImageFactory
        end do 
 
        CALL WDialogLoad(IDD_SpeedSetter)
+       CALL WDialogTitle(getWordInCurrentLang("speedSettings")) 
+       CALL WDialogPutString(ID_SpeedOK, getWordInCurrentLang("ok")) 
+       CALL WDialogPutString(ID_Speedcancel, getWordInCurrentLang("cancel")) 
+
 
        oldSpeed  = 16 - getSpeed() 
        testIndex = 1
@@ -655,6 +660,16 @@ MODULE ImageFactory
 
        call onlyRunAfterLoad()
  
+       CALL WDialogTitle(getWordInCurrentLang("bmpToXXP")) 
+       CALL WDialogPutString(IDF_XXPLABEL1, getWordInCurrentLang("frameIndex")) 
+       CALL WDialogPutString(IDF_ANIM, getWordInCurrentLang("animate")) 
+       CALL WDialogPutString(IDF_XXPLABEL2, getWordInCurrentLang("transpColor")) 
+       CALL WDialogPutString(IDF_TRANS, getWordInCurrentLang("transparent")) 
+       CALL WDialogPutString(IDF_ColorPick, getWordInCurrentLang("pickAColor!")) 
+       CALL WDialogPutString(IDF_XXPLABEL3, getWordInCurrentLang("testFilter")) 
+       CALL WDialogPutString(ID_BMPLoad, getWordInCurrentLang("load")) 
+       CALL WDialogPutString(ID_XXPSave, getWordInCurrentLang("save")) 
+
        justACancel = .FALSE.     
        pleaseStop  = .TRUE.
  

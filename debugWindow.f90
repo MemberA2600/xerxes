@@ -4,12 +4,12 @@ MODULE debugWindow
    IMPLICIT NONE
 
    PRIVATE 
-   PUBLIC        :: displayDebug, appendDebug, setdbgBin
+   PUBLIC        :: displayDebug, appendDebug, setdbgBin, writeOutDebug
 
    TYPE(WIN_MESSAGE) :: MESSAGE
    INTEGER           :: ITYPE 
 
-   character(255) :: dbgBin 
+   character(255) :: dbgBin, dbgTxt 
 
    CONTAINS 
 
@@ -17,6 +17,8 @@ MODULE debugWindow
          character(*)        :: cwd
 
          dbgbin = trim(CWD) // '\debug.bin'
+         dbgTxt = trim(CWD) // '\debug.txt'
+
    end subroutine
 
    SUBROUTINE displayDebug(txt)
@@ -49,6 +51,24 @@ MODULE debugWindow
         close(34, iostat = rc)
         if (rc /= 0) call displayDebug("Failed to close debug!")
 
+   end subroutine
+
+   SUBROUTINE writeOutDebug(txt)
+        CHARACTER(LEN = *), intent(in)   :: txt
+        integer(1)          :: rc
+        
+        !call displayDebug(trim(CWD) // '\debug.bin')
+
+        open(36, FILE = dbgtxt, iostat = rc, status='old', position='append')
+
+        if (rc /= 0) open(36, FILE = dbgtxt, iostat = rc, &
+                          status='replace', position='append')
+        if (rc /= 0) call displayDebug("Failed to append a byte to debug!")
+        
+        write(36, "(A)") txt
+
+        close(36, iostat = rc)
+        if (rc /= 0) call displayDebug("Failed to close debug!")
 
    end subroutine
 

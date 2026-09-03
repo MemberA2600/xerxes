@@ -8,6 +8,7 @@ MODULE config
     USE inputReader
     USE subs
     USE dataLoader
+    USE dict
 
     implicit none
 
@@ -20,13 +21,14 @@ MODULE config
     !   05th    BYTE : Version (current: 0) 
     !   06th    BYTE : Screen Size 
     !   07th    BYTE : Speed
-    !   08th    BYTE : Sound Volume
-    !   09th    BYTE : Music Volume
-    !   10th    BYTE : OPL2LPT Mode
-    !   11-12th BYTES: LPT Hex
-    !   13th    BYTE : Analog Stick Sensitivity
-    !   14-23th BYTE : Keys
-    !   24-33th BYTE : Joystick Settings
+    !   08th    BYTE : Lang
+    !   09th    BYTE : Sound Volume
+    !   10th    BYTE : Music Volume
+    !   11th    BYTE : OPL2LPT Mode
+    !   12-13th BYTES: LPT Hex
+    !   14th    BYTE : Analog Stick Sensitivity
+    !   15-24th BYTE : Keys
+    !   25-34th BYTE : Joystick Settings
     !   
 
     contains
@@ -53,8 +55,9 @@ MODULE config
             version = bytes(5)
             call setScreenSize(bytes(6) + ID_AUTO)
             call setSpeed(bytes(7))
+            call setLang(bytes(8))
 
-            ind      = 8
+            ind      = 9
 
             call setSoundSettings(bytes, ind, version)
             call setControllerSettings(bytes, ind, version)
@@ -69,7 +72,7 @@ MODULE config
         integer(2), dimension(:), allocatable  :: bytes
         integer(2)                             :: ind, rc, s
         
-        allocate(bytes(33), stat = rc)
+        allocate(bytes(34), stat = rc)
 
         if (rc /= 0) call displayDebug("Failed to allocate Config File bytes!")
 
@@ -77,8 +80,9 @@ MODULE config
         bytes(5) = configVersion       
         bytes(6) = getScreenSizeId()
         bytes(7) = getSpeed()
+        bytes(8) = getLang()
 
-        ind      = 8
+        ind      = 9
 
         call getSoundSettings(bytes, ind)
         call getControllerSettings(bytes, ind)

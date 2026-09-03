@@ -31,7 +31,8 @@
       USE config  
       USE imagefactory  
       USE sprite7up
-  
+      USE dict  
+
       IMPLICIT NONE
 !
 ! Declare variables to be returned by WMessage
@@ -128,7 +129,7 @@
 
        !call loadBMP() 
 
-    call setWeather(WEATHER_NIGHT_RAIN)
+    call setWeather(WEATHER_DAY_RAIN)
 
     call createSpriteObjSky(       'Bird',  'Bird', 222, 65, TYPE_EMPTY, .TRUE., NO_FILTER, 60)
     call createSpriteObjSky(       'Bird',  'Bird', 444, 401, TYPE_EMPTY, .TRUE., NO_FILTER, 90)
@@ -155,6 +156,8 @@
 !   Load the config!
 !
      call loadConfig()
+     call setMenuLabels()
+
      call playTIAbyName("StartUp", 0)  
 !
 !   Main message loop
@@ -210,7 +213,11 @@
                     call displayPalette()  
               CASE (ID_STARTGAME)
                     editMode = .FALSE. 
-            END SELECT 
+              CASE (ID_ENGLISH:ID_DEUTSCH)
+                    call setLang(MESSAGE%VALUE1 - ID_ENGLISH) 
+                    call saveConfig() 
+                    call setMenuLabels()
+          END SELECT 
 
           CASE (CloseRequest)            ! Close window (e.g. Alt/F4)
             EXIT   
@@ -246,10 +253,28 @@
 
       CONTAINS  
 
+      subroutine setMenuLabels()
+            call WMenuSetString(ID_SoundInput       , trim(getWordInCurrentLang( "settings"           )))
+            call WMenuSetString(ID_SCREENSIZE       , trim(getWordInCurrentLang( "resolution"         )))
+            call WMenuSetString(ID_SPEED            , trim(getWordInCurrentLang( "gameSpeed"          )))
+            call WMenuSetString(ID_SoundSettings    , trim(getWordInCurrentLang( "sfxMusic"           )))
+            call WMenuSetString(ID_InputSettings    , trim(getWordInCurrentLang( "keyboardController" )))
+            call WMenuSetString(ID_DEV              , trim(getWordInCurrentLang( "development"        )))
+            call WMenuSetString(ID_TIA_Noiser       , trim(getWordInCurrentLang( "tiaNoiseMaker"      )))
+            call WMenuSetString(ID_VGM2XXA          , trim(getWordInCurrentLang( "vgmToXXA"           )))
+            call WMenuSetString(ID_BMP2XXP          , trim(getWordInCurrentLang( "bmpToXXP"           )))
+            call WMenuSetString(ID_DisplayPalette   , trim(getWordInCurrentLang( "displayPalette"     )))
+            call WMenuSetString(ID_LANG             , trim(getWordInCurrentLang( "language"           )))
+            call WMenuSetString(ID_STARTGAME        , trim(getWordInCurrentLang( "startGame"          )))
+            call WMenuSetString(ID_auto             , trim(getWordInCurrentLang( "auto"               )))
+
+      end subroutine  
+
       subroutine loadFolders()
            call getFolder("tia"  , "xxt")
            call getFolder("adlib", "xxa")
            call getFolder("img"  , "xxp")
+           call getFolder("dict" , "xxd")
       end subroutine  
 
       function playAdlibT(lpParameter) result(rc)

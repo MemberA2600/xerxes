@@ -15,6 +15,7 @@ MODULE inputReader
     USE KERNEL32, WinSleep => Sleep
     USE WINMM
     USE colors
+    USE dict
 
     implicit none
 
@@ -31,15 +32,15 @@ MODULE inputReader
         8, 9, 13, 16, 17, 18, 19, 20, 27, 32, &
         33, 34, 35, 36, 37, 38, 39, 40, 45, 46, &
         144, 145, 106, 107, 109, 110, 111, 1, 2, 4 /)
-    character(len=12), parameter :: vk_name(n_special) = (/ &
-        "BACKSPACE   ", "TAB         ", "ENTER       ", "SHIFT       ", &
-        "CTRL        ", "ALT         ", "PAUSE       ", "CAPSLOCK    ", &
-        "ESC         ", "SPACE       ", "PAGE UP     ", "PAGE DOWN   ", &
-        "END         ", "HOME        ", "LEFT ARROW  ", "UP ARROW    ", &
-        "RIGHT ARROW ", "DOWN ARROW  ", "INSERT      ", "DELETE      ", &
-        "NUM LOCK    ", "SCROLL LOCK ", "*"           , "+"           , &
-        "-"           , "NUM , ."     , "/"           , "MOUSE LEFT"  , &
-        "MOUSE RIGHT" , "MOUSE MIDDLE"   /)
+    character(len=20), parameter :: vk_name(n_special) = (/ &
+        "buttonBackSpace"  , "buttonTab"         , "buttonEnter"    , "buttonShift"    , &
+        "buttonCtrl"       , "buttonAlt"         , "buttonPause"    , "buttonCapsLock" , &
+        "buttonEsc"        , "buttonSpace"       , "buttonPageUp"   , "buttonPageDown" , &
+        "buttonEnd"        , "buttonHome"        , "buttonLeftArrow", "buttonUpArrow"  , &
+        "buttonRightArrow" , "buttonDownArrow"   , "buttonInsert"   , "buttonDelete"   , &
+        "buttonNumLock"    , "buttonScrollLock"  , "*"              , "+"              , &
+        "-"                , "NUM , ."           , "/"              , "buttonMouseLeft", &
+        "buttonMouseRight" , "buttonMouseMiddle"  /)
 
     ! Button masks
     integer(2), parameter :: XINPUT_GAMEPAD_DPAD_UP        = Z'0001'
@@ -216,6 +217,30 @@ MODULE inputReader
 
        CALL WDialogLoad(IDD_InputSetter)
 
+       CALL WDialogTitle(getWordInCurrentLang("keyboardControllerSettings")) 
+       CALL WDialogPutString(ID_InputOK, getWordInCurrentLang("ok")) 
+       CALL WDialogPutString(ID_InputCancel, getWordInCurrentLang("cancel")) 
+       CALL WDialogPutString(ID_InputRestore, getWordInCurrentLang("reset")) 
+
+       CALL WDialogPutString(IDF_InputTester, getWordInCurrentLang("keyboardControllerTest")) 
+       CALL WDialogPutString(IDF_LabelButton, getWordInCurrentLang("pressedButton")) 
+       CALL WDialogPutString(IDF_LabelDirs, getWordInCurrentLang("joystickDirections")) 
+       CALL WDialogPutString(IDF_LabelJoyButt, getWordInCurrentLang("joystickButtons")) 
+       CALL WDialogPutString(IDF_Analog, getWordInCurrentLang("analogStickSensitivity")) 
+       CALL WDialogPutString(IDF_LabelButtonName, getWordInCurrentLang("moveLeft")) 
+       CALL WDialogPutString(IDF_LabelButtonName2, getWordInCurrentLang("moveRight")) 
+       CALL WDialogPutString(IDF_LabelButtonName3, getWordInCurrentLang("moveUp")) 
+       CALL WDialogPutString(IDF_LabelButtonName4, getWordInCurrentLang("moveDown")) 
+       CALL WDialogPutString(IDF_LabelButtonName5, getWordInCurrentLang("attack")) 
+       CALL WDialogPutString(IDF_LabelButtonName6, getWordInCurrentLang("charge")) 
+       CALL WDialogPutString(IDF_LabelButtonName7, getWordInCurrentLang("spell1")) 
+       CALL WDialogPutString(IDF_LabelButtonName8, getWordInCurrentLang("spell2")) 
+       CALL WDialogPutString(IDF_LabelButtonName9, getWordInCurrentLang("spell3")) 
+       CALL WDialogPutString(IDF_LabelButtonName10, getWordInCurrentLang("menu")) 
+       CALL WDialogPutString(IDF_KeyboardGroup, getWordInCurrentLang("keyboard")) 
+       CALL WDialogPutString(IDF_JoystickGroup, getWordInCurrentLang("joystick")) 
+
+
        buttonsOld  = buttons 
 
        call WDialogPutInteger( IDF_JoySenseVal, joyDiffSaved)
@@ -270,7 +295,7 @@ MODULE inputReader
         r = 0
         pixelColor = -1 
 
-        call WindowOutStatusBar(1, "Press Mouse to pick a Color (or ESC to Cancel)!")       
+        call WindowOutStatusBar(1, getWordInCurrentLang("pickColor"))       
 
         lastPressedKey = 0
         DO
@@ -279,17 +304,17 @@ MODULE inputReader
             call getPixelColor()
 
             if (lastPressedKey /= 0) then
-
-                select case(getKeyName(lastPressedKey))
-                case("ESC")
+                if (getKeyName(lastPressedKey) == getWordInCurrentLang("buttonEsc")) then
                       r = 0  
                       exit
-                case("MOUSE LEFT")  
+                end if
+
+                if (getKeyName(lastPressedKey) == getWordInCurrentLang("buttonMouseLeft")) then 
                       if (pixelColor > 1) then
                           r = pixelColor         
                           exit  
                       end if  
-                end select
+                end if
             end if
         END DO
 
@@ -328,7 +353,7 @@ MODULE inputReader
                     write(text, "('X: ', I0, '| Y: ', I0, '| C: ', I0 )") X, Y, pixelColor
                     call WindowOutStatusBar(1, trim(text))  
                 else
-                    call WindowOutStatusBar(1, "Press Mouse to pick a Color (or ESC to Cancel)!")       
+                    call WindowOutStatusBar(1, getWordInCurrentLang("pickColor"))       
                 end if
   
             end if
@@ -342,7 +367,7 @@ MODULE inputReader
         logical                :: pressed
 
         buttonArrayID          = buttonID - ID_AssignLeftKey + 1
-        call WindowOutStatusBar(1, "Press a Button (or ESC to Cancel)!")       
+        call WindowOutStatusBar(1, getWordInCurrentLang("pressButton"))       
 
         pressed     = .FALSE.
 
@@ -352,7 +377,7 @@ MODULE inputReader
             call readInput()
 
             if (lastPressedKey /= 0) then
-                If (getKeyName(lastPressedKey) /= "ESC") then 
+                If (getKeyName(lastPressedKey) /= getWordInCurrentLang("buttonEsc")) then 
                     do ind = 1, 10, 1
                        if (buttons(ind) == lastPressedKey) then 
                            buttons(ind) = buttons(buttonArrayID)
@@ -385,7 +410,7 @@ MODULE inputReader
         !character(40)          :: tt
 
         buttonArrayID          = buttonID - ID_AssignLeftKey + 1
-        call WindowOutStatusBar(1, "Use the Joystick (or ESC to Cancel)!")       
+        call WindowOutStatusBar(1, getWordInCurrentLang("useJoy"))       
         pressed = .FALSE.
 
         !write(tt, "(I0)") buttonArrayID
@@ -397,7 +422,7 @@ MODULE inputReader
             call readInput()
 
             if (lastPressedKey /= 0) then
-                If (getKeyName(lastPressedKey) == "ESC") then 
+                If (getKeyName(lastPressedKey) == getWordInCurrentLang("buttonEsc")) then 
                     justACancel = .TRUE.
                     exit
                 end if 
@@ -557,7 +582,7 @@ MODULE inputReader
     end function
 
     function getKeyName(val) result(keyname)
-        character(len=12) :: keyname
+        character(len=20) :: keyname, readFromDict
         logical           :: found
         integer           :: i
         integer(2)        :: val
@@ -588,6 +613,10 @@ MODULE inputReader
             end if
         end select
 
+        !call writeOutDebug(keyName)
+        readFromDict = getWordInCurrentLang(keyname)
+        if (readFromDict /= "!!!") keyname = readFromDict
+
     end function
 
     function getJoyName(val) result(joyname)
@@ -596,25 +625,25 @@ MODULE inputReader
 
         select case(val)
         case(IND_JOY_LEFT)
-            joyName = "LEFT"
+            joyName = getWordInCurrentLang("joyLeft")
         case(IND_JOY_RIGHT)
-            joyName = "RIGHT"
+            joyName = getWordInCurrentLang("joyRight")
         case(IND_JOY_UP)
-            joyName = "UP"
+            joyName = getWordInCurrentLang("joyUp")
         case(IND_JOY_DOWN)
-            joyName = "DOWN"
+            joyName = getWordInCurrentLang("joyDown")
         case(IND_JOY_BUTTON1)
-            joyName = "BUTTON1"                         
+            joyName = getWordInCurrentLang("joy1")                        
         case(IND_JOY_BUTTON2)
-            joyName = "BUTTON2"
+            joyName = getWordInCurrentLang("joy2")
         case(IND_JOY_BUTTON3)
-            joyName = "BUTTON3"
+            joyName = getWordInCurrentLang("joy3")
         case(IND_JOY_BUTTON4)
-            joyName = "BUTTON4"
+            joyName = getWordInCurrentLang("joy4")
         case(IND_JOY_BUTTON5)
-            joyName = "BUTTON5"
+            joyName = getWordInCurrentLang("joy5")
         case(IND_JOY_BUTTON6)
-            joyName = "BUTTON6"
+            joyName = getWordInCurrentLang("joy6")
         case default
             joyName = ""
         end select

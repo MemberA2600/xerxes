@@ -10,6 +10,7 @@ MODULE vgm
     USE adlib
     USE waveplayer 
     USE inpout
+    USE dict
 
     implicit none
 
@@ -64,6 +65,12 @@ MODULE vgm
        end do 
 
        CALL WDialogLoad(IDD_VGM2XXA)
+
+       CALL WDialogTitle(getWordInCurrentLang("vgmToXXA")) 
+       CALL WDialogPutString(ID_VGMLoad, getWordInCurrentLang("load")) 
+       CALL WDialogPutString(ID_XXASave, getWordInCurrentLang("save")) 
+       CALL WDialogPutString(ID_XXAPlay, getWordInCurrentLang("play")) 
+       CALL WDialogPutString(ID_XXAStop, getWordInCurrentLang("stop")) 
 
        do
           CALL WDialogSelect(IDD_VGM2XXA)

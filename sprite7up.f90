@@ -55,14 +55,12 @@ MODULE sprite7up
 
     type(BlockMap), dimension(layerNum)         :: layerBlocks
 
-    integer(2), dimension(layerNum, 3)          :: layerDimensions
+    integer(2), dimension(layerNum, 2)          :: layerDimensions
 
     integer(4)                                  :: XOffset, YOffset, wSize, hSize
 
     integer(1), parameter                       :: BLOCKMAP_1     = 0, &
                                                    BLOCKMAP_INF   = 1, & 
-                                                   BLOCKMAP_REAL  = 0, &
-                                                   BLOCKMAP_DUMMY = 1, & 
                                                    BLOCKMAP_FIX   = 0, &
                                                    BLOCKMAP_EXP   = 1                                                
 
@@ -276,7 +274,7 @@ MODULE sprite7up
         do i = 1, layerBlocks(b)%nextIndexP, 1
            iP = layerBlocks(b)%pozList(i)%ind  
 
-           if (layerBlocks(b)%pozList(i)%name /= n) cycle 
+           if (layerBlocks(b)%pozList(i)%name /= n .AND. n /= "") cycle 
                         
            if ((layerBlocks(b)%spriteList(ip)%active             .EQV. .TRUE.) .AND. &
                (associated(layerBlocks(b)%spriteList(ip)%imageF) .EQV. .TRUE.)) then    
@@ -581,23 +579,21 @@ MODULE sprite7up
            layerBlocks(ind)%nextIndexS = 0
            layerBlocks(ind)%nextIndexP = 0
 
-           if (layerDimensions(ind,3) /= BLOCKMAP_DUMMY) then
-               select case(layerDimensions(ind,1))
-               case(BLOCKMAP_1)  
-                    allocate(layerBlocks(ind)%spriteList(1), stat = rc)
-                    if (rc /= 0) call displayDebug("Failed to allocate spriteList!") 
+           select case(layerDimensions(ind,1))
+           case(BLOCKMAP_1)  
+                allocate(layerBlocks(ind)%spriteList(1), stat = rc)
+                if (rc /= 0) call displayDebug("Failed to allocate spriteList!") 
     
-                    allocate(layerBlocks(ind)%pozList   (1), stat = rc)
-                    if (rc /= 0) call displayDebug("Failed to allocate pozList!") 
+                allocate(layerBlocks(ind)%pozList   (1), stat = rc)
+                if (rc /= 0) call displayDebug("Failed to allocate pozList!") 
     
-               case(BLOCKMAP_INF) 
-                    allocate(layerBlocks(ind)%spriteList(SIZE_INIT), stat = rc)
-                    if (rc /= 0) call displayDebug("Failed to allocate spriteList!") 
+           case(BLOCKMAP_INF) 
+                allocate(layerBlocks(ind)%spriteList(SIZE_INIT), stat = rc)
+                if (rc /= 0) call displayDebug("Failed to allocate spriteList!") 
     
-                    allocate(layerBlocks(ind)%pozList   (SIZE_INIT), stat = rc)
-                    if (rc /= 0) call displayDebug("Failed to allocate pozList!") 
-               end select 
-            end if
+                allocate(layerBlocks(ind)%pozList   (SIZE_INIT), stat = rc)
+                if (rc /= 0) call displayDebug("Failed to allocate pozList!") 
+           end select 
         end do 
 
     end subroutine
@@ -606,23 +602,18 @@ MODULE sprite7up
 
         layerDimensions(LAYER_BACKGROUND,1) =   BLOCKMAP_1
         layerDimensions(LAYER_BACKGROUND,2) =   BLOCKMAP_FIX
-        layerDimensions(LAYER_BACKGROUND,3) =   BLOCKMAP_REAL
 
         layerDimensions(LAYER_PLAYGROUND,1) =   BLOCKMAP_INF       
         layerDimensions(LAYER_PLAYGROUND,2) =   BLOCKMAP_EXP     
-        layerDimensions(LAYER_PLAYGROUND,3) =   BLOCKMAP_REAL    
 
         layerDimensions(LAYER_WEATHER   ,1) =   BLOCKMAP_1        
         layerDimensions(LAYER_WEATHER   ,2) =   BLOCKMAP_FIX
-        layerDimensions(LAYER_WEATHER   ,3) =   BLOCKMAP_REAL    
 
-        layerDimensions(LAYER_FOREGROUND,1) =   BLOCKMAP_1
+        layerDimensions(LAYER_FOREGROUND,1) =   BLOCKMAP_INF 
         layerDimensions(LAYER_FOREGROUND,2) =   BLOCKMAP_FIX
-        layerDimensions(LAYER_FOREGROUND,3) =   BLOCKMAP_REAL    
 
         layerDimensions(LAYER_INTERFACE ,1) =   BLOCKMAP_INF         
         layerDimensions(LAYER_INTERFACE ,2) =   BLOCKMAP_FIX     
-        layerDimensions(LAYER_INTERFACE ,3) =   BLOCKMAP_REAL    
 
     end subroutine
 

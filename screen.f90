@@ -22,7 +22,7 @@ MODULE screen
     INTEGER(KIND = 2)               :: layers     = 0, test = 0, slow = 0
     CHARACTER(50)                   :: msgString
     INTEGER                         :: onlyBitMap
-    LOGICAL                         :: bitmapCreated = .FALSE.
+    LOGICAL                         :: bitmapCreated = .FALSE., dontDelete = .FALSE.
 
     CONTAINS 
 
@@ -49,10 +49,10 @@ MODULE screen
 
     END SUBROUTINE initScreenBuff
 
-    SUBROUTINE eraseBuff()
-    
+    SUBROUTINE eraseBuff()   
+         dontDelete = .FALSE.
          screenBuffers = -1
- 
+
     END SUBROUTINE eraseBuff  
  
     SUBROUTINE testPattern1()
@@ -136,6 +136,8 @@ MODULE screen
         integer(2)      :: x, y
         character(40)   :: t
 
+        dontDelete = .TRUE.
+
         c = (numOfColors / 16)
 
         h = (hOfScreenBuffer / c)
@@ -159,10 +161,14 @@ MODULE screen
 
         end do
 
+        dontDelete = .TRUE.
+
     END SUBROUTINE 
 
     subroutine setBufferPixel(n, x, y, c)
         integer(2) :: n, x, y, c
+        
+        dontDelete = .FALSE.
 
         if (c > 0) then
             screenBuffers(n, x, y) = getColorValue(c)
@@ -264,6 +270,7 @@ MODULE screen
         CALL WBitmapclear(onlyBitMap)           
         call WBitmapGetData(onlyBitMap,screenData)
         CALL WBitmapPut(onlyBitMap)
+        if (dontDelete .EQV. .FALSE.) CALL eraseBuff()
 
     END SUBROUTINE buffer2Real
  

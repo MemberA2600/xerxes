@@ -10,6 +10,7 @@ MODULE FolderParser
       use Adlib  
       use subs
       use imageFactory    
+      use dict
 
       IMPLICIT NONE  
 
@@ -25,7 +26,7 @@ MODULE FolderParser
           INTEGER                       :: NN,n,i
           character(MAX_PATH_LEN)       :: dirName
             
-          call WindowOutStatusBar(1, "Loading data: " // trim(folder) // '\*.' // (trim(extension)))       
+          call WindowOutStatusBar(1, trim(folder) // '\*.' // (trim(extension)))       
 
           N = 0
           hndl = FILE$FIRST
@@ -42,6 +43,8 @@ MODULE FolderParser
               call initAdlibList(N)  
           case("xxp")
               call initImageList(N) 
+          case("xxd")
+              call setNumOfLangs(N) 
           end select
 
           hndl = FILE$FIRST
@@ -59,6 +62,8 @@ MODULE FolderParser
                   call loadAdlibHeader(N, dir_info%name)
              case("xxp")
                   call loadImageHeader(N, dir_info%name)
+             case("xxd")
+                  call loadDict(N, dir_info%name)
              end select
 
           END DO
