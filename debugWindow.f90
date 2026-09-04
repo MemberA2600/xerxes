@@ -4,7 +4,8 @@ MODULE debugWindow
    IMPLICIT NONE
 
    PRIVATE 
-   PUBLIC        :: displayDebug, appendDebug, setdbgBin, writeOutDebug
+   PUBLIC        :: displayDebug, appendDebug, setdbgBin, writeOutDebug, &
+                    displayDebugNum, displayDebugNumTxt
 
    TYPE(WIN_MESSAGE) :: MESSAGE
    INTEGER           :: ITYPE 
@@ -21,16 +22,36 @@ MODULE debugWindow
 
    end subroutine
 
+   SUBROUTINE displayDebugNumTxt(txt, i)
+         integer(8)                :: i  
+         character(40)             :: t 
+         CHARACTER(LEN = *), intent(in)   :: txt
+
+         write(t, "(I0)") i
+         call displayDebug(txt // ' ' // t)
+   END SUBROUTINE 
+
+   SUBROUTINE displayDebugNum(i)
+         integer(8)                :: i  
+         character(40)             :: t 
+        
+         write(t, "(I0)") i
+         call displayDebug(t)
+   END SUBROUTINE 
+
    SUBROUTINE displayDebug(txt)
       CHARACTER(LEN = *), intent(in)   :: txt
       
-      CALL WDialogLoad(IDD_DEBUGMSG)
-      CALL WDialogSelect(IDD_DEBUGMSG)
-
-      CALL WDialogPutString(IDF_DEBUGTXT, txt) 
-      CALL WDialogShow(ITYPE=Modal)  
-      CALL WDialogUnLoad()
-
+      if (WInfoDialog(CurrentDialog) == 0) then
+          CALL WDialogLoad(IDD_DEBUGMSG)
+          CALL WDialogSelect(IDD_DEBUGMSG)
+        
+          CALL WDialogPutString(IDF_DEBUGTXT, txt) 
+          CALL WDialogShow(ITYPE=Modal)  
+          CALL WDialogUnLoad(IDD_DEBUGMSG)
+      else  
+          CALL writeOutDebug(txt)        
+      end if  
    END SUBROUTINE 
 
    SUBROUTINE appendDebug(b)
@@ -39,16 +60,16 @@ MODULE debugWindow
         
         !call displayDebug(trim(CWD) // '\debug.bin')
 
-        open(34, FILE = dbgbin, iostat = rc, access='stream', form='unformatted', &
+        open(93, FILE = dbgbin, iostat = rc, access='stream', form='unformatted', &
              status='old', position='append')
 
-        if (rc /= 0) open(34, FILE = dbgbin, iostat = rc, access='stream', form='unformatted', &
+        if (rc /= 0) open(93, FILE = dbgbin, iostat = rc, access='stream', form='unformatted', &
                           status='replace', position='append')
         if (rc /= 0) call displayDebug("Failed to append a byte to debug!")
         
-        write(34) b
+        write(93) b
 
-        close(34, iostat = rc)
+        close(93, iostat = rc)
         if (rc /= 0) call displayDebug("Failed to close debug!")
 
    end subroutine
@@ -59,15 +80,15 @@ MODULE debugWindow
         
         !call displayDebug(trim(CWD) // '\debug.bin')
 
-        open(36, FILE = dbgtxt, iostat = rc, status='old', position='append')
+        open(94, FILE = dbgtxt, iostat = rc, status='old', position='append')
 
-        if (rc /= 0) open(36, FILE = dbgtxt, iostat = rc, &
+        if (rc /= 0) open(94, FILE = dbgtxt, iostat = rc, &
                           status='replace', position='append')
         if (rc /= 0) call displayDebug("Failed to append a byte to debug!")
         
-        write(36, "(A)") txt
+        write(94, "(A)") txt
 
-        close(36, iostat = rc)
+        close(94, iostat = rc)
         if (rc /= 0) call displayDebug("Failed to close debug!")
 
    end subroutine

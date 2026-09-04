@@ -76,7 +76,6 @@ MODULE ImageFactory
         character(*)                            :: n
         type(imageFile), pointer, intent(inout) :: p
         integer                                 :: ind, foundInd 
-        character(40)                           :: test        
 
         foundInd = 0
         nullify(p)
@@ -136,6 +135,14 @@ MODULE ImageFactory
         integer                                   :: n 
         integer(1)                                :: rc
 
+        !write(test, "(I0, L)") size(imageList), (allocated(imageList) .EQV. .TRUE.)
+        !call writeOutDebug(test)
+
+        if (allocated(imageList)) then
+            deallocate(imageList, stat = rc) 
+            if (rc /= 0) call displayDebug("Failed to deallocate imageList!")    
+        end if 
+
         allocate(imageList(n), stat = rc) 
         if (rc /= 0) call displayDebug("Failed to allocate imageList!")   
 
@@ -143,12 +150,12 @@ MODULE ImageFactory
 
     subroutine dropImageList()
        integer(1)                                 :: rc
-
+    
        if (allocated(imageList)) then
            call dropAllImages() 
 
            deallocate(imageList, stat = rc) 
-           if (rc /= 0) call displayDebug("Failed to deallocate imageList!")     
+           if (rc /= 0) call displayDebug("Failed to deallocate imageList!")    
 
        end if 
 
@@ -169,6 +176,7 @@ MODULE ImageFactory
                    if (rc /= 0) call displayDebug("Failed to deallocate image of imageFile!") 
                end if 
             end do
+
         end if
 
     end subroutine
@@ -243,7 +251,8 @@ MODULE ImageFactory
         integer(2)                      :: frameNum, bufferNum, x, y, filter
         integer(2)                      :: xPix, yPix, color, xOnBuff, yOnBuff
         integer(2), dimension(3)        :: rgb        
-        !character(40)                   :: test
+
+        if (allocated(this%img) .EQV. .FALSE.) call this%loadImage()
 
         do yPix = 1, this%img%height, 1
            do xPix = 1, this%img%width, 1
@@ -266,6 +275,7 @@ MODULE ImageFactory
                       !end if
                   end if
               end if  
+              !call writeOutDebug("02")
 
               select case(filter)
               case(FILTER_RAINBOW)
@@ -358,6 +368,7 @@ MODULE ImageFactory
 
               !write(test, '(I0)') color
               !call displayDebug(test)  
+              !call writeOutDebug("03")
 
               !if (xOnBuff <= wOfScreenBuffer .AND. yOnBuff <= hOfScreenBuffer) then   
               call setBufferPixel(bufferNum, xOnBuff, yOnBuff, color)   
@@ -672,7 +683,7 @@ MODULE ImageFactory
 
        justACancel = .FALSE.     
        pleaseStop  = .TRUE.
- 
+
 721    do
           CALL WDialogSelect(IDD_BMP2XXP)
           CALL WDialogShow(ITYPE=Modal)     
@@ -720,8 +731,8 @@ MODULE ImageFactory
            justACancel = .FALSE.     
            goto 721 
        end if 
-
-       canKill = .TRUE.        
+       pleaseStop  = .TRUE.
+       canKill     = .TRUE.        
 
     END SUBROUTINE
 
@@ -780,73 +791,73 @@ MODULE ImageFactory
        character(NAME_MAX_LEN)   :: name
        integer                   :: ind, filter, animSet, transSet, t1, t2
 
-       if ((pickerActive .EQV. .FALSE.) .AND. (pleaseStop .EQV. .FALSE.)) then
- 
-           call WDialogGetString(     ID_XXAName, name   )
+       if (canKill .EQV. .FALSE.) then
+           if ((pickerActive .EQV. .FALSE.) .AND. (pleaseStop .EQV. .FALSE.)) then
+               !call writeOutDebug("2") 
     
-           if (allocated(imageLoader%img)) then 
-               if (imageLoader%img%numOfFrames > 1) then  
-                   call WDialogGetCheckBox(IDF_Anim   , animSet)
-                   CALL WDialogFieldState(IDF_SpriteIndex, 1 - animSet)
-               else
-                   animSet = 0  
-               end if 
+               call WDialogGetString(     ID_XXAName, name   )
+        
+               if (allocated(imageLoader%img)) then 
+                   if (imageLoader%img%numOfFrames > 1) then  
+                       call WDialogGetCheckBox(IDF_Anim   , animSet)
+                       CALL WDialogFieldState(IDF_SpriteIndex, 1 - animSet)
+                   else
+                       animSet = 0  
+                   end if 
+        
+                   call WDialogGetCheckBox(IDF_Trans     , transSet)
+                   CALL WDialogFieldState(IDF_TransColor , transSet) 
+                   CALL WDialogFieldState(IDF_TransTrk   , transSet) 
     
-               call WDialogGetCheckBox(IDF_Trans     , transSet)
-               CALL WDialogFieldState(IDF_TransColor , transSet) 
-               CALL WDialogFieldState(IDF_TransTrk   , transSet) 
-
-               if (transSet == 1) then
-                   CALL WDialogGetInteger( IDF_TransColor, t1)
-                   CALL WDialogGetTrackbar(IDF_TransTrk, t2)
-                   
-                   if (t1 /= imageLoader%img%transpColor) then
-                       imageLoader%img%transpColor = t1 
-                       CALL WDialogPutTrackbar(IDF_TransTrk, t1)
-                   end if 
-
-                   if (t2 /= imageLoader%img%transpColor) then
-                       imageLoader%img%transpColor = t2 
-                       CALL WDialogPutInteger(IDF_TransColor, t2)
-                   end if 
-
-               else
-                   imageLoader%img%transpColor = 1 
+                   if (transSet == 1) then
+                       CALL WDialogGetInteger( IDF_TransColor, t1)
+                       CALL WDialogGetTrackbar(IDF_TransTrk, t2)
+                       
+                       if (t1 /= imageLoader%img%transpColor) then
+                           imageLoader%img%transpColor = t1 
+                           CALL WDialogPutTrackbar(IDF_TransTrk, t1)
+                       end if 
+    
+                       if (t2 /= imageLoader%img%transpColor) then
+                           imageLoader%img%transpColor = t2 
+                           CALL WDialogPutInteger(IDF_TransColor, t2)
+                       end if 
+    
+                   else
+                       imageLoader%img%transpColor = 1 
+                   end if  
+        
+                   call WDialogGetInteger(IDF_SpriteIndex, ind)
+                   call WDialogGetInteger(IDF_FilterInd  , filter)
+    
+                   if (animSet == 1) then
+                       if (counttimer.timerEnded() .EQV. .TRUE.) then
+                           ind = ind + 1 
+                           call counttimer.timerStart(PERFECT_WAIT * getSpeed())
+                       end if 
+                   end if     
+    
+                   if (ind > imageLoader%img%numOfFrames) ind = 1 
+                   if (ind < 1) ind = imageLoader%img%numOfFrames 
+    
+                   CALL WDialogPutInteger(IDF_SpriteIndex, ind) 
+    
+                   call imageLoader%addToScreenBuffer(ind, 1, 1, 1, filter)
+                   CALL setUpTo256()
+                   CALL buffer2Real()    
+               
+               else 
+                   CALL WDialogFieldState(IDF_SpriteIndex, DISABLED) 
+                   CALL WDialogFieldState(IDF_TransColor , DISABLED) 
+                   CALL WDialogFieldState(IDF_TransTrk   , DISABLED) 
+    
                end if  
-    
-               call WDialogGetInteger(IDF_SpriteIndex, ind)
-               call WDialogGetInteger(IDF_FilterInd  , filter)
-
-               if (animSet == 1) then
-                   if (counttimer.timerEnded() .EQV. .TRUE.) then
-                       ind = ind + 1 
-                       call counttimer.timerStart(PERFECT_WAIT * getSpeed())
-                   end if 
-               end if     
-
-               if (ind > imageLoader%img%numOfFrames) ind = 1 
-               if (ind < 1) ind = imageLoader%img%numOfFrames 
-
-               CALL WDialogPutInteger(IDF_SpriteIndex, ind) 
-
-               call imageLoader%addToScreenBuffer(ind, 1, 1, 1, filter)
-               CALL setUpTo256()
-               CALL buffer2Real()    
-           
-           else 
-               CALL WDialogFieldState(IDF_SpriteIndex, DISABLED) 
-               CALL WDialogFieldState(IDF_TransColor , DISABLED) 
-               CALL WDialogFieldState(IDF_TransTrk   , DISABLED) 
-
-           end if  
-
-        end if
-
-        if (canKill .EQV. .TRUE.) then 
-            call eraseBuff() 
-            call imageLoader%dropImage()    
-            CALL WDialogUnLoad()
-            canKill = .FALSE.
+           end if
+        else
+           call eraseBuff() 
+           call imageLoader%dropImage()
+           CALL WDialogUnLoad()
+           canKill = .FALSE.
         end if
 
     end subroutine
@@ -857,7 +868,6 @@ MODULE ImageFactory
         character(NAME_MAX_LEN)               :: name
         character(MAX_PATH_LEN)               :: fname
         integer(8)                            :: offset, s, f, x, y, fullS
-        character(40)                         :: t   
 
         fname = FileDialog("img\", .TRUE., "xxp ")  
         call WDialogGetString(ID_XXPName,  name)
@@ -920,8 +930,12 @@ MODULE ImageFactory
         integer(2)                             :: stat
         integer(2), dimension(:), allocatable  :: d, temp
         integer(8)                             :: offset
-
+        !character(40)                          :: test
+        
         call loadBinary(trim(CWD()) // "\img\" // fname, d, siz, .TRUE.)
+
+        !write(test, "(I0)") num    
+        !call displayDebug(test // ' ' // fname)    
        
         offset = 1
         call read4CharFromBin(d, siz, offset, imageList(num)%header)  
@@ -953,7 +967,7 @@ MODULE ImageFactory
         integer(2)                             :: stat
         integer(2), dimension(:), allocatable  :: d
         integer(8)                             :: offset, f, x, y
-        character(40)                          :: test
+        character(40)                          :: test 
 
         if (allocated(this%img) .EQV. .TRUE.) call this%dropImage()
 

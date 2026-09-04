@@ -151,10 +151,10 @@ MODULE sprite7up
         if ((associated(this%imageF) .EQV. .FALSE.)  .OR. &
             (this%active             .EQV. .FALSE.)) return
 
-        !write(test, "(A, ' ', I0, ' ', I0)") trim(layerBlocks(this%bufferNum)%pozList(pozInd)%name), x, y 
-        !call DisplayDebug(test) 
-
         pozInd = getPozInd(this%ind, this%bufferNum)
+
+        !write(test, "(A, ' ', I0, ' ', I0)") trim(layerBlocks(this%bufferNum)%pozList(pozInd)%name), x, y 
+        !call displayDebug(test)
 
         if (layerDimensions(this%bufferNum,1) /= BLOCKMAP_1) then  
 
@@ -194,21 +194,25 @@ MODULE sprite7up
 
         end if
 
-        if (this%imageF%img%numOfFrames > 1) then
-            if (this%timer%timerEnded() .EQV. .TRUE. ) then             
-                this%spriteI = this%spriteI + 1
-
-                if (this%spriteI >= this%imageF%img%numOfFrames) then
-                    this%spriteI = 1
-                end if
-                
-                call this%timer%timerStart(PERFECT_WAIT * getSpeed())
-            end if
-
+        if (this%timer%getDiffCheck() /= (PERFECT_WAIT * getSpeed())) then
+            !call displayDebugNumTxt("Fos:", this%timer%getDiffCheck())
+            call this%timer%timerStart(PERFECT_WAIT * getSpeed())
         else
-            this%spriteI = 1
-        end if  
+            if (this%imageF%img%numOfFrames > 1) then
+                if (this%timer%timerEnded() .EQV. .TRUE. ) then             
+                    this%spriteI = this%spriteI + 1
     
+                    if (this%spriteI >= this%imageF%img%numOfFrames) then
+                        this%spriteI = 1
+                    end if
+                    
+                    call this%timer%timerStart(PERFECT_WAIT * getSpeed())
+                end if
+    
+            else
+                this%spriteI = 1
+            end if  
+        end if    
 
     end subroutine
 
@@ -634,13 +638,17 @@ MODULE sprite7up
     subroutine putSpritesOnBuffer()
         integer(1) :: ind, n, sInd
         integer(2) :: x, y
-
+        !character(40)       :: test
+        
         call eraseBuff()
 
         do n = 1, size(layerBlocks), 1
            if (layerBlocks(n)%nextIndexP > 1) call reorderPoz(n)
 
            do ind = 1, layerBlocks(n)%nextIndexP, 1 
+              !write(test, "(I0)") ind
+              !call displayDebug(test // ' ' // layerBlocks(n)%pozList(ind)%name)
+
               sInd = layerBlocks(n)%pozList(ind)%ind  
               call layerBlocks(n)%spriteList(sind)%drawImage()  
            end do 

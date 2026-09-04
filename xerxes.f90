@@ -212,7 +212,7 @@
               CASE (ID_DisplayPalette)
                     call displayPalette()  
               CASE (ID_STARTGAME)
-                    editMode = .FALSE. 
+                    editMode = .FALSE.
               CASE (ID_ENGLISH:ID_DEUTSCH)
                     call setLang(MESSAGE%VALUE1 - ID_ENGLISH) 
                     call saveConfig() 

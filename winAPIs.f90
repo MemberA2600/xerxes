@@ -12,7 +12,7 @@ MODULE winAPIs
 
     PRIVATE
     PUBLIC :: CounterTimer, TimerEnded, TimerRestart, &
-              AppendSamples, AppendOne, AppendOne2, AppendOne4
+              AppendSamples, AppendOne, AppendOne2, AppendOne4, getDiffCheck
 
     integer, parameter :: i32 = selected_int_kind(9)
     integer, parameter :: i64 = selected_int_kind(18)
@@ -31,6 +31,7 @@ MODULE winAPIs
         procedure  :: timerStart   => timerStart
         procedure  :: timerEnded   => timerEnded
         procedure  :: TimerRestart => TimerRestart
+        procedure  :: getDiffCheck => getDiffCheck
 
     END TYPE
 
@@ -39,6 +40,14 @@ MODULE winAPIs
     !
     ! Timer functions
     ! 
+
+     function getDiffCheck(this) result(r)
+        class(CounterTimer), intent(inout) :: this    
+        integer(8)      :: r
+
+        r = this%diffCheck
+
+     end function
 
      subRoutine timerInit(this)
         class(CounterTimer), intent(inout) :: this    
