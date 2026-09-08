@@ -19,7 +19,8 @@ MODULE ImageFactory
     private
     public                  :: bitMapWindow, checkImageWindowFields, dropImageList, dropAllImages, &
                                initImageList, loadImageHeader, loadImageByName, addToSCRBuffByName, &
-                               imageFile, assignSpriteToPointer, setSpeedScreen, testSpeedLoop
+                               imageFile, assignSpriteToPointer, setSpeedScreen, testSpeedLoop, &
+                               loadAllInFolder
 
     !
     !   Images are pretty complex and compact.
@@ -183,8 +184,9 @@ MODULE ImageFactory
     
     function loadBMP() result(r)
          character(MAX_PATH_LEN)               :: fname, newFname
-         integer(2)                            :: numOfFrames, dotPoz, ind, rc
+         integer(2)                            :: numOfFrames, dotPoz, slashPoz, ind, rc
          logical                               :: ex, r       
+         character(NAME_MAX_LEN)               :: n
 
          r = .FALSE.
 
@@ -205,6 +207,16 @@ MODULE ImageFactory
             end if
          end do       
 
+         slashPoz = 0   
+
+         do ind = len_trim(fname), 1, -1
+            if (fname(ind:ind) == "\") then
+                slashPoz = ind
+                exit    
+            end if
+         end do       
+
+
          numOfFrames = 1
 
          if (fname(dotPoz - 3 : dotPoz - 1) == "000") then
@@ -222,6 +234,14 @@ MODULE ImageFactory
         if (rc /= 0) call displayDebug("Failed to allocate image data for tester!")
 
         imageLoader%img%numOfFrames = numOfFrames 
+
+        if (fname(dotPoz - 3 : dotPoz - 1) == "000") then
+            n = fname(slashPoz + 1:dotPoz - 4)
+        else
+            n = fname(slashPoz + 1:dotPoz - 1)
+        end if
+
+        CALL WDialogPutString(ID_XXPName, n) 
 
         call extractBMP(fname, 1)
 
@@ -355,7 +375,7 @@ MODULE ImageFactory
                    color = changeRGB(color,  -3, 3, 3)
 
               case(FILTER_SHADOW)
-                   if (modulo((xPix + yPix), 2) == 0) then 
+                   if (modulo((xPix + yPix), 2) == 1) then 
                        color = -1 
                    else 
                        color =  1
@@ -562,7 +582,7 @@ MODULE ImageFactory
        CALL WDialogPutString(ID_Speedcancel, getWordInCurrentLang("cancel")) 
 
 
-       oldSpeed  = 16 - getSpeed() 
+       oldSpeed  = speedUpConst - getSpeed() 
        testIndex = 1
    
        call WDialogPutTrackbar(IDF_SpeedTrk, oldSpeed  )
@@ -571,9 +591,9 @@ MODULE ImageFactory
        if (editMode .EQV. .TRUE.) then 
            if (allocated(imageLoader%img)) call imageLoader%dropImage()            
 
-           imageLoader%name     = "Suika"  
+           imageLoader%name     = "XXHealMapWalkSE"  
            imageLoader%nameLen  = len_trim(imageLoader%name)
-           imageLoader%fileName = "suika.xxp"
+           imageLoader%fileName = "XXHealMapWalkSE.xxp"
 
            call imageLoader%loadImage()
 
@@ -611,18 +631,18 @@ MODULE ImageFactory
          call WDialogGetInteger( IDF_SpeedVal, v)
          call WDialogGetTrackbar(IDF_SpeedTrk, t)
 
-         s = 16 - getSpeed()
+         s = speedUpConst - getSpeed()
 
          if (v /= s) then
             !s = v
             call WDialogPutTrackbar(IDF_SpeedTrk, v)
-            call setSpeed(16 - v)
+            call setSpeed(speedUpConst - v)
          end if
 
          if (t /= s) then
             !t = v
             call WDialogPutInteger(IDF_SpeedVal, t)
-            call setSpeed(16 - t)
+            call setSpeed(speedUpConst - t)
          end if
 
          if (editMode .EQV. .TRUE.) then
@@ -668,9 +688,11 @@ MODULE ImageFactory
        if (allocated(imageLoader%img)) call imageLoader%dropImage()            
 
        call counttimer.timerStart(PERFECT_WAIT * getSpeed()) 
+       !call displayDebugNum(getSpeed())
 
        call onlyRunAfterLoad()
- 
+       CALL WDialogPutString(ID_XXPName, IMG_DEFAULT)  
+
        CALL WDialogTitle(getWordInCurrentLang("bmpToXXP")) 
        CALL WDialogPutString(IDF_XXPLABEL1, getWordInCurrentLang("frameIndex")) 
        CALL WDialogPutString(IDF_ANIM, getWordInCurrentLang("animate")) 
@@ -680,6 +702,7 @@ MODULE ImageFactory
        CALL WDialogPutString(IDF_XXPLABEL3, getWordInCurrentLang("testFilter")) 
        CALL WDialogPutString(ID_BMPLoad, getWordInCurrentLang("load")) 
        CALL WDialogPutString(ID_XXPSave, getWordInCurrentLang("save")) 
+       CALL WDialogPutString(ID_BMPConvertFolder, getWordInCurrentLang("convertFolder")) 
 
        justACancel = .FALSE.     
        pleaseStop  = .TRUE.
@@ -698,8 +721,10 @@ MODULE ImageFactory
                          call onlyRunAfterLoad()
                      end if
 
+                  CASE(ID_BMPConvertFolder)  
+                     call loadAllInFolder()   
                   CASE(ID_XXPSave)
-                     call saveBMP2XXP()
+                     call saveBMP2XXP("")
 
                   CASE(IDF_ColorPick)
                      pickerActive = .TRUE.
@@ -862,17 +887,25 @@ MODULE ImageFactory
 
     end subroutine
  
-    subroutine saveBMP2XXP()
+    subroutine saveBMP2XXP(fun)
         integer(2), dimension(:), allocatable :: d
         integer(2)                            :: rc
         character(NAME_MAX_LEN)               :: name
         character(MAX_PATH_LEN)               :: fname
+        character(*)                          :: fun
         integer(8)                            :: offset, s, f, x, y, fullS
 
-        fname = FileDialog("img\", .TRUE., "xxp ")  
-        call WDialogGetString(ID_XXPName,  name)
-        if (fname == "") return
-        
+        if (fun == "") then
+            fname = FileDialog("img\", .TRUE., "xxp ")  
+            call WDialogGetString(ID_XXPName,  name)
+            if (fname == "") return
+        else
+            fname = trim(CWD()) // "\img\" // trim(fun) // ".xxp"
+            name  = fun
+            
+            !call displayDebug(fname)
+        end if
+            
     !   4   bytes: 'IMG ' 
     !   1   byte : Lenght of Name
     !   lenOfName: Name 
@@ -954,6 +987,8 @@ MODULE ImageFactory
         offset = offset + imageList(num)%nameLen
 
         call bin2Char(imageList(num)%name, temp, imageList(num)%nameLen, .TRUE.) 
+        if (imageList(num)%name == IMG_DEFAULT) call displayDebug(fname // " has the default IMG name!")
+
         imageList(num)%fileName = fname    
 
         deallocate(d, stat = stat)
@@ -1018,5 +1053,104 @@ MODULE ImageFactory
         if (stat /= 0) call displayDebug("Failed to deallocate the loaded XXP! #2")
 
     end subroutine
+
+    subroutine loadAllInFolder()
+          character(MAX_PATH_LEN)       :: folder, fname
+          TYPE(FILE$INFO)               :: DIR_INFO
+          INTEGER(KIND=INT_PTR_KIND( )) :: hndl
+          INTEGER                       :: NN,i
+          character(MAX_PATH_LEN)       :: dirName
+       
+          character(MAX_PATH_LEN)       :: newFname
+          integer(2)                    :: numOfFrames, dotPoz, slashPoz, ind, rc
+          logical                       :: ex, r       
+          character(NAME_MAX_LEN)       :: n    
+ 
+          folder = getDir(CWD())  
+
+          if (folder == "") return  
+
+          hndl = FILE$FIRST
+          pleaseStop = .TRUE.
+          call eraseBuff()   
+
+          DO 
+             NN = GETFILEINFOQQ(trim(folder) // '\*.bmp',DIR_INFO, hndl)
+	        IF(hndl.eq.FILE$LAST.or.hndl.eq.FILE$ERROR.or.NN.eq.0)exit
+
+             fname = trim(folder) // "\" // dir_info%name
+           
+             call imageLoader%dropImage()            
+    
+             do ind = len_trim(fname), 1, -1
+                if (fname(ind:ind) == ".") then
+                    dotPoz = ind
+                    exit    
+                end if
+             end do       
+    
+             slashPoz = 0   
+    
+             do ind = len_trim(fname), 1, -1
+                if (fname(ind:ind) == "\") then
+                    slashPoz = ind
+                    exit    
+                end if
+             end do       
+    
+             numOfFrames = 1
+    
+             if (fname(dotPoz - 3 : dotPoz - 1) == "000") then
+                 do ind = 1, 255, 1
+                    newFname = insertNum(fname, dotPoz - 3, ind)
+    
+                    inquire(file=newFname, exist = ex)
+                    if (ex .EQV. .FALSE.) exit
+                    numOfFrames = numOfFrames + 1
+                 end do
+    
+             end if
+    
+            allocate(imageLoader%img, stat = rc) 
+            if (rc /= 0) call displayDebug("Failed to allocate image data for tester!")
+    
+            imageLoader%img%numOfFrames = numOfFrames 
+    
+            if (fname(dotPoz - 3 : dotPoz - 1) == "000") then
+                n = fname(slashPoz + 1:dotPoz - 4)
+            else
+                if (verify(fname(dotPoz - 3 : dotPoz - 1), '0123456789') == 0) cycle
+
+                n = fname(slashPoz + 1:dotPoz - 1)
+            end if
+       
+            call extractBMP(fname, 1)
+    
+            if (imageLoader%img%width > wOfScreenBuffer .OR. imageLoader%img%height > hOfScreenBuffer) then
+                imageLoader%img%transpColor = 1
+            else  
+                imageLoader%img%transpColor = imageLoader%img%frames(1, 1, 1)  
+            end if
+       
+            if (numOfFrames > 1) then
+                 do ind = 1, 255, 1
+                    newFname = insertNum(fname, dotPoz - 3, ind)
+    
+                    inquire(file=newFname, exist = ex)
+                    if (ex .EQV. .FALSE.) exit
+                    call extractBMP(newFname, ind + 1)
+    
+                 end do
+            end if 
+
+            call saveBMP2XXP(n)
+            
+          END DO
+
+        !pleaseStop = .FALSE.
+        call eraseBuff()   
+        call imageLoader%dropImage()            
+
+    end subroutine  
 
 END MODULE ImageFactory

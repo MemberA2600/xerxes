@@ -19,7 +19,7 @@ MODULE sprite7up
                                      createSpriteObjBackGround, setOffset, addToOffset,                   &
                                      createSpriteObjSky, addTempFilter, getAllIndByName, getAllIndByType, &
                                      addTempFiltertoAllByName, addTempFiltertoAllByType,                  &
-                                     setWeather       
+                                     setWeather, killAllByName, killAllByType       
 
     type SpriteObj 
          integer(2)               :: w, h, spriteI
@@ -33,6 +33,7 @@ MODULE sprite7up
          procedure                :: drawImage     => drawImage 
          procedure                :: drawDrawDraw  => drawDrawDraw  
          procedure                :: addTempFilter => addTempFilter       
+         procedure                :: animateSprite => animateSprite
 
     end type
 
@@ -44,6 +45,8 @@ MODULE sprite7up
          integer(1)               :: bufferNum
 
          contains        
+
+         procedure                :: killMe => killMe
 
     end type 
 
@@ -73,6 +76,17 @@ MODULE sprite7up
     integer(1)                                  :: defaultFilter = NO_FILTER
 
     contains
+
+    !       
+    !   SpritePoz Things
+    !
+
+    subroutine killMe(this)
+        class(spritePoz), intent(inout) :: this
+        
+        layerBlocks(this%bufferNum)%spriteList(this%ind)%active = .FALSE.
+
+    end subroutine       
 
     !       
     !   SpriteObj Things
@@ -195,24 +209,27 @@ MODULE sprite7up
         end if
 
         if (this%timer%getDiffCheck() /= (PERFECT_WAIT * getSpeed())) then
-            !call displayDebugNumTxt("Fos:", this%timer%getDiffCheck())
-            call this%timer%timerStart(PERFECT_WAIT * getSpeed())
+            call this%timer%timerStart(PERFECT_WAIT * getSpeed())    
+            call this%animateSprite()                  
         else
-            if (this%imageF%img%numOfFrames > 1) then
-                if (this%timer%timerEnded() .EQV. .TRUE. ) then             
-                    this%spriteI = this%spriteI + 1
-    
-                    if (this%spriteI >= this%imageF%img%numOfFrames) then
-                        this%spriteI = 1
-                    end if
-                    
-                    call this%timer%timerStart(PERFECT_WAIT * getSpeed())
-                end if
-    
-            else
-                this%spriteI = 1
-            end if  
+            if (this%timer%timerEnded() .EQV. .TRUE. ) call this%animateSprite()             
         end if    
+
+    end subroutine
+
+    subroutine animateSprite(this)
+       class(SpriteObj)        :: this
+       if (this%imageF%img%numOfFrames > 1) then
+            this%spriteI = this%spriteI + 1
+
+            if (this%spriteI >= this%imageF%img%numOfFrames) then
+               this%spriteI = 1
+            end if
+                    
+            call this%timer%timerStart(PERFECT_WAIT * getSpeed())    
+        else
+            this%spriteI = 1
+        end if  
 
     end subroutine
 
@@ -220,13 +237,47 @@ MODULE sprite7up
     !   BlockMap Stuff
     !
 
+    subroutine killAllByName(b, n)
+        character(*)                         :: n
+        integer(1)                           :: b
+        integer                              :: ind, rc        
+        integer, dimension(:,:), allocatable :: l
+
+        call getAllIndByName(b, n, l)
+
+        do ind = 1, size(l, 1), 1
+           layerBlocks(b)%spriteList(l(ind, 2))%active = .FALSE.
+        end do
+
+        deallocate(l, stat = RC)
+        if (rc /= 0) call displayDebug("Failed to dealloc list of indexes!")
+
+    end subroutine
+
+    subroutine killAllByType(b, typ)
+        integer(1)                           :: b
+        integer                              :: typ
+        integer                              :: ind, rc        
+        integer, dimension(:,:), allocatable :: l
+
+        call getAllIndByType(b, typ, l)
+
+        do ind = 1, size(l, 1), 1
+           layerBlocks(b)%spriteList(l(ind, 2))%active = .FALSE.
+        end do
+
+        deallocate(l, stat = RC)
+        if (rc /= 0) call displayDebug("Failed to dealloc list of indexes!")
+
+    end subroutine
+
     subroutine addTempFiltertoAllByName(b, n, f, t)
         integer(1)                           :: f, t, b
         character(*)                         :: n
         integer                              :: ind, rc        
 
         integer, dimension(:,:), allocatable :: l
-        character(40)                        :: test    
+        !character(40)                        :: test    
 
         call getAllIndByName(b, n, l)
 

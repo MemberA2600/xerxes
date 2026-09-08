@@ -66,6 +66,7 @@ MODULE vgm
 
        CALL WDialogLoad(IDD_VGM2XXA)
 
+       CALL WDialogPutString(ID_XXAName, OPL2_DEFAULT)  
        CALL WDialogTitle(getWordInCurrentLang("vgmToXXA")) 
        CALL WDialogPutString(ID_VGMLoad, getWordInCurrentLang("load")) 
        CALL WDialogPutString(ID_XXASave, getWordInCurrentLang("save")) 

@@ -16,6 +16,7 @@ MODULE engineConstants
                 /), shape(standards), order=(/2,1/))
 
     integer                       :: PERFECT_WAIT = 5000
+    integer(1)                    :: speedUpConst = 30   
 
     integer(1), parameter         :: layerNum          = 5, &      
                                      LAYER_BACKGROUND  = 1, & 
@@ -109,4 +110,7 @@ MODULE engineConstants
                                         LANG_HUN    = 1,  &
                                         LANG_DEU    = 2
 
+    character(NAME_MAX_LEN), parameter :: tia_default  = "Puking Ears              ", &
+                                          opl2_default = "Original Plastic Lobotomy", &      
+                                          img_default  = "Sexy Sprite              "   
 END MODULE engineConstants

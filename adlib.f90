@@ -217,6 +217,8 @@ MODULE adlib
 
         call bin2Char(adlibList(num)%name, temp, adlibList(num)%nameLen, .TRUE.) 
 
+        if (adlibList(num)%name == OPL2_DEFAULT) call displayDebug(fname // " has the default OPL2 name!")
+
         adlibList(num)%numOfBytes = ReadInt8FromData(d, offset) 
         adlibList(num)%loopByte   = ReadInt8FromData(d, offset) 
         adlibList(num)%fileName   = fname    

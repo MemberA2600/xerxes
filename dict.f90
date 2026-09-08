@@ -2,7 +2,7 @@ MODULE dict
 
     USE debugWindow
     USE engineConstants  
-    USE subs
+    !USE subs
     USE winAPIs
     USE dataLoader
     use, intrinsic :: iso_c_binding
@@ -76,7 +76,7 @@ MODULE dict
         integer(8)                                  :: lineStart, lineEnd
         integer(8)                                  :: currentLine
          
-        call loadBinary(trim(CWD()) // "\dict\" // trim(fname), &
+        call loadBinary("dict\" // trim(fname), &
                         d, s, .TRUE.)
       
         if (s == 0) then

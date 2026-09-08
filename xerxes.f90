@@ -44,7 +44,7 @@
       CHARACTER(20)                  :: msgString
       INTEGER                        :: intDummy, beepF
         
-      !CHARACTER(255)                 :: fname  
+      CHARACTER(1)                   :: txtDummy  
 
       !INTEGER(2), dimension(:), allocatable :: tiaTestData  
       !TYPE(TIASfx)                          :: tester  
@@ -83,7 +83,7 @@
       CALL IGrArea(0.0,0.0,1.0,1.0)
       CALL IGrAreaClear() 
       CALL IGrPlotMode(' ')  
-      call setSpeed(5)
+      call setSpeed(speedUpConst - 5)
       CALL WMessageTimer(1000/MFPS,IREPEAT=Enabled)  
       call WindowClear(RGB=RGB_BLACK)
 
@@ -129,29 +129,7 @@
 
        !call loadBMP() 
 
-    call setWeather(WEATHER_DAY_RAIN)
-
-    call createSpriteObjSky(       'Bird',  'Bird', 222, 65, TYPE_EMPTY, .TRUE., NO_FILTER, 60)
-    call createSpriteObjSky(       'Bird',  'Bird', 444, 401, TYPE_EMPTY, .TRUE., NO_FILTER, 90)
-
-    call createSpriteObjPlayGround('Tree',  'Tree', 425, -60, TYPE_EMPTY, .TRUE., NO_FILTER)
-    call createSpriteObjPlayGround('Tree',  'Tree', 575, 190, TYPE_EMPTY, .TRUE., NO_FILTER)
-    call createSpriteObjPlayGround('Tree',  'Tree', 201, 10, TYPE_EMPTY, .TRUE., NO_FILTER)
-    call createSpriteObjPlayGround('Tree',  'Tree', 289, 320, TYPE_EMPTY, .TRUE., NO_FILTER)
-
-    call createSpriteObjPlayGround('Suika', 'Suika', 250, 100, TYPE_EMPTY, .TRUE., NO_FILTER)
-    call createSpriteObjBackground('Grass', 'Grass', NO_FILTER)
-    call createSpriteObjPlayGround('Tree',  'Tree', 300, 140, TYPE_EMPTY, .TRUE., NO_FILTER)
-    call createSpriteObjPlayGround('Tree',  'Tree', 22, -70, TYPE_EMPTY, .TRUE., NO_FILTER)
-    call createSpriteObjPlayGround('Tree',  'Tree', 380, 20, TYPE_EMPTY, .TRUE., NO_FILTER)
-    call createSpriteObjPlayGround('Tree',  'Tree', 35, 325, TYPE_EMPTY, .TRUE., NO_FILTER)
-    call createSpriteObjSky(       'Bird',  'Bird', 47, 150, TYPE_EMPTY, .TRUE., NO_FILTER, 80)
-    call createSpriteObjPlayGround('Tree',  'Tree', 680, 10, TYPE_EMPTY, .TRUE., NO_FILTER)
-    call createSpriteObjPlayGround('Tree',  'Tree', 720, 455, TYPE_EMPTY, .TRUE., NO_FILTER)
-    call createSpriteObjSky(       'Bird',  'Bird', 688, 322, TYPE_EMPTY, .TRUE., NO_FILTER, 120)
-    call createSpriteObjPlayGround('Tree',  'Tree', 666, 510, TYPE_EMPTY, .TRUE., NO_FILTER)
-    call createSpriteObjSky(       'Bird',  'Bird', 625, 425, TYPE_EMPTY, .TRUE., NO_FILTER, 120)
-
+       !call loadAllInFolder() 
 !
 !   Load the config!
 !
@@ -159,6 +137,7 @@
      call setMenuLabels()
 
      call playTIAbyName("StartUp", 0)  
+     !call displayDebugNum(getSpeed())
 !
 !   Main message loop
 !
@@ -213,6 +192,7 @@
                     call displayPalette()  
               CASE (ID_STARTGAME)
                     editMode = .FALSE.
+                   
               CASE (ID_ENGLISH:ID_DEUTSCH)
                     call setLang(MESSAGE%VALUE1 - ID_ENGLISH) 
                     call saveConfig() 

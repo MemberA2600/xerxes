@@ -9,6 +9,11 @@ MODULE subs
       USE IFWIN
       USE IFWINTY
       use IFPORT
+      use dict
+      use KERNEL32
+      use SHELL32
+      USE WINMM
+      use winfolderdialog
 
       IMPLICIT NONE
 
@@ -17,7 +22,7 @@ MODULE subs
                            getWindowDim, setScreenSize, timer, setSpeed, &
                            randInt, getTime, FileDialog, countCharInString, &
                            getNextPoz, dFile, f2bitsTo1Bit, getNullTermString, &
-                           CWD, setCWD, getScreenSizeId, getSpeed
+                           CWD, setCWD, getScreenSizeId, getSpeed, getDir
 
       CHARACTER(20)     :: msgString
       INTEGER(KIND = 1) :: speed, timer, screenSize
@@ -42,6 +47,21 @@ MODULE subs
 
       end subroutine 
 
+      function getDir(dir) result(dName)
+           character(MAX_PATH_LEN)                 :: dname  
+           character(260)                          :: d  
+
+           character(*)                            :: dir
+           logical                                 :: selected
+
+           logical :: ok
+            
+           ok    = browse_for_folder(getWordInCurrentLang('selectFolder'), dir, d)
+           dname = trim(d) 
+
+      end function  
+
+
       function FileDialog(dir, sav, typ) result(fname)
             character(*)                            :: dir
             character(MAX_PATH_LEN)                 :: fname  
@@ -50,45 +70,53 @@ MODULE subs
             character(25), dimension(6,3)           :: typeList         
             character(4)                            :: typ
             character(40)                           :: title, ftyp 
+            logical                                 :: invert
 
             typeList(1,1) = 'wave'
-            typelist(1,2) = 'Wave Files|*.wav|'
-            typelist(1,3) = 'Windows Wave File'
+            typelist(1,2) = trim(getWordInCurrentLang('waveFiles')) //'|*.wav|'
+            typelist(1,3) = getWordInCurrentLang('windowsWaveFile')
 
             typeList(2,1) = 'xxt '
-            typelist(2,2) = 'TIA Files (XXT)|*.xxt|'
-            typelist(2,3) = 'Xerxes TIA File'
+            typelist(2,2) = trim(getWordInCurrentLang('tiaFiles')) //'(XXT)|*.xxt|'
+            typelist(2,3) = getWordInCurrentLang('xerxesTiaFile')
 
             typeList(3,1) = 'vgm '
-            typelist(3,2) = 'VGM Files|*.vgm;*.vgz|'
-            typelist(3,3) = 'Video Game Music'
+            typelist(3,2) = trim(getWordInCurrentLang('vgmFiles')) //'|*.vgm;*.vgz|'
+            typelist(3,3) = getWordInCurrentLang('videoGameMusic')
 
             typeList(4,1) = 'xxa '
-            typelist(4,2) = 'Adlib Files (XXA)|*.xxa|'
-            typelist(4,3) = 'Xerxes Adlib File'
+            typelist(4,2) = trim(getWordInCurrentLang('adlibFiles')) //'(XXA)|*.xxa|'
+            typelist(4,3) = getWordInCurrentLang('xerxesAdlibFile')
 
             typeList(5,1) = 'bmp '
-            typelist(5,2) = 'Bitmap Files|*.bmp|'
-            typelist(5,3) = 'Windows Bitmap'
+            typelist(5,2) = trim(getWordInCurrentLang('bitmapFiles')) //'|*.bmp|'
+            typelist(5,3) = getWordInCurrentLang('windowsBitmapFile')
 
             typeList(6,1) = 'xxp '
-            typelist(6,2) = 'Bitmap Files (XXP)|*.xxp|'
-            typelist(6,3) = 'Xerxes Bitmap File'
+            typelist(6,2) = trim(getWordInCurrentLang('bitmapFiles')) //'(XXP)|*.xxp|'
+            typelist(6,3) = getWordInCurrentLang('xerxesBitmapFile')
 
             iflags = 8 + 32
 
             title = ""
 
+            invert = (getLang() /= LANG_ENG) 
+
             if (sav    .EQV. .TRUE.) then 
                 iflags = iflags + 1
-                title = "Save"
+                title = getWordInCurrentLang("save")
             else
-                title = "Open"
+                title = getWordInCurrentLang("open")
             end if
             
             do ind = 1, size(typeList, 1), 1
-               if (typeList(ind,1) == typ) then 
-                   title = trim(title) // " " // typelist(ind,3)
+               if (typeList(ind,1) == typ) then
+
+                   if (invert) then
+                        title = trim(typelist(ind,3)) // " " // trim(title)
+                   else   
+                        title = trim(title) // " " // typelist(ind,3)
+                   end if
                    ftyp  = typelist(ind,2)
                    exit 
                end if
@@ -99,6 +127,7 @@ MODULE subs
 
             call WSelectFile(trim(ftyp), iflags, fname, trim(title))
             if (WinFoDialog(4) /= CommonOK) fname = ""  
+
 
       end function    
 
@@ -334,5 +363,6 @@ MODULE subs
         end do
     end subroutine
 
-
 END MODULE subs
+
+

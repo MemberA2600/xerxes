@@ -245,6 +245,8 @@ MODULE TIA
         call loadBinary(trim(CWD()) // "\tia\" // fname, d, siz, .FALSE.)
         call makeTiaHeader(d, temp, header, siz)
 
+        if (header%name == TIA_DEFAULT) call displayDebug(fname // " has the default TIA name!")
+
         call uncompressTIA(temp, header%numOfTones)        
         call tiaList(N)%createTIASfx(header%name, temp)     
 
@@ -575,6 +577,7 @@ MODULE TIA
 
        CALL WDialogLoad(IDD_TIA)
 
+       CALL WDialogPutString(ID_TIAName, TIA_DEFAULT)  
        CALL WDialogTitle(getWordInCurrentLang("tiaNoiseMaker")) 
        CALL WDialogPutString(ID_TIAErase, getWordInCurrentLang("erase")) 
        CALL WDialogPutString(ID_TIALoad, getWordInCurrentLang("load")) 
