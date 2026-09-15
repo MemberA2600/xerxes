@@ -31,6 +31,7 @@ FILE    7 vgm.f90
 FILE    7 waveplayer.f90
 FILE    7 waveplayerwindow.f90
 FILE    7 winapis.f90
+FILE    7 winfolderdialog.f90
 FILE    3 xerxes.f90
 FCREL -c
 OPREL -O2

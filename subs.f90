@@ -150,8 +150,11 @@ MODULE subs
            speed = s
            timer = s 
 
-           !write(msgString, '("Speed: ",I0)') timer
-           !call displayDebug(msgString)  
+           if (speed < (speedUpConst - 10)) speed = speedUpConst - speed
+           if (speed >  speedUpConst - 1 )  speed = speedUpConst - 1  
+           if (speed <  speedUpConst - 10)  speed = speedUpConst - 10  
+
+           !call displayDebugNum(speed)  
 
       END SUBROUTINE setSpeed
 

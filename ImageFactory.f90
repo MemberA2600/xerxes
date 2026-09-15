@@ -185,7 +185,7 @@ MODULE ImageFactory
     function loadBMP() result(r)
          character(MAX_PATH_LEN)               :: fname, newFname
          integer(2)                            :: numOfFrames, dotPoz, slashPoz, ind, rc
-         logical                               :: ex, r       
+         logical                               :: ex, r, forceTransp       
          character(NAME_MAX_LEN)               :: n
 
          r = .FALSE.
@@ -216,7 +216,6 @@ MODULE ImageFactory
             end if
          end do       
 
-
          numOfFrames = 1
 
          if (fname(dotPoz - 3 : dotPoz - 1) == "000") then
@@ -241,11 +240,15 @@ MODULE ImageFactory
             n = fname(slashPoz + 1:dotPoz - 1)
         end if
 
+        forceTransp = (fname(slashPoz + 1:slashPoz + 1) == '_') 
+        if (forceTransp) n = n(2:len_trim(n))
+
         CALL WDialogPutString(ID_XXPName, n) 
 
         call extractBMP(fname, 1)
 
-        if (imageLoader%img%width > wOfScreenBuffer .OR. imageLoader%img%height > hOfScreenBuffer) then
+        if ((imageLoader%img%width > wOfScreenBuffer / 2 .OR. imageLoader%img%height > hOfScreenBuffer / 2) &
+            .OR. forceTransp .EQV. .TRUE.) then
             imageLoader%img%transpColor = 1
         else  
             imageLoader%img%transpColor = imageLoader%img%frames(1, 1, 1)  
@@ -1063,7 +1066,7 @@ MODULE ImageFactory
        
           character(MAX_PATH_LEN)       :: newFname
           integer(2)                    :: numOfFrames, dotPoz, slashPoz, ind, rc
-          logical                       :: ex, r       
+          logical                       :: ex, r, forceTransp             
           character(NAME_MAX_LEN)       :: n    
  
           folder = getDir(CWD())  
@@ -1124,10 +1127,13 @@ MODULE ImageFactory
                 n = fname(slashPoz + 1:dotPoz - 1)
             end if
        
+            forceTransp = (fname(slashPoz + 1:slashPoz + 1) == '_') 
+            if (forceTransp) n = n(2:len_trim(n))
+
             call extractBMP(fname, 1)
     
-            if (imageLoader%img%width > wOfScreenBuffer .OR. imageLoader%img%height > hOfScreenBuffer) then
-                imageLoader%img%transpColor = 1
+        if ((imageLoader%img%width > wOfScreenBuffer / 2 .OR. imageLoader%img%height > hOfScreenBuffer / 2) &
+            .OR. forceTransp .EQV. .TRUE.) then
             else  
                 imageLoader%img%transpColor = imageLoader%img%frames(1, 1, 1)  
             end if
