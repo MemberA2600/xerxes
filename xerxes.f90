@@ -32,6 +32,7 @@
       USE imagefactory  
       USE sprite7up
       USE dict  
+      USE gameObject  
 
       IMPLICIT NONE
 !
@@ -89,6 +90,7 @@
 
       call random_seed() 
 
+      call initSpriteNameListPointers()  
       call openAllOuts()    
       call initWavChannels()
       call loadFolders() 
@@ -102,7 +104,6 @@
       call sendTheValues()  
       call restoreKeyButtons()
       call restoreJoyButtons()
-
 !
 !   Start threads
 !
@@ -190,6 +191,8 @@
                     call getFolder("img", "xxp")
               CASE (ID_DisplayPalette)
                     call displayPalette()  
+              CASE (ID_ObjManager)
+                    call objManagerWindow()
               CASE (ID_STARTGAME)
                     editMode = .FALSE.
                    
@@ -247,6 +250,7 @@
             call WMenuSetString(ID_LANG             , trim(getWordInCurrentLang( "language"           )))
             call WMenuSetString(ID_STARTGAME        , trim(getWordInCurrentLang( "startGame"          )))
             call WMenuSetString(ID_auto             , trim(getWordInCurrentLang( "auto"               )))
+            call WMenuSetString(ID_objManager       , trim(getWordInCurrentLang( "objManager"         )))
 
       end subroutine  
 
@@ -357,7 +361,8 @@
             case(IDD_SpeedSetter)
                 call testSpeedLoop(editMode)
                 if (editMode .EQV. .FALSE.) call putSpritesOnBuffer()
-
+            case(IDD_ObjectWindow)
+                call objectWindowThings()
             end select
 
         end subroutine

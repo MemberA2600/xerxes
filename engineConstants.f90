@@ -4,7 +4,7 @@ MODULE engineConstants
 
     INTEGER(KIND=2), DIMENSION(9,2), PARAMETER   ::  & 
     standards = reshape((/ &
-                320,  240, &   ! EGA
+                320,  240, &   ! half VGA
                 640,  480, &   ! VGA
                 800,  600, &   ! SVGA
                 1024, 768, &   ! XGA
@@ -99,7 +99,9 @@ MODULE engineConstants
                                         FILTER_MULTI        = 1 
 
     integer(1), parameter            :: TYPE_EMPTY          = 0   ,&
-                                        TYPE_FLOOR          = 1
+                                        TYPE_FLOOR          = 1   ,&
+                                        TYPE_PLAYER_MAP     = 2   ,&
+                                        TYPE_OBSTACLE_MAP   = 3
 
     integer(1), parameter            :: WEATHER_DAY_NORM    = 0,  &
                                         WEATHER_NIGHT_NORM  = 1,  &
@@ -112,5 +114,9 @@ MODULE engineConstants
 
     character(NAME_MAX_LEN), parameter :: tia_default  = "Puking Ears              ", &
                                           opl2_default = "Original Plastic Lobotomy", &      
-                                          img_default  = "Sexy Sprite              "   
+                                          img_default  = "Sexy Sprite              ", &
+                                          obj_default  = "Old Ogre Object          "   
+     
+    character(NAME_MAX_LEN), dimension(1), target :: floorSprites = (/ "default" /)
+
 END MODULE engineConstants

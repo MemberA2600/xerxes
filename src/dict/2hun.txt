@@ -103,3 +103,4 @@ windowsBitmapFile => Windows Bitmap Fájl
 xerxesBitmapFile => Xerxes Bitkép Fájl
 open => Megnyitása
 selectFolder => Mappaválasztás
+objManager => Objektumkezelõ

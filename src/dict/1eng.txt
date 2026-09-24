@@ -103,3 +103,4 @@ windowsBitmapFile => Windows Bitmap File
 xerxesBitmapFile => Xerxes Bitmap File
 open => Open
 selectFolder => Select Folder
+objManager => Object Manager

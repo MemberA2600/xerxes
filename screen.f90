@@ -10,7 +10,7 @@ MODULE screen
     PRIVATE
     PUBLIC    :: initScreenBuff, eraseBuff, initRealScreen,  &
                  getGameScreenSize, buffer2Real, setBufferPixel, &
-                 displayPalette
+                 displayPalette, getBufferPixel
              
     INTEGER(KIND = 4), DIMENSION(:,:,:), &
                        ALLOCATABLE  :: screenBuffers
@@ -164,6 +164,14 @@ MODULE screen
         dontDelete = .TRUE.
 
     END SUBROUTINE 
+
+    function   getBufferPixel(n, x, y) result(p)
+        integer(2) :: n, x, y       
+        integer(2) :: p
+
+        p =  screenBuffers(n, x, y) 
+
+    end function
 
     subroutine setBufferPixel(n, x, y, c)
         integer(2) :: n, x, y, c

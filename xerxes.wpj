@@ -15,6 +15,7 @@ FILE    7 dataloader.f90
 FILE    7 dict.f90
 FILE    7 engineconstants.f90
 FILE    7 folderparser.f90
+FILE    7 gameobject.f90
 FILE    7 gzip.f90
 FILE    7 imagefactory.f90
 FILE    7 inpout.f90

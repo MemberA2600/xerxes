@@ -20,7 +20,7 @@ MODULE ImageFactory
     public                  :: bitMapWindow, checkImageWindowFields, dropImageList, dropAllImages, &
                                initImageList, loadImageHeader, loadImageByName, addToSCRBuffByName, &
                                imageFile, assignSpriteToPointer, setSpeedScreen, testSpeedLoop, &
-                               loadAllInFolder
+                               loadAllInFolder, getImageList
 
     !
     !   Images are pretty complex and compact.
@@ -72,6 +72,21 @@ MODULE ImageFactory
     integer                                        :: testIndex    
 
     contains
+
+    subroutine getImageList(spriteNames )
+        character(NAME_MAX_LEN), dimension(:), allocatable, intent(out) :: spriteNames 
+        integer(2)                                                      :: rc
+        integer(2)                                                      :: num
+
+        allocate(spriteNames(size(imageList)), stat = rc)
+
+        if (rc /= 0) call displayDebug("Failed to allocate list of Sprite Names!")
+
+        do num = 1, size(imageList), 1
+           spriteNames(num) = imageList(num)%name 
+        end do
+
+    end subroutine
 
     subroutine assignSpriteToPointer(n, p)
         character(*)                            :: n
@@ -381,7 +396,8 @@ MODULE ImageFactory
                    if (modulo((xPix + yPix), 2) == 1) then 
                        color = -1 
                    else 
-                       color =  1
+                       color = getBufferPixel(bufferNum, xOnBuff, yOnBuff)
+                       if (color /= -1) color = changeRGB(color, -1, -1, -1)
                    end if 
 
               case(FILTER_TRANSP)

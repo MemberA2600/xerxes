@@ -11,6 +11,7 @@ MODULE sprite7up
     use imageFactory
     use colors
     use screen
+    use gameobject
 
     implicit None
 
@@ -26,7 +27,7 @@ MODULE sprite7up
          type(imageFile), pointer :: imageF       
          integer(1)               :: filter, bufferNum, tempFilter, tempFilterCountDown  
          integer(4)               :: ind
-         logical                  :: solid, active
+         logical                  :: active
          type(counterTimer)       :: timer
 
          contains 
@@ -128,6 +129,9 @@ MODULE sprite7up
                 call this%imageF%addToScreenBuffer(this%spriteI, b - 1, &
                                                    x, y, FILTER_SHADOW)
     
+                call this%imageF%addToScreenBuffer(this%spriteI, b, &
+                                                   x, y, FILTER_SHADOW)
+
                 call this%imageF%addToScreenBuffer(this%spriteI, b, &
                                                    x, y - fly, filter)                
             else
@@ -470,16 +474,15 @@ MODULE sprite7up
          character(*)  :: imageName, spriteName   
          integer(1)    :: filter
 
-         call createSpriteObj(spriteName, imageName, LAYER_WEATHER, 1, 1, TYPE_EMPTY, .FALSE., filter, 0)
+         call createSpriteObj(spriteName, imageName, LAYER_WEATHER, 1, 1, TYPE_EMPTY, filter, 0)
 
     end subroutine 
 
-    subroutine createSpriteObjSky(spriteName, imageName, x, y, typFlag, solid, filter, fly)
+    subroutine createSpriteObjSky(spriteName, imageName, x, y, typFlag, filter, fly)
          character(*)  :: imageName, spriteName   
          integer(4)    :: x, y
          integer(1)    :: filter
          integer(4)    :: typFlag
-         logical       :: solid
          integer(2)    :: fly
         
       !
@@ -487,18 +490,17 @@ MODULE sprite7up
       !  the shadow becomes the main unit and the creature is just drawn on the SKY layer.
       !
 
-         call createSpriteObj(spriteName, imageName, LAYER_PLAYGROUND, x, y, typFlag, solid, filter, fly)
+         call createSpriteObj(spriteName, imageName, LAYER_PLAYGROUND, x, y, typFlag, filter, fly)
 
     end subroutine 
 
-    subroutine createSpriteObjPlayGround(spriteName, imageName, x, y, typFlag, solid, filter)
+    subroutine createSpriteObjPlayGround(spriteName, imageName, x, y, typFlag, filter)
          character(*)  :: imageName, spriteName   
          integer(4)    :: x, y
          integer(1)    :: filter
          integer(4)    :: typFlag
-         logical       :: solid
 
-         call createSpriteObj(spriteName, imageName, LAYER_PLAYGROUND, x, y, typFlag, solid, filter, 0)
+         call createSpriteObj(spriteName, imageName, LAYER_PLAYGROUND, x, y, typFlag, filter, 0)
 
     end subroutine 
 
@@ -506,17 +508,16 @@ MODULE sprite7up
          character(*)  :: imageName, spriteName   
          integer(1)    :: filter
 
-         call createSpriteObj(spriteName, imageName, LAYER_BACKGROUND, 1, 1, TYPE_FLOOR, .FALSE., filter, 0)
+         call createSpriteObj(spriteName, imageName, LAYER_BACKGROUND, 1, 1, TYPE_FLOOR, filter, 0)
 
     end subroutine 
    
 
-    subroutine createSpriteObj(spriteName, imageName, bufferNum, x, y, typFlag, solid, filter, fly)
+    subroutine createSpriteObj(spriteName, imageName, bufferNum, x, y, typFlag, filter, fly)
          character(*)  :: imageName, spriteName   
          integer(4)    :: x, y, f
          integer(1)    :: filter, bufferNum  
          integer(4)    :: typFlag
-         logical       :: solid
          integer(1)    :: rc
          integer(2)    :: fly
 
@@ -586,7 +587,6 @@ MODULE sprite7up
          layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%tempFilterCountDown = 0
 
          layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%bufferNum = bufferNum   
-         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%solid     = solid
          layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%active    = .TRUE.
 
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%y   = y
