@@ -16,7 +16,8 @@ MODULE GameObject
     private
     public   :: objManagerWindow, objectWindowThings, initSpriteNameListPointers
 
-    logical   :: canKill, changedPage = .FALSE., bullshit
+    logical               :: canKill, bullshit
+    integer(1)            :: changedPage = 0
     integer(2), parameter :: typeNum = 3
 
     character(NAME_MAX_LEN), dimension(typeNum ), parameter:: typeNames =  &
@@ -97,7 +98,7 @@ MODULE GameObject
        call wDialogPutMenu(IDF_AssignedSprite8, spriteNames, size(spriteNames), 0)  
 
        call setDefaults() 
-       changedPage = .FALSE.
+       changedPage = 0
 
        do
           CALL WDialogSelect(IDD_ObjectWindow)
@@ -112,15 +113,16 @@ MODULE GameObject
                   CASE(ID_ObjLoad)
                        call loadObj()
                   CASE(ID_ObjSave)
+                       call saveToList()
                        call saveObj() 
                   CASE(ID_ObjErase)
                        call setDefaults() 
                   CASE(IDF_DecrIndex)  
-                       changedPage = .TRUE.               
-                       currPage    = currPage - 1 
+                       call saveToList()
+                       changedPage = -1               
                   CASE(IDF_IncrIndex)  
-                       changedPage = .TRUE.               
-                       currPage    = currPage + 1 
+                       call saveToList()
+                       changedPage = 1              
 
                   END SELECT
               end if
@@ -353,8 +355,8 @@ MODULE GameObject
     end subroutine
 
     subroutine loadFromList()
-        integer(2)                  :: num, num2
-        integer(4)                  :: num3
+        integer(2)                  :: num2
+        integer(4)                  :: num3, num
 
         num2 = 0
         do num  = (currPage * 8) + 1, (currPage + 1)  * 8, 1
@@ -363,7 +365,7 @@ MODULE GameObject
            if (num <= size(spriteNameListPointers(lastSelectedType)%spriteNameList)) then
                do num3 = 1, size(spriteNames), 1  
                   if (spriteNames(num3) == testData%spriteList(num)) then
-                      call WDialogPutOption(IDF_AssignedSprite1 + (num2 - 1), num3)   
+                      call WDialogPutOption(IDF_AssignedSprite1 + (num2 - 1), num3)  
                       exit  
                   end if 
                end do 
@@ -375,9 +377,22 @@ MODULE GameObject
 
     end subroutine 
 
-    subroutine objectWindowThings()
+    subroutine saveToList()
         integer(2)                  :: rc, num, num2
-        integer                     :: currSelectedType, currSelectedSprite
+        integer                     :: currSelectedSprite
+
+        do num = 1, 8, 1
+           num2 = num + (currPage * 8)  
+               if (num2 > size(testData%spriteList)) exit                  
+               call WDialogGetMenu(IDF_AssignedSprite1 + num - 1, currSelectedSprite) 
+               testData%spriteList(num2) = spriteNames(currSelectedSprite)
+        end do 
+
+    end subroutine
+
+    subroutine objectWindowThings()
+        integer(2)                  :: rc
+        integer                     :: currSelectedType
         logical                     :: hackMe
 
         if (WinfoDialog(CurrentDialog) == IDD_ObjectWindow) then 
@@ -386,40 +401,41 @@ MODULE GameObject
                call WDialogGetMenu(IDF_ObjectTypeMenu, currSelectedType)    
     
                if (lastSelectedType /= currSelectedType) then
-
                    hackMe            = (lastSelectedType == -1) 
 
                    lastSelectedType  = currSelectedType
                    currPage          = 0   
                    maxPages          = ((size(spriteNameListPointers(lastSelectedType)%spriteNameList) - 1) / 8)  
                     
-                   if (allocated(testData%spriteList)) then
-                       deallocate(testData%spriteList, stat = rc) 
-        
-                       if (rc /= 0) call displayDebug("Failed to deallocate testData's Sprite List!")
-                   end if  
-    
-                   allocate(testData%spriteList( & 
-                        size(spriteNameListPointers(lastSelectedType)%spriteNameList)), stat = RC) 
-    
-                   if (rc /= 0) call displayDebug("Failed to allocate testData's Sprite List!")
-    
-                   call fillListNames() 
                    if (hackMe .EQV. .FALSE.) then
+                       if (allocated(testData%spriteList)) then
+                           deallocate(testData%spriteList, stat = rc) 
+            
+                           if (rc /= 0) call displayDebug("Failed to deallocate testData's Sprite List!")
+                       end if  
+        
+                       allocate(testData%spriteList( & 
+                            size(spriteNameListPointers(lastSelectedType)%spriteNameList)), stat = RC) 
+        
+                       if (rc /= 0) call displayDebug("Failed to allocate testData's Sprite List!")
+
                        testData%spriteList = spriteNames(1)
                    end if
- 
+
+                   call fillListNames() 
                    call loadFromList() 
-     
+
                end if 
 
-               if (changedPage) then
+               if (changedPage /=0) then
+                   currPage = currPage + changedPage 
+
                    call fillListNames()  
                    call loadFromList() 
     
-                   changedPage = .FALSE. 
+                   changedPage = 0
                end if  
-    
+
                if (maxPages == 0) then 
                    CALL WDialogFieldState(IDF_DecrIndex, DISABLED) 
                    CALL WDialogFieldState(IDF_IncrIndex, DISABLED) 
@@ -438,14 +454,6 @@ MODULE GameObject
     
                end if 
     
-               do num = 1, 8, 1
-                  num2 = num + (currPage * 8)  
-                  if (num2 > size(testData%spriteList)) exit                  
-
-                  call WDialogGetMenu(IDF_AssignedSprite1 + num - 1, currSelectedSprite) 
-                  testData%spriteList(num2) = spriteNames(currSelectedSprite)
-               end do 
-
             end if
         end if
 
