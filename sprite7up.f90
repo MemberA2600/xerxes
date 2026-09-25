@@ -144,14 +144,15 @@ MODULE sprite7up
         end if
     end subroutine
 
-    function getPozInd(i, b) result(res)
+    function getPozInd(p, i, b) result(res)
         integer(4)              :: i
+        integer(4)              :: p
         integer(1)              :: b
         integer(4)              :: ind, res
 
-        res = 0
+        res = -1
 
-        do ind = 1, layerBlocks(b)%nextIndexP, 1
+        do ind = p + 1, layerBlocks(b)%nextIndexP, 1
            if (layerBlocks(b)%pozList(ind)%ind == i) then 
                 res = ind 
                 exit
@@ -169,56 +170,60 @@ MODULE sprite7up
         if ((associated(this%imageF) .EQV. .FALSE.)  .OR. &
             (this%active             .EQV. .FALSE.)) return
 
-        pozInd = getPozInd(this%ind, this%bufferNum)
-
-        !write(test, "(A, ' ', I0, ' ', I0)") trim(layerBlocks(this%bufferNum)%pozList(pozInd)%name), x, y 
-        !call displayDebug(test)
-
-        if (layerDimensions(this%bufferNum,1) /= BLOCKMAP_1) then  
-
-            x   = layerBlocks(this%bufferNum)%pozList(pozInd)%x
-            y   = layerBlocks(this%bufferNum)%pozList(pozInd)%y
-            fly = layerBlocks(this%bufferNum)%pozList(pozInd)%fly
-            typ = layerBlocks(this%bufferNum)%pozList(pozInd)%typFlag
-        
-            if (layerDimensions(this%bufferNum,2) /= BLOCKMAP_FIX) then
-                if ((x + this%w - 1 < XOffset) .OR. (x > XOffset + wSize)  .OR. & 
-                    (y + this%h - 1 < YOffset) .OR. (Y > YOffset + hSize)) return
-        
-                x = x - XOffset 
-                y = y - YOffset 
-            end if
-
-
-            call this%drawDrawDraw(x, y, fly, typ)
+        pozInd = 0
     
-        else
-            do y = layerBlocks(this%bufferNum)%pozList(pozInd)%y -   & 
-                   layerBlocks(this%bufferNum)%spriteList(this%ind)%h, &
-                   hSize + layerBlocks(this%bufferNum)%spriteList(this%ind)%h, &
-                   layerBlocks(this%bufferNum)%spriteList(this%ind)%h 
-                do x = layerBlocks(this%bufferNum)%pozList(pozInd)%x -   & 
-                       layerBlocks(this%bufferNum)%spriteList(this%ind)%w, &
-                       wSize + layerBlocks(this%bufferNum)%spriteList(this%ind)%w, &
-                       layerBlocks(this%bufferNum)%spriteList(this%ind)%w 
-   
+        do 
+            pozInd = getPozInd(pozInd, this%ind, this%bufferNum)
+            if (pozInd == -1) exit    
 
-                    call this%drawDrawDraw(x - modulo(XOffset, layerBlocks(this%bufferNum)%spriteList(this%ind)%w) &
-                                         , y - modulo(YOffset, layerBlocks(this%bufferNum)%spriteList(this%ind)%h) &
-                                         , 0, typ)
-
+            !write(test, "(A, ' ', I0, ' ', I0)") trim(layerBlocks(this%bufferNum)%pozList(pozInd)%name), x, y 
+            !call displayDebug(test)
+    
+            if (layerDimensions(this%bufferNum,1) /= BLOCKMAP_1) then  
+    
+                x   = layerBlocks(this%bufferNum)%pozList(pozInd)%x
+                y   = layerBlocks(this%bufferNum)%pozList(pozInd)%y
+                fly = layerBlocks(this%bufferNum)%pozList(pozInd)%fly
+                typ = layerBlocks(this%bufferNum)%pozList(pozInd)%typFlag
+            
+                if (layerDimensions(this%bufferNum,2) /= BLOCKMAP_FIX) then
+                    if ((x + this%w - 1 < XOffset) .OR. (x > XOffset + wSize)  .OR. & 
+                        (y + this%h - 1 < YOffset) .OR. (Y > YOffset + hSize)) return
+            
+                    x = x - XOffset 
+                    y = y - YOffset 
+                end if
+    
+    
+                call this%drawDrawDraw(x, y, fly, typ)
+        
+            else
+                do y = layerBlocks(this%bufferNum)%pozList(pozInd)%y -   & 
+                       layerBlocks(this%bufferNum)%spriteList(this%ind)%h, &
+                       hSize + layerBlocks(this%bufferNum)%spriteList(this%ind)%h, &
+                       layerBlocks(this%bufferNum)%spriteList(this%ind)%h 
+                    do x = layerBlocks(this%bufferNum)%pozList(pozInd)%x -   & 
+                           layerBlocks(this%bufferNum)%spriteList(this%ind)%w, &
+                           wSize + layerBlocks(this%bufferNum)%spriteList(this%ind)%w, &
+                           layerBlocks(this%bufferNum)%spriteList(this%ind)%w 
+       
+    
+                        call this%drawDrawDraw(x - modulo(XOffset, layerBlocks(this%bufferNum)%spriteList(this%ind)%w) &
+                                             , y - modulo(YOffset, layerBlocks(this%bufferNum)%spriteList(this%ind)%h) &
+                                             , 0, typ)
+    
+                    end do
                 end do
-            end do
-
-        end if
-
-        if (this%timer%getDiffCheck() /= (PERFECT_WAIT * getSpeed())) then
-            call this%timer%timerStart(PERFECT_WAIT * getSpeed())    
-            call this%animateSprite()                  
-        else
-            if (this%timer%timerEnded() .EQV. .TRUE. ) call this%animateSprite()             
-        end if    
-
+    
+            end if
+    
+            if (this%timer%getDiffCheck() /= (PERFECT_WAIT * getSpeed())) then
+                call this%timer%timerStart(PERFECT_WAIT * getSpeed())    
+                call this%animateSprite()                  
+            else
+                if (this%timer%timerEnded() .EQV. .TRUE. ) call this%animateSprite()             
+            end if    
+        end do
     end subroutine
 
     subroutine animateSprite(this)
@@ -458,7 +463,8 @@ MODULE sprite7up
         end select
 
         do bufferN = 1, layerNum, 1
-           if (bufferN /= LAYER_FOREGROUND .AND. bufferN /= LAYER_INTERFACE) then
+           if (bufferN /= LAYER_FOREGROUND .AND. bufferN /= LAYER_INTERFACE &
+         .AND. bufferN /= LAYER_TRANSITION) then
                do ind = 1, layerBlocks(bufferN)%nextIndexS, 1 
                   if ((layerBlocks(bufferN)%spriteList(ind)%active .EQV. .TRUE.) .AND. &
           (associated(layerBlocks(bufferN)%spriteList(ind)%imageF) .EQV. .TRUE.)) then
@@ -474,33 +480,35 @@ MODULE sprite7up
          character(*)  :: imageName, spriteName   
          integer(1)    :: filter
 
-         call createSpriteObj(spriteName, imageName, LAYER_WEATHER, 1, 1, TYPE_EMPTY, filter, 0)
+         call createSpriteObj(spriteName, imageName, LAYER_WEATHER, 1, 1, TYPE_EMPTY, filter, 0, .TRUE.)
 
     end subroutine 
 
-    subroutine createSpriteObjSky(spriteName, imageName, x, y, typFlag, filter, fly)
+    subroutine createSpriteObjSky(spriteName, imageName, x, y, typFlag, filter, fly, unique)
          character(*)  :: imageName, spriteName   
          integer(4)    :: x, y
          integer(1)    :: filter
          integer(4)    :: typFlag
          integer(2)    :: fly
+         logical       :: unique
         
       !
       !  Sky units are basically ground units. If fly = 0, the main unit is the creature, but if it flies,
       !  the shadow becomes the main unit and the creature is just drawn on the SKY layer.
       !
 
-         call createSpriteObj(spriteName, imageName, LAYER_PLAYGROUND, x, y, typFlag, filter, fly)
+         call createSpriteObj(spriteName, imageName, LAYER_PLAYGROUND, x, y, typFlag, filter, fly, unique)
 
     end subroutine 
 
-    subroutine createSpriteObjPlayGround(spriteName, imageName, x, y, typFlag, filter)
+    subroutine createSpriteObjPlayGround(spriteName, imageName, x, y, typFlag, filter, unique)
          character(*)  :: imageName, spriteName   
          integer(4)    :: x, y
          integer(1)    :: filter
          integer(4)    :: typFlag
+         logical       :: unique
 
-         call createSpriteObj(spriteName, imageName, LAYER_PLAYGROUND, x, y, typFlag, filter, 0)
+         call createSpriteObj(spriteName, imageName, LAYER_PLAYGROUND, x, y, typFlag, filter, 0, unique)
 
     end subroutine 
 
@@ -508,50 +516,79 @@ MODULE sprite7up
          character(*)  :: imageName, spriteName   
          integer(1)    :: filter
 
-         call createSpriteObj(spriteName, imageName, LAYER_BACKGROUND, 1, 1, TYPE_FLOOR, filter, 0)
+         call createSpriteObj(spriteName, imageName, LAYER_BACKGROUND, 1, 1, TYPE_FLOOR, filter, 0, .TRUE.)
 
     end subroutine 
    
 
-    subroutine createSpriteObj(spriteName, imageName, bufferNum, x, y, typFlag, filter, fly)
+    subroutine createSpriteObj(spriteName, imageName, bufferNum, x, y, typFlag, filter, fly, unique)
          character(*)  :: imageName, spriteName   
          integer(4)    :: x, y, f
          integer(1)    :: filter, bufferNum  
          integer(4)    :: typFlag
          integer(1)    :: rc
          integer(2)    :: fly
+         logical       :: unique
+         logical       :: alreadyThere
 
          type(SpriteObj), dimension(:), allocatable :: spriteListTemp
          type(spritePoz), dimension(:), allocatable :: pozListTemp
 
          integer(4)    :: ind
-         !character(50) :: test
 
-         if (bufferNum /= LAYER_FOREGROUND .AND. bufferNum /= LAYER_INTERFACE) then
+         if (bufferNum /= LAYER_FOREGROUND .AND. bufferNum /= LAYER_INTERFACE &
+       .AND. bufferNum /= LAYER_TRANSITION) then
              if (filter == NO_FILTER) then
                  f = defaultFilter 
              end if      
          end if
 
+         alreadyThere = .FALSE.
+
          if (layerDimensions(bufferNum,1) /= BLOCKMAP_1) then
-             do ind = 1, layerBlocks(bufferNum)%nextIndexS, 1
-                if ((layerBlocks(bufferNum)%spriteList(ind)%active             .EQV. .FALSE.) .OR. &
-                    (associated(layerBlocks(bufferNum)%spriteList(ind)%imageF) .EQV. .FALSE.)) then
-                     layerBlocks(bufferNum)%nextIndexS = ind - 1   
-                     exit   
-                end if            
-             end do
-   
-             if (layerBlocks(bufferNum)%nextIndexS == size(layerBlocks(bufferNum)%spriteList)) then
-    
-                 allocate(spriteListTemp(layerBlocks(bufferNum)%nextIndexS + SIZE_ADD), stat = RC)
-                 if (rc /= 0) call displayDebug("Failed to allocate temporal spriteList!")
-    
-                 spriteListTemp(1:layerBlocks(bufferNum)%nextIndexS) = layerBlocks(bufferNum)%spriteList
-    
-                 call move_alloc(spriteListTemp, layerBlocks(bufferNum)%spriteList)
-             end if     
-     
+             if (unique .EQV. .FALSE.) then  
+                 do ind = 1, size(layerBlocks(bufferNum)%spriteList), 1
+                    if ((layerBlocks(bufferNum)%spriteList(ind)%active             .EQV. .TRUE.) .AND. &
+                        (associated(layerBlocks(bufferNum)%spriteList(ind)%imageF) .EQV. .TRUE.)) then
+                         if (layerBlocks(bufferNum)%spriteList(ind)%imageF%name == imageName) then
+                             layerBlocks(bufferNum)%nextIndexS = layerBlocks(bufferNum)%spriteList(ind)%ind
+                             alreadyThere = .TRUE.
+                             exit
+                         end if
+                    end if        
+                 end do   
+             end if
+
+             if (alreadyThere .EQV. .FALSE.) then
+                 layerBlocks(bufferNum)%nextIndexS = size(layerBlocks(bufferNum)%spriteList) 
+  
+                 do ind = 1, size(layerBlocks(bufferNum)%spriteList), 1
+                    if ((layerBlocks(bufferNum)%spriteList(ind)%active             .EQV. .FALSE.) .OR. &
+                        (associated(layerBlocks(bufferNum)%spriteList(ind)%imageF) .EQV. .FALSE.)) then
+                         layerBlocks(bufferNum)%nextIndexS = ind - 1   
+                         exit   
+                    end if            
+                 end do
+       
+                 if (layerBlocks(bufferNum)%nextIndexS == size(layerBlocks(bufferNum)%spriteList)) then
+        
+                     allocate(spriteListTemp(layerBlocks(bufferNum)%nextIndexS + SIZE_ADD), stat = RC)
+                     if (rc /= 0) call displayDebug("Failed to allocate temporal spriteList!")
+        
+                     spriteListTemp(1:layerBlocks(bufferNum)%nextIndexS) = layerBlocks(bufferNum)%spriteList
+        
+                     call move_alloc(spriteListTemp, layerBlocks(bufferNum)%spriteList)
+                
+                     do ind = layerBlocks(bufferNum)%nextIndexS + 1, size(layerBlocks(bufferNum)%spriteList), 1
+                        layerBlocks(bufferNum)%spriteList(ind)%active = .FALSE.
+                     end do
+
+                 end if 
+
+                 layerBlocks(bufferNum)%nextIndexS = & 
+                 layerBlocks(bufferNum)%nextIndexS + 1       
+             end if         
+
              if (layerBlocks(bufferNum)%nextIndexP == size(layerBlocks(bufferNum)%pozList)) then
     
                  allocate(pozListTemp(layerBlocks(bufferNum)%nextIndexP + SIZE_ADD), stat = RC)
@@ -560,10 +597,7 @@ MODULE sprite7up
                  pozListTemp(1:layerBlocks(bufferNum)%nextIndexP) = layerBlocks(bufferNum)%pozList
     
                  call move_alloc(pozListTemp, layerBlocks(bufferNum)%pozList)
-             end if         
-            
-             layerBlocks(bufferNum)%nextIndexS = & 
-             layerBlocks(bufferNum)%nextIndexS + 1            
+             end if                 
                
              layerBlocks(bufferNum)%nextIndexP = & 
              layerBlocks(bufferNum)%nextIndexP + 1   
@@ -572,43 +606,45 @@ MODULE sprite7up
              layerBlocks(bufferNum)%nextIndexP = 1   
          end if  
 
-         call assignSpriteToPointer(imageName, &
-              layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%imageF) 
+         if (alreadyThere .EQV. .FALSE.) then
+             call assignSpriteToPointer(imageName, &
+                  layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%imageF) 
 
-         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%w = &
-         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%imageF%img%width    
+             layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%w = &
+             layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%imageF%img%width    
+    
+             layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%h = &
+             layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%imageF%img%height  
+    
+             layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%spriteI    = 1
+             layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%filter     = f
+             layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%tempFilter    = -1
+             layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%tempFilterCountDown = 0
+    
+             layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%bufferNum = bufferNum   
+             layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%active    = .TRUE.
+    
+             layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%ind = &
+             layerBlocks(bufferNum)%nextIndexS
+    
+             if (layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%imageF%img%numOfFrames > 1) then
+                 call layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%timer%timerStart( &
+                      PERFECT_WAIT * getSpeed())
+             end if
+         end if
 
-         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%h = &
-         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%imageF%img%height  
-
-         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%spriteI    = 1
-         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%filter     = f
-         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%tempFilter    = -1
-         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%tempFilterCountDown = 0
-
-         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%bufferNum = bufferNum   
-         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%active    = .TRUE.
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%ind = &
+         layerBlocks(bufferNum)%nextIndexS
 
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%y   = y
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%yh  = y + &
          layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%h
-
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%x   = x
-         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%ind = &
-         layerBlocks(bufferNum)%nextIndexS
-
-         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%ind = &
-         layerBlocks(bufferNum)%nextIndexS
 
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%fly      = fly
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%name     = spriteName
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%typFlag  = typFlag
-         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%bufferNum = bufferNum   
-
-         if (layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%imageF%img%numOfFrames > 1) then
-             call layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%timer%timerStart( &
-                  PERFECT_WAIT * getSpeed())
-         end if
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%bufferNum = bufferNum  
 
          !write(test, "(A, ' ', I0, ' ', I0, ' ', I0, ' ', I0)") &
          !      trim(spriteName), x, y, bufferNum ,layerBlocks(bufferNum)%nextIndexS   
@@ -669,6 +705,9 @@ MODULE sprite7up
 
         layerDimensions(LAYER_INTERFACE ,1) =   BLOCKMAP_INF         
         layerDimensions(LAYER_INTERFACE ,2) =   BLOCKMAP_FIX     
+
+        layerDimensions(LAYER_TRANSITION,1) =   BLOCKMAP_INF         
+        layerDimensions(LAYER_TRANSITION,2) =   BLOCKMAP_FIX  
 
     end subroutine
 

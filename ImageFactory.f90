@@ -76,7 +76,7 @@ MODULE ImageFactory
     subroutine getImageList(spriteNames )
         character(NAME_MAX_LEN), dimension(:), allocatable, intent(out) :: spriteNames 
         integer(2)                                                      :: rc
-        integer(2)                                                      :: num
+        integer(4)                                                      :: num
 
         allocate(spriteNames(size(imageList)), stat = rc)
 

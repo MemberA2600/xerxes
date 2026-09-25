@@ -18,12 +18,14 @@ MODULE engineConstants
     integer                       :: PERFECT_WAIT = 5000
     integer(1)                    :: speedUpConst = 30   
 
-    integer(1), parameter         :: layerNum          = 5, &      
+    integer(1), parameter         :: layerNum          = 6, &      
                                      LAYER_BACKGROUND  = 1, & 
                                      LAYER_PLAYGROUND  = 2, &
                                      LAYER_WEATHER     = 3, &   
                                      LAYER_FOREGROUND  = 4, &  
-                                     LAYER_INTERFACE   = 5
+                                     LAYER_INTERFACE   = 5, &
+                                     LAYER_TRANSITION  = 6
+
 
     integer(2), parameter         :: numOfColors = 256 
     INTEGER(KIND=1), PARAMETER    :: maxNumberOfScreenSizes = 9
@@ -38,7 +40,9 @@ MODULE engineConstants
     character(4), parameter       :: OPL2_FILE_TYPE   = 'OPL2', &
                                      TIA_FILE_TYPE    = 'TIA ', &
                                      CONF_FILE_TYPE   = 'CONF', &
-                                     IMG_FILE_TYPE    = 'IMG '                
+                                     IMG_FILE_TYPE    = 'IMG ', &
+                                     OBJ_FILE_TYPE    = 'OBJ '
+                
 
     integer(1), parameter         :: IND_KEY_LEFT           = 1 , &  
                                      IND_KEY_RIGHT          = 2 , &  
@@ -101,7 +105,7 @@ MODULE engineConstants
     integer(1), parameter            :: TYPE_EMPTY          = 0   ,&
                                         TYPE_FLOOR          = 1   ,&
                                         TYPE_PLAYER_MAP     = 2   ,&
-                                        TYPE_OBSTACLE_MAP   = 3
+                                        TYPE_TREE           = 3
 
     integer(1), parameter            :: WEATHER_DAY_NORM    = 0,  &
                                         WEATHER_NIGHT_NORM  = 1,  &
@@ -117,6 +121,12 @@ MODULE engineConstants
                                           img_default  = "Sexy Sprite              ", &
                                           obj_default  = "Old Ogre Object          "   
      
-    character(NAME_MAX_LEN), dimension(1), target :: floorSprites = (/ "default" /)
+    character(NAME_MAX_LEN), dimension(1) , target :: singleSpriteList       = (/ "default" /)
+    character(NAME_MAX_LEN), dimension(24), target :: mapCharacterSpriteList = (/&
+    "standN", "standNW", "standW", "standSW", "standS", "standSE", "standE", "standNE", &
+    "walkN" , "walkNW" , "walkW" , "walkSW" , "walkS" , "walkSE" , "walkE" , "walkNE" , &
+    "windN" , "windNW" , "windW" , "windSW" , "windS" , "windSE" , "windE" , "windNE"   /)
+
+    character(NAME_MAX_LEN), dimension(3) , target :: treeSpriteList       = (/ "normal", "dry", "wind"/)
 
 END MODULE engineConstants

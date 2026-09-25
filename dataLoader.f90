@@ -13,7 +13,8 @@ MODULE dataLoader
       PRIVATE
       PUBLIC :: loadbinary, read4CharFromBin, readIntFromBin, copyBytes, copyBytesHalf, &
                 writeChars2Bin, writeBytes2Bin, writeBin2File, bin2Char, WriteInt8ToData, &
-                ReadInt8FromData, read2CharFromBin, WriteInt2ToData, ReadInt2FromData
+                ReadInt8FromData, read2CharFromBin, WriteInt2ToData, ReadInt2FromData, &
+                WriteInt4ToData, ReadInt4FromData
 
       CONTAINS
       
@@ -423,6 +424,47 @@ MODULE dataLoader
         
           v = transfer(bytes, v)
           offset = offset + 2   
+
+      end function
+
+      subroutine WriteInt4ToData(d, offset, v)
+        
+          implicit none
+        
+          integer(2), intent(inout) :: d(:)
+          integer(8), intent(inout) :: offset
+          integer(4), intent(in)    :: v
+        
+          integer(1)                :: bytes(4)
+          integer                   :: ind
+       
+          bytes = transfer(v, bytes)
+        
+          do ind = 1, 4
+             d(offset + ind - 1) = iand(Z'00FF', bytes(ind))
+          end do
+        
+          offset = offset + 4   
+
+      end subroutine
+
+      function ReadInt4FromData(d, offset) result(v)
+        
+          implicit none
+      
+          integer(2), intent(in)    :: d(:)
+          integer(8), intent(inout) :: offset
+        
+          integer(4) :: v
+          integer(1) :: bytes(4)
+          integer    :: ind
+        
+          do ind = 1, 4
+              bytes(ind) = int(d(offset + ind-1), kind=1)
+          end do
+        
+          v = transfer(bytes, v)
+          offset = offset + 4   
 
       end function
 
