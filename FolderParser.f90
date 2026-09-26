@@ -11,6 +11,7 @@ MODULE FolderParser
       use subs
       use imageFactory    
       use dict
+      use GameObject  
 
       IMPLICIT NONE  
 
@@ -45,6 +46,8 @@ MODULE FolderParser
               call initImageList(N) 
           case("xxd")
               call setNumOfLangs(N) 
+          case("xxo")
+              call initObjList(N) 
           end select
 
           hndl = FILE$FIRST
@@ -64,6 +67,8 @@ MODULE FolderParser
                   call loadImageHeader(N, dir_info%name)
              case("xxd")
                   call loadDict(N, dir_info%name)
+             case("xxo")
+                  call loadObjFile(N, dir_info%name, .TRUE.)
              end select
 
           END DO

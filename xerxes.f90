@@ -193,6 +193,9 @@
                     call displayPalette()  
               CASE (ID_ObjManager)
                     call objManagerWindow()
+                    call dropObjList()
+                    call getFolder("obj", "xxo")
+
               CASE (ID_STARTGAME)
                     editMode = .FALSE.
                    
@@ -259,6 +262,7 @@
            call getFolder("adlib", "xxa")
            call getFolder("img"  , "xxp")
            call getFolder("dict" , "xxd")
+           call getFolder("obj"  , "xxo")
       end subroutine  
 
       function playAdlibT(lpParameter) result(rc)

@@ -14,7 +14,8 @@ MODULE GameObject
     implicit none
 
     private
-    public   :: objManagerWindow, objectWindowThings, initSpriteNameListPointers
+    public   :: objManagerWindow, objectWindowThings, initSpriteNameListPointers, &
+                loadObjFile, initObjList, dropObjList
 
     logical               :: canKill, bullshit
     integer(1)            :: changedPage = 0
@@ -46,6 +47,33 @@ MODULE GameObject
     type(objectData)                                    :: testData
 
     contains
+
+    subroutine initObjList(N)
+        integer(1)          :: rc
+        integer             :: N
+
+        if (allocated(gameObjectList)) call dropObjList()
+
+        allocate(gameObjectList(N), stat = rc)
+        if (rc /= 0) call displayDebug("Failed to allocate gameObjectList!")
+
+    end subroutine
+
+    subroutine dropObjList()
+        integer     :: num
+        integer(1)  :: rc    
+
+        do num = 1, size(gameObjectList), 1
+           if (allocated(gameObjectList(num)%spriteList)) then
+               deallocate(gameObjectList(num)%spriteList, stat = rc)
+               if (rc /= 0) call displayDebug("Failed to deallocate gameObjectList's Sprite List!")
+           end if 
+        end do
+
+        deallocate(gameObjectList, stat = rc)
+        if (rc /= 0) call displayDebug("Failed to deallocate gameObjectList!")
+        
+    end subroutine
 
     subroutine initSpriteNameListPointers()
         spriteNameListPointers(1)%spriteNameList => singleSpriteList 
