@@ -102,9 +102,9 @@ MODULE GameObject
                 else
                     r = this%getSprite("normal") // directions(num)
                 end if
-
             end if
-
+        case(TYPE_WEATHER)
+            r = this%getSprite("default")
         end select
     end function    
 

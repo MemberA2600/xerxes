@@ -20,7 +20,7 @@ MODULE GameMap
     logical  :: canKill = .FALSE.
     character(NAME_MAX_LEN), dimension(:), allocatable :: baseFloorList 
     character(NAME_MAX_LEN), dimension(4), parameter   :: weatherNamesKeys = (/ & 
-                                                       "dayNorm", "dayRain", "nightNorm", "nightRain" /) 
+                                                       "dayNorm", "nightNorm", "dayRain","nightRain" /) 
     character(NAME_MAX_LEN), dimension(4)              :: weatherNames
 
     type Unit
@@ -48,10 +48,11 @@ MODULE GameMap
 
     type Map
          character(4)                          :: header
-         integer(1)                            :: nameLen, weather, defFilter = NO_FILTER, &
-                                                  typ = MAP_WALKING, defWeather = WEATHER_DAY_NORM
+         integer(1)                            :: nameLen, typ = MAP_WALKING, &
+                                                  defWeather = WEATHER_DAY_NORM, &
+                                                  defFilter  = NO_FILTER      
          character(NAME_MAX_LEN)               :: name 
-         integer(4)                            :: width, height, numOfUnits
+         integer(4)                            :: width, height
          logical                               :: wind = .FALSE., paused = .TRUE.
             
          type(unit)                            :: defaultFloor
@@ -77,7 +78,6 @@ MODULE GameMap
 
         if (associated(this%sp)) call this%sp%killMe()
         !call currentMap%killUnit(this%ind)
-        currentMap%numOfUnits = currentMap%numOfUnits - 1                
     
     end subroutine
 
@@ -110,7 +110,6 @@ MODULE GameMap
         end select
 
         call addPointerToLastSpritePoz(this%sp, layerNum)
-        currentMap%numOfUnits = currentMap%numOfUnits + 1
 
     end subroutine
 
@@ -241,13 +240,17 @@ MODULE GameMap
 
     function openBasicSettingsWindow(load) result(success)
        logical                 :: load
+
        integer(1)              :: success
-       INTEGER                 :: ITYPE, selectedFloor, selectedWeather
+       INTEGER                 :: ITYPE, selectedFloor, selectedWeather, windVal
        TYPE(WIN_MESSAGE)       :: MESSAGE
        integer(1)              :: num 
 
-       success         = 0
-       canKill         = .FALSE.
+       integer                 :: w, h, m 
+
+       success           = 0
+       canKill           = .FALSE.
+       currentMap%paused = .TRUE.
 
        do
          if (WInfoDialog(CurrentDialog) == 0) exit
@@ -265,8 +268,8 @@ MODULE GameMap
            CALL WDialogPutString(ID_MAP_BASICSETTINGS_Cancel, getWordInCurrentLang("load")) 
            currentMap%typ        = MAP_WALKING 
            currentMap%defWeather = WEATHER_DAY_NORM
-           currentMap%width      = 1
-           currentMap%height     = 1
+           currentMap%width      = wOfScreenBuffer
+           currentMap%height     = hOfScreenBuffer
            currentMap%wind       = .FALSE.           
            defaultFloor          = "Grass"
            currentMap%name       = map_default 
@@ -321,8 +324,8 @@ MODULE GameMap
        end if 
 
        CALL WDialogPutString( ID_MAP_BASICSETTINGS_NAME, currentMap%name  )        
-       CALL WDialogPutInteger(IDF_MAP_WSIZE            , currentMap%width )        
-       CALL WDialogPutInteger(IDF_MAP_HSIZE            , currentMap%height)        
+       CALL WDialogPutInteger(IDF_MAP_WSIZE            , currentMap%width   / wOfScreenBuffer)        
+       CALL WDialogPutInteger(IDF_MAP_HSIZE            , currentMap%height  / hOfScreenBuffer)        
 
        do selectedFloor = 1, size(baseFloorList), 1
           if (baseFloorList(selectedFloor) == defaultFloor) exit   
@@ -344,21 +347,90 @@ MODULE GameMap
                   CASE(ID_MAP_BASICSETTINGS_Cancel) 
                      EXIT
                   CASE(ID_MAP_BASICSETTINGS_OK)
+                     success = 1
                      EXIT
                   END SELECT
               end if
        end do 
+
+       if (success == 1) then  
+           call WDialogGetRadioButton(IDF_MAP_TYPE_RADIO1, m)
+           CALL Wdialoggetinteger(IDF_MAP_WSIZE, w)
+           CALL Wdialoggetinteger(IDF_MAP_HSIZE, h)        
+    
+           w = w * wOfScreenBuffer
+           h = h * hOfScreenBuffer
+    
+           currentMap%width  = w
+           currentMap%height = h
+           currentMap%typ    = m
+    
+           call WDialogGetMenu(IDF_MAP_DEFAULT_FLOOR  , selectedFloor) 
+           call WDialogGetMenu(IDF_MAP_DEFAULT_WEATHER, selectedWeather) 
+    
+           currentMap%defWeather = selectedWeather    
+    
+           call WDialogGetCheckBox(IDF_MAP_WIND, windVal)
+           CALL wDialogGetString(ID_MAP_BASICSETTINGS_NAME, currentMap%name) 
+
+           if (windVal == 1) then
+               currentMap%wind = .TRUE.
+           else
+               currentMap%wind = .FALSE.
+           end if   
+
+           if ((defaultFloorOld /= baseFloorList(selectedFloor)) .OR. (load)) then 
+               if (load .EQV. .FALSE.) call currentMap%defaultFloor%killMe() 
+               call currentMap%defaultFloor%setUnit(baseFloorList(selectedFloor), 1, 1, 1)
+           end if 
+
+           if (selectedWeather /= weatherOld .OR. (currentMap%wind .NEQV. windOld)) then
+               select case(selectedWeather)
+               case(WEATHER_DAY_NORM)    
+                    currentMap%defFilter = NO_FILTER
+               case(WEATHER_NIGHT_NORM)    
+                    currentMap%defFilter = FILTER_BLUE
+               case(WEATHER_DAY_RAIN)    
+                    currentMap%defFilter = NO_FILTER
+               case(WEATHER_NIGHT_RAIN)    
+                    currentMap%defFilter = FILTER_BLUE
+               end select
+
+               call setWeather(selectedWeather, currentMap%wind)
+           end if
+    
+       else 
+           if (load) then 
+  
+           end if 
+       end if 
 
        canKill = .TRUE.        
 
     end function
 
     subroutine mapBasicSettings()
+        integer(4)                  :: mapType
+
         if (WinfoDialog(CurrentDialog) == IDD_MAP_BASICSETTINGS) then
-            !
+            call WDialogGetRadioButton(IDF_MAP_TYPE_RADIO1, mapType)
 
+            if (mapType /= mapTypePrev) then
+                select case(mapType)
+                case(MAP_WALKING)
+                     CALL WDialogFieldState(IDF_MAP_WSIZE, ENABLED) 
+                     CALL WDialogFieldState(IDF_MAP_HSIZE, ENABLED) 
+                case default
+                     CALL WDialogFieldState(IDF_MAP_WSIZE, DISABLED) 
+                     CALL WDialogFieldState(IDF_MAP_HSIZE, DISABLED) 
 
+                     CALL Wdialogputinteger(IDF_MAP_WSIZE, 1)
+                     CALL Wdialogputinteger(IDF_MAP_HSIZE, 1)
+                end select
+            end if
 
+            mapTypePrev = mapType
+            
         end if
 
         if (canKill .EQV. .TRUE.) then 

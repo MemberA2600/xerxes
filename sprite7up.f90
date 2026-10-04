@@ -287,10 +287,10 @@ MODULE sprite7up
        if (this%imageF%img%numOfFrames > 1) then
             this%spriteI = this%spriteI + 1
 
-            if (this%spriteI >= this%imageF%img%numOfFrames) then
+            if (this%spriteI > this%imageF%img%numOfFrames) then
                this%spriteI = 1
             end if
-                    
+
             call this%timer%timerStart(PERFECT_WAIT * getSpeed())    
         else
             this%spriteI = 1
@@ -495,8 +495,9 @@ MODULE sprite7up
 
     end subroutine
 
-    subroutine setWeather(w)
+    subroutine setWeather(w, wind)
         integer(1)      :: w
+        logical         :: wind
         integer(4)      :: bufferN, ind
 
         layerBlocks(LAYER_WEATHER)%spriteList(1)%active = .FALSE.
@@ -510,12 +511,20 @@ MODULE sprite7up
 
         case(WEATHER_DAY_RAIN)    
              defaultFilter = NO_FILTER
-             call createSpriteObjWeather("Rain", "Rain", defaultFilter, "")
 
+             if (wind) then 
+                call createSpriteObjWeather("RainWind", "RainWind", defaultFilter, "")
+             else
+                call createSpriteObjWeather("Rain", "Rain", defaultFilter, "")
+             end if
         case(WEATHER_NIGHT_RAIN)    
-             defaultFilter = FILTER_BLUE                
-             call createSpriteObjWeather("Rain", "Rain", defaultFilter, "")
+             defaultFilter = FILTER_BLUE  
 
+             if (wind) then              
+                call createSpriteObjWeather("RainWind", "RainWind", defaultFilter, "")
+             else
+                call createSpriteObjWeather("Rain", "Rain", defaultFilter, "")
+             end if
         end select
 
         do bufferN = 1, layerNum, 1
