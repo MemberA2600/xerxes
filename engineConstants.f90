@@ -26,7 +26,6 @@ MODULE engineConstants
                                      LAYER_INTERFACE   = 5, &
                                      LAYER_TRANSITION  = 6
 
-
     integer(2), parameter         :: numOfColors = 256 
     INTEGER(KIND=1), PARAMETER    :: maxNumberOfScreenSizes = 9
     INTEGER(kind=2)               :: wOfScreenBuffer        = 640, &
@@ -41,8 +40,8 @@ MODULE engineConstants
                                      TIA_FILE_TYPE    = 'TIA ', &
                                      CONF_FILE_TYPE   = 'CONF', &
                                      IMG_FILE_TYPE    = 'IMG ', &
-                                     OBJ_FILE_TYPE    = 'OBJ '
-                
+                                     OBJ_FILE_TYPE    = 'OBJ ', &
+                                     MAP_FILE_TYPE    = 'MAP '
 
     integer(1), parameter         :: IND_KEY_LEFT           = 1 , &  
                                      IND_KEY_RIGHT          = 2 , &  
@@ -65,6 +64,9 @@ MODULE engineConstants
                                      IND_JOY_BUTTON4        = 8 , &
                                      IND_JOY_BUTTON5        = 9 , &
                                      IND_JOY_BUTTON6        = 10  
+
+    integer(1), parameter            :: SIZE_INIT           = 64, &
+                                        SIZE_ADD            = 32
 
     integer(1), parameter            :: configVersion       = 0
     character(8), parameter          :: configName          = "conf.xxc"    
@@ -105,21 +107,27 @@ MODULE engineConstants
     integer(1), parameter            :: TYPE_EMPTY          = 0   ,&
                                         TYPE_FLOOR          = 1   ,&
                                         TYPE_PLAYER_MAP     = 2   ,&
-                                        TYPE_TREE           = 3
+                                        TYPE_TREE           = 3   ,&
+                                        TYPE_WEATHER        = 4
 
-    integer(1), parameter            :: WEATHER_DAY_NORM    = 0,  &
-                                        WEATHER_NIGHT_NORM  = 1,  &
-                                        WEATHER_DAY_RAIN    = 2,  &
-                                        WEATHER_NIGHT_RAIN  = 3   
+    integer(1), parameter            :: WEATHER_DAY_NORM    = 1,  &
+                                        WEATHER_NIGHT_NORM  = 2,  &
+                                        WEATHER_DAY_RAIN    = 3,  &
+                                        WEATHER_NIGHT_RAIN  = 4   
 
     integer(1), parameter            :: LANG_ENG    = 0,  &
                                         LANG_HUN    = 1,  &
                                         LANG_DEU    = 2
 
+    integer(1), parameter            :: MAP_WALKING  = 1,  &
+                                        MAP_FIGHTING = 2,  &
+                                        MAP_WATCHING = 3
+
     character(NAME_MAX_LEN), parameter :: tia_default  = "Puking Ears              ", &
                                           opl2_default = "Original Plastic Lobotomy", &      
                                           img_default  = "Sexy Sprite              ", &
-                                          obj_default  = "Old Ogre Object          "   
+                                          obj_default  = "Old Ogre Object          ", &
+                                          map_default  = "Memorable Map            "      
      
     character(NAME_MAX_LEN), dimension(1) , target :: singleSpriteList       = (/ "default" /)
     character(NAME_MAX_LEN), dimension(24), target :: mapCharacterSpriteList = (/&
@@ -127,6 +135,8 @@ MODULE engineConstants
     "walkN" , "walkNW" , "walkW" , "walkSW" , "walkS" , "walkSE" , "walkE" , "walkNE" , &
     "windN" , "windNW" , "windW" , "windSW" , "windS" , "windSE" , "windE" , "windNE"   /)
 
-    character(NAME_MAX_LEN), dimension(3) , target :: treeSpriteList       = (/ "normal", "dry", "wind"/)
+    character(NAME_MAX_LEN), dimension(2) , target :: twoSpriteList       = (/ "normal", "wind"/)
+    character(2), dimension(8), parameter :: directions = (/ &
+    "N ", "NW", "W ", "SW", "S ", "SE", "E ", "NE" /)    
 
 END MODULE engineConstants

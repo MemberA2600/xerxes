@@ -33,6 +33,7 @@
       USE sprite7up
       USE dict  
       USE gameObject  
+      USE gameMap  
 
       IMPLICIT NONE
 !
@@ -41,7 +42,7 @@
       INTEGER                        :: ITYPE
       TYPE(WIN_MESSAGE)              :: MESSAGE
       INTEGER(KIND=2), DIMENSION (2) :: scr
-      LOGICAL                        :: editMode, firstTime = .TRUE.
+      LOGICAL                        :: editMode, mapEditorActive = .FALSE., firstTime = .TRUE.
       CHARACTER(20)                  :: msgString
       INTEGER                        :: intDummy, beepF
         
@@ -196,9 +197,19 @@
                     call dropObjList()
                     call getFolder("obj", "xxo")
 
+              CASE (ID_STARTMAPEDITOR)
+                    if (openBasicSettingsWindow(.TRUE.) == 1) then
+                        editMode        = .FALSE.
+                        mapEditorActive = .TRUE.
+                    end if
+
+              CASE (ID_MAPEDITOR_BASICS)  
+                    intDummy = openBasicSettingsWindow(.FALSE.)
+
               CASE (ID_STARTGAME)
-                    editMode = .FALSE.
-                   
+                    editMode        = .FALSE.
+                    mapEditorActive = .FALSE.
+
               CASE (ID_ENGLISH:ID_DEUTSCH)
                     call setLang(MESSAGE%VALUE1 - ID_ENGLISH) 
                     call saveConfig() 
@@ -210,19 +221,34 @@
 
         END SELECT
         if (editMode .EQV. .FALSE.) then 
-            call WMenuSetState(ID_DEV, ItemEnabled, 0)  
+            call WMenuSetState(ID_DEV      , ItemEnabled, 0)  
 
-            intDummy = intDummy + 1
+            if (mapEditorActive .EQV. .TRUE.) then
+                ! Map Editor
+                call WMenuSetState(ID_MAPEDITOR, ItemEnabled, 1)  
+                call searchForDeadUnits()
+            else
+                ! Playing the Game
+                call WMenuSetState(ID_MAPEDITOR, ItemEnabled, 0)  
 
-            if (intDummy > 256) intdummy = 1 
+            end if
 
-            if ((intDummy / 16) > 7) call addToOffset(-1,-1)
-            if ((intDummy / 16) < 8) call addToOffset( 1, 1)
+            !intDummy = intDummy + 1
 
-            if ( intDummy == 1) call &
-                 addTempFiltertoAllByName(LAYER_PLAYGROUND, "Bird", FILTER_YELLOW, FILTER_TIME_2)
+            !if (intDummy > 256) intdummy = 1 
+
+            !if ((intDummy / 16) > 7) call addToOffset(-1,-1)
+            !if ((intDummy / 16) < 8) call addToOffset( 1, 1)
+
+            !if ( intDummy == 1) call &
+                 !addTempFiltertoAllByName(LAYER_PLAYGROUND, "Bird", FILTER_YELLOW, FILTER_TIME_2)
 
             call putSpritesOnBuffer()
+        else
+            call WMenuSetState(ID_DEV, ItemEnabled      , 1)  
+            call WMenuSetState(ID_MAPEDITOR, ItemEnabled, 0)  
+           
+
         end if
         !CALL soundChannelLoop()
         !call playAdlib()
@@ -254,6 +280,9 @@
             call WMenuSetString(ID_STARTGAME        , trim(getWordInCurrentLang( "startGame"          )))
             call WMenuSetString(ID_auto             , trim(getWordInCurrentLang( "auto"               )))
             call WMenuSetString(ID_objManager       , trim(getWordInCurrentLang( "objManager"         )))
+            call WMenuSetString(ID_StartMapEditor   , trim(getWordInCurrentLang( "startMapEditor"     )))
+            call WMenuSetString(ID_MapEditor        , trim(getWordInCurrentLang( "mapEditor"          )))
+            call WMenuSetString(ID_MAPEDITOR_BASICS , trim(getWordInCurrentLang( "basicSettings"      )))
 
       end subroutine  
 
@@ -367,6 +396,8 @@
                 if (editMode .EQV. .FALSE.) call putSpritesOnBuffer()
             case(IDD_ObjectWindow)
                 call objectWindowThings()
+            case(IDD_MAP_BASICSETTINGS)
+                call mapBasicSettings()
             end select
 
         end subroutine

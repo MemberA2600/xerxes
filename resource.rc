@@ -8,20 +8,20 @@
 //
 // Winteracter resource script
 //
-// Modified : 25/szept./2026 10:34:03
+// Modified : 04/okt./2026 13:14:39
 //
 ///////////////////////////////////////////////////
 //
 // Number of resources
 //
 //*WN* NMENU       1
-//*WN* NITEM       26
-//*WN* NDIALOG     8
-//*WN* NFIELD      138
+//*WN* NITEM       29
+//*WN* NDIALOG     9
+//*WN* NFIELD      157
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
-//*WN* NIDENTIFIER 183
+//*WN* NIDENTIFIER 206
 //*WN* NINCLUDE    0
 //*WN* NOPTROW     0
 ///////////////////////////////////////////////////
@@ -34,179 +34,202 @@
 //
 // Parameter Definitions
 //
-#define IDM_MAIN              30001
-#define ID_SCREENSIZE         40001
-#define IDF_DEBUGTXT           1001
-#define IDD_DEBUGMSG            102
-#define ID_DEBUGOK             1002
-#define ID_AUTO               40002
-#define ID_320x240            40003
-#define ID_640x480            40004
-#define ID_800x600            40005
-#define ID_1024x768           40006
-#define ID_1152x864           40007
-#define ID_1280x960           40008
-#define ID_1400x1050          40009
-#define ID_1600x1200          40010
-#define ID_2048x1536          40011
-#define IDF_SpeedTrk           1102
-#define IDD_SpeedSetter         109
-#define IDF_SpeedVal           1103
-#define ID_SpeedOK             1104
-#define ID_SpeedCancel         1105
-#define ID_SPEED              40012
-#define ID_DEV                40018
-#define ID_TIA_Noiser         40019
-#define ID_TIAINPUT            1006
-#define IDD_TIA                 104
-#define ID_TIAName             1007
-#define ID_TIAErase            1011
-#define ID_TIASave             1012
-#define ID_TIAPlay             1013
-#define ID_TIALoad             1014
-#define ID_ObjName             1004
-#define ID_VGMLoad             1008
-#define IDD_VGM2XXA             105
-#define ID_XXASave             1009
-#define ID_XXAPlay             1010
-#define ID_XXAName             1015
-#define ID_VGM2XXA            40020
-#define ID_XXAStop             1017
-#define ID_SoundInput         40021
-#define ID_SoundSettings      40022
-#define ID_InputSettings      40023
-#define IDF_SoundTrack         1018
-#define IDD_SoundSettings       106
-#define IDF_LABELSfxVol        1019
-#define IDF_SoundValue         1020
-#define IDF_MusicValue         1021
-#define IDF_MusicTrack         1022
-#define IDF_LABELMusicVol      1023
-#define IDF_MusicRadio1        1024
-#define IDF_MusicRadio2        1025
-#define IDF_HEX                1026
-#define IDF_LPTPort            1027
-#define ID_SoundOK             1028
-#define ID_SoundCancel         1029
-#define ID_SoundReset          1030
-#define ID_SoundTest           1031
-#define ID_MusicTest           1032
-#define ID_MusicTest2          1033
-#define ID_MusicStop           1034
-#define ID_MusicStop2          1035
-#define IDF_InputTester        1036
-#define IDD_InputSetter         107
-#define IDF_LabelButton        1037
-#define IDF_Pressed            1038
-#define IDF_LabelDirs          1039
-#define IDF_JoyUp              1040
-#define IDF_JoyDown            1041
-#define IDF_JoyLeft            1042
-#define IDF_JoyRight           1043
-#define IDF_LabelJoyButt       1044
-#define IDF_Joy1               1045
-#define IDF_Joy2               1046
-#define IDF_Joy3               1047
-#define IDF_Joy4               1048
-#define IDF_Joy5               1049
-#define IDF_Joy6               1050
-#define IDF_JoySenseTrk        1051
-#define IDF_JoySenseVal        1052
-#define IDF_Analog             1053
-#define ID_InputCancel         1054
-#define ID_InputOK             1055
-#define ID_InputRestore        1056
-#define IDF_KeyboardGroup      1057
-#define IDF_JoystickGroup      1058
-#define IDF_LabelButtonName    1059
-#define IDF_LabelButtonName2   1060
-#define IDF_LabelButtonName3   1061
-#define IDF_LabelButtonName4   1062
-#define IDF_LabelButtonName5   1063
-#define IDF_LabelButtonName6   1064
-#define IDF_LabelButtonName7   1065
-#define IDF_LabelButtonName8   1066
-#define IDF_LabelButtonName9   1067
-#define IDF_LabelButtonName10  1068
-#define ID_AssignLeftKey       1069
-#define ID_AssignRightKey      1070
-#define ID_AssignUpKey         1071
-#define ID_AssignDownKey       1072
-#define ID_AssignAttackKey     1073
-#define ID_AssignChargeKey     1074
-#define ID_AssignSpell1Key     1075
-#define ID_AssignSpell2Key     1076
-#define ID_AssignSpell3Key     1077
-#define ID_AssignMenuKey       1078
-#define ID_AssignLeftJoy       1079
-#define ID_AssignRightJoy      1080
-#define ID_AssignUpJoy         1081
-#define ID_AssignDownJoy       1082
-#define ID_AssignAttackJoy     1083
-#define ID_AssignChargeJoy     1084
-#define ID_AssignSpell1Joy     1085
-#define ID_AssignSpell2Joy     1086
-#define ID_AssignSpell3Joy     1087
-#define ID_AssignMenuJoy       1088
-#define ID_BMP2XXP            40024
-#define ID_BMPLoad             1089
-#define IDD_BMP2XXP             108
-#define ID_XXPSave             1090
-#define ID_XXPName             1091
-#define IDF_SpriteIndex        1092
-#define IDF_XXPLABEL1          1093
-#define IDF_ANIM               1094
-#define IDF_XXPLABEL2          1095
-#define IDF_TRANS              1096
-#define IDF_TransColor         1097
-#define IDF_ColorPick          1098
-#define IDF_XXPLABEL3          1099
-#define IDF_FilterInd          1100
-#define IDF_TransTrk           1101
-#define ID_DisplayPalette     40025
-#define ID_STARTGAME          40026
-#define ID_LANG               40013
-#define ID_ENGLISH            40014
-#define ID_MAGYAR             40015
-#define ID_DEUTSCH            40016
-#define ID_BMPConvertFolder    1003
-#define ID_ObjManager         40017
-#define ID_ObjErase            1005
-#define IDD_ObjectWindow        103
-#define ID_ObjLoad             1016
-#define ID_ObjSave             1106
-#define IDF_ObjTypeLabel       1107
-#define IDF_ObjectTypeMenu     1108
-#define IDF_SolidBox           1109
-#define IDF_SpriteIndexLabel   1110
-#define IDF_SpriteNameLabel    1111
-#define IDF_AssignedLabel      1112
-#define IDF_DecrIndex          1113
-#define IDF_IncrIndex          1114
-#define IDF_SpriteIndexNum1    1115
-#define IDF_SpriteIndexNum2    1116
-#define IDF_SpriteIndexNum3    1117
-#define IDF_SpriteIndexNum4    1118
-#define IDF_SpriteIndexNum5    1119
-#define IDF_SpriteIndexNum6    1120
-#define IDF_SpriteIndexNum7    1121
-#define IDF_SpriteIndexNum8    1122
-#define IDF_SpriteName1        1123
-#define IDF_SpriteName2        1124
-#define IDF_SpriteName3        1125
-#define IDF_SpriteName4        1126
-#define IDF_SpriteName5        1127
-#define IDF_SpriteName6        1128
-#define IDF_SpriteName7        1129
-#define IDF_SpriteName8        1130
-#define IDF_AssignedSprite1    1131
-#define IDF_AssignedSprite2    1132
-#define IDF_AssignedSprite3    1133
-#define IDF_AssignedSprite4    1134
-#define IDF_AssignedSprite5    1135
-#define IDF_AssignedSprite6    1136
-#define IDF_AssignedSprite7    1137
-#define IDF_AssignedSprite8    1138
+#define IDM_MAIN                        30001
+#define ID_SCREENSIZE                   40001
+#define IDF_DEBUGTXT                     1001
+#define IDD_DEBUGMSG                      102
+#define ID_DEBUGOK                       1002
+#define ID_AUTO                         40002
+#define ID_320x240                      40003
+#define ID_640x480                      40004
+#define ID_800x600                      40005
+#define ID_1024x768                     40006
+#define ID_1152x864                     40007
+#define ID_1280x960                     40008
+#define ID_1400x1050                    40009
+#define ID_1600x1200                    40010
+#define ID_2048x1536                    40011
+#define IDF_SpeedTrk                     1102
+#define IDD_SpeedSetter                   109
+#define IDF_SpeedVal                     1103
+#define ID_SpeedOK                       1104
+#define ID_SpeedCancel                   1105
+#define ID_SPEED                        40012
+#define ID_DEV                          40018
+#define ID_TIA_Noiser                   40019
+#define ID_TIAINPUT                      1006
+#define IDD_TIA                           104
+#define ID_TIAName                       1007
+#define ID_TIAErase                      1011
+#define ID_TIASave                       1012
+#define ID_TIAPlay                       1013
+#define ID_TIALoad                       1014
+#define ID_ObjName                       1004
+#define ID_VGMLoad                       1008
+#define IDD_VGM2XXA                       105
+#define ID_XXASave                       1009
+#define ID_XXAPlay                       1010
+#define ID_XXAName                       1015
+#define ID_VGM2XXA                      40020
+#define ID_XXAStop                       1017
+#define ID_SoundInput                   40021
+#define ID_SoundSettings                40022
+#define ID_InputSettings                40023
+#define IDF_SoundTrack                   1018
+#define IDD_SoundSettings                 106
+#define IDF_LABELSfxVol                  1019
+#define IDF_SoundValue                   1020
+#define IDF_MusicValue                   1021
+#define IDF_MusicTrack                   1022
+#define IDF_LABELMusicVol                1023
+#define IDF_MusicRadio1                  1024
+#define IDF_MusicRadio2                  1025
+#define IDF_HEX                          1026
+#define IDF_LPTPort                      1027
+#define ID_SoundOK                       1028
+#define ID_SoundCancel                   1029
+#define ID_SoundReset                    1030
+#define ID_SoundTest                     1031
+#define ID_MusicTest                     1032
+#define ID_MusicTest2                    1033
+#define ID_MusicStop                     1034
+#define ID_MusicStop2                    1035
+#define IDF_InputTester                  1036
+#define IDD_InputSetter                   107
+#define IDF_LabelButton                  1037
+#define IDF_Pressed                      1038
+#define IDF_LabelDirs                    1039
+#define IDF_JoyUp                        1040
+#define IDF_JoyDown                      1041
+#define IDF_JoyLeft                      1042
+#define IDF_JoyRight                     1043
+#define IDF_LabelJoyButt                 1044
+#define IDF_Joy1                         1045
+#define IDF_Joy2                         1046
+#define IDF_Joy3                         1047
+#define IDF_Joy4                         1048
+#define IDF_Joy5                         1049
+#define IDF_Joy6                         1050
+#define IDF_JoySenseTrk                  1051
+#define IDF_JoySenseVal                  1052
+#define IDF_Analog                       1053
+#define ID_InputCancel                   1054
+#define ID_InputOK                       1055
+#define ID_InputRestore                  1056
+#define IDF_KeyboardGroup                1057
+#define IDF_JoystickGroup                1058
+#define IDF_LabelButtonName              1059
+#define IDF_LabelButtonName2             1060
+#define IDF_LabelButtonName3             1061
+#define IDF_LabelButtonName4             1062
+#define IDF_LabelButtonName5             1063
+#define IDF_LabelButtonName6             1064
+#define IDF_LabelButtonName7             1065
+#define IDF_LabelButtonName8             1066
+#define IDF_LabelButtonName9             1067
+#define IDF_LabelButtonName10            1068
+#define ID_AssignLeftKey                 1069
+#define ID_AssignRightKey                1070
+#define ID_AssignUpKey                   1071
+#define ID_AssignDownKey                 1072
+#define ID_AssignAttackKey               1073
+#define ID_AssignChargeKey               1074
+#define ID_AssignSpell1Key               1075
+#define ID_AssignSpell2Key               1076
+#define ID_AssignSpell3Key               1077
+#define ID_AssignMenuKey                 1078
+#define ID_AssignLeftJoy                 1079
+#define ID_AssignRightJoy                1080
+#define ID_AssignUpJoy                   1081
+#define ID_AssignDownJoy                 1082
+#define ID_AssignAttackJoy               1083
+#define ID_AssignChargeJoy               1084
+#define ID_AssignSpell1Joy               1085
+#define ID_AssignSpell2Joy               1086
+#define ID_AssignSpell3Joy               1087
+#define ID_AssignMenuJoy                 1088
+#define ID_BMP2XXP                      40024
+#define ID_BMPLoad                       1089
+#define IDD_BMP2XXP                       108
+#define ID_XXPSave                       1090
+#define ID_XXPName                       1091
+#define IDF_SpriteIndex                  1092
+#define IDF_XXPLABEL1                    1093
+#define IDF_ANIM                         1094
+#define IDF_XXPLABEL2                    1095
+#define IDF_TRANS                        1096
+#define IDF_TransColor                   1097
+#define IDF_ColorPick                    1098
+#define IDF_XXPLABEL3                    1099
+#define IDF_FilterInd                    1100
+#define IDF_TransTrk                     1101
+#define ID_DisplayPalette               40025
+#define ID_STARTGAME                    40026
+#define ID_LANG                         40013
+#define ID_ENGLISH                      40014
+#define ID_MAGYAR                       40015
+#define ID_DEUTSCH                      40016
+#define ID_BMPConvertFolder              1003
+#define ID_ObjManager                   40017
+#define ID_ObjErase                      1005
+#define IDD_ObjectWindow                  103
+#define ID_ObjLoad                       1016
+#define ID_ObjSave                       1106
+#define IDF_ObjTypeLabel                 1107
+#define IDF_ObjectTypeMenu               1108
+#define IDF_SolidBox                     1109
+#define IDF_SpriteIndexLabel             1110
+#define IDF_SpriteNameLabel              1111
+#define IDF_AssignedLabel                1112
+#define IDF_DecrIndex                    1113
+#define IDF_IncrIndex                    1114
+#define IDF_SpriteIndexNum1              1115
+#define IDF_SpriteIndexNum2              1116
+#define IDF_SpriteIndexNum3              1117
+#define IDF_SpriteIndexNum4              1118
+#define IDF_SpriteIndexNum5              1119
+#define IDF_SpriteIndexNum6              1120
+#define IDF_SpriteIndexNum7              1121
+#define IDF_SpriteIndexNum8              1122
+#define IDF_SpriteName1                  1123
+#define IDF_SpriteName2                  1124
+#define IDF_SpriteName3                  1125
+#define IDF_SpriteName4                  1126
+#define IDF_SpriteName5                  1127
+#define IDF_SpriteName6                  1128
+#define IDF_SpriteName7                  1129
+#define IDF_SpriteName8                  1130
+#define IDF_AssignedSprite1              1131
+#define IDF_AssignedSprite2              1132
+#define IDF_AssignedSprite3              1133
+#define IDF_AssignedSprite4              1134
+#define IDF_AssignedSprite5              1135
+#define IDF_AssignedSprite6              1136
+#define IDF_AssignedSprite7              1137
+#define IDF_AssignedSprite8              1138
+#define IDF_FlyTypeLabel                 1139
+#define IDF_FlyTypeMenu                  1140
+#define ID_MAPEDITOR                    40027
+#define ID_MAPEDITOR_BASICS             40028
+#define ID_STARTMAPEDITOR               40029
+#define ID_MAP_BASICSETTINGS_OK          1141
+#define IDD_MAP_BASICSETTINGS             110
+#define ID_MAP_BASICSETTINGS_Cancel      1142
+#define ID_MAP_BASICSETTINGS_NAME_LABEL  1143
+#define ID_MAP_BASICSETTINGS_NAME        1144
+#define ID_MAP_BASICSETTINGS_TYPE_LABEL  1145
+#define IDF_MAP_TYPE_RADIO1              1146
+#define IDF_MAP_TYPE_RADIO2              1147
+#define ID_MAP_BASICSETTINGS_WSIZE_L     1148
+#define ID_MAP_BASICSETTINGS_HSIZE_L     1149
+#define IDF_MAP_WSIZE                    1150
+#define IDF_MAP_HSIZE                    1151
+#define IDF_MAP_WIND                     1152
+#define IDF_MAP_TYPE_RADIO3              1153
+#define ID_MAP_BASICSETTINGS_FLOOR_L     1154
+#define IDF_MAP_DEFAULT_FLOOR            1155
+#define ID_MAP_BASICSETTINGS_WEATHER_L   1156
+#define IDF_MAP_DEFAULT_WEATHER          1157
 
 ///////////////////////////////////////////////////
 //
@@ -437,47 +460,49 @@ BEGIN
 ,0
 END
 
-IDD_ObjectWindow DIALOG 0,0,185,220
+IDD_ObjectWindow DIALOG 0,0,185,243
 STYLE WS_POPUP | WS_BORDER | WS_DLGFRAME | WS_SYSMENU | DS_3DLOOK | DS_MODALFRAME
 FONT 8, "MS Shell Dlg"
 CAPTION "Object Manager"
 BEGIN
-  CONTROL "Erase",ID_ObjErase,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_DEFPUSHBUTTON | BS_TEXT,29,200,40,14
-  CONTROL "Load",ID_ObjLoad,"BUTTON",WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,73,200,40,14
-  CONTROL "Save",ID_ObjSave,"BUTTON",WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,118,200,40,14
+  CONTROL "Erase",ID_ObjErase,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_DEFPUSHBUTTON | BS_TEXT,29,225,40,14
+  CONTROL "Load",ID_ObjLoad,"BUTTON",WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,73,225,40,14
+  CONTROL "Save",ID_ObjSave,"BUTTON",WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,118,225,40,14
   CONTROL "Old Ogre Object",ID_ObjName,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_LEFT,7,7,169,14
   CONTROL "Object Type:",IDF_ObjTypeLabel,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,7,26,55,12
   CONTROL "",IDF_ObjectTypeMenu,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,68,25,112,15
-  CONTROL "Solid",IDF_SolidBox,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_AUTOCHECKBOX | BS_TEXT,7,41,45,14
-  CONTROL "Index:",IDF_SpriteIndexLabel,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,8,60,34,8
-  CONTROL "Name:",IDF_SpriteNameLabel,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,45,60,40,8
-  CONTROL "Assigned Sprite:",IDF_AssignedLabel,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,88,60,94,8
-  CONTROL "<<",IDF_DecrIndex,"BUTTON",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER | BS_TOP | BS_BOTTOM | BS_VCENTER,90,42,33,14
-  CONTROL ">>",IDF_IncrIndex,"BUTTON",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER | BS_TOP | BS_BOTTOM | BS_VCENTER,128,42,33,14
-  CONTROL "1",IDF_SpriteIndexNum1,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,8,72,32,12
-  CONTROL "2",IDF_SpriteIndexNum2,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,8,87,32,12
-  CONTROL "3",IDF_SpriteIndexNum3,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,8,102,32,12
-  CONTROL "4",IDF_SpriteIndexNum4,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,8,117,32,12
-  CONTROL "5",IDF_SpriteIndexNum5,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,8,132,32,12
-  CONTROL "6",IDF_SpriteIndexNum6,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,8,147,32,12
-  CONTROL "7",IDF_SpriteIndexNum7,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,8,162,32,12
-  CONTROL "8",IDF_SpriteIndexNum8,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,8,177,32,12
-  CONTROL "",IDF_SpriteName1,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE,45,72,40,12
-  CONTROL "",IDF_SpriteName2,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE,45,87,40,12
-  CONTROL "",IDF_SpriteName3,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE,45,102,40,12
-  CONTROL "",IDF_SpriteName4,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE,45,117,40,12
-  CONTROL "",IDF_SpriteName5,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE,45,132,40,12
-  CONTROL "",IDF_SpriteName6,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE,45,147,40,12
-  CONTROL "",IDF_SpriteName7,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE,45,162,40,12
-  CONTROL "",IDF_SpriteName8,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE,45,177,40,12
-  CONTROL "",IDF_AssignedSprite1,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,89,71,91,15
-  CONTROL "",IDF_AssignedSprite2,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,89,86,91,15
-  CONTROL "",IDF_AssignedSprite3,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,89,101,91,15
-  CONTROL "",IDF_AssignedSprite4,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,89,116,91,15
-  CONTROL "",IDF_AssignedSprite5,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,89,131,91,15
-  CONTROL "",IDF_AssignedSprite6,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,89,146,91,15
-  CONTROL "",IDF_AssignedSprite7,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,89,161,91,15
-  CONTROL "",IDF_AssignedSprite8,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,89,176,91,15
+  CONTROL "Solid",IDF_SolidBox,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_AUTOCHECKBOX | BS_TEXT,7,73,45,14
+  CONTROL "Index:",IDF_SpriteIndexLabel,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,8,90,34,8
+  CONTROL "Name:",IDF_SpriteNameLabel,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,45,90,40,8
+  CONTROL "Assigned Sprite:",IDF_AssignedLabel,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,88,90,94,8
+  CONTROL "<<",IDF_DecrIndex,"BUTTON",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER | BS_TOP | BS_BOTTOM | BS_VCENTER,90,73,33,14
+  CONTROL ">>",IDF_IncrIndex,"BUTTON",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER | BS_TOP | BS_BOTTOM | BS_VCENTER,128,73,33,14
+  CONTROL "1",IDF_SpriteIndexNum1,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,8,102,32,12
+  CONTROL "2",IDF_SpriteIndexNum2,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,8,117,32,12
+  CONTROL "3",IDF_SpriteIndexNum3,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,8,132,32,12
+  CONTROL "4",IDF_SpriteIndexNum4,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,8,147,32,12
+  CONTROL "5",IDF_SpriteIndexNum5,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,8,162,32,12
+  CONTROL "6",IDF_SpriteIndexNum6,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,8,177,32,12
+  CONTROL "7",IDF_SpriteIndexNum7,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,8,192,32,12
+  CONTROL "8",IDF_SpriteIndexNum8,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,8,207,32,12
+  CONTROL "",IDF_SpriteName1,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE,45,102,40,12
+  CONTROL "",IDF_SpriteName2,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE,45,117,40,12
+  CONTROL "",IDF_SpriteName3,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE,45,132,40,12
+  CONTROL "",IDF_SpriteName4,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE,45,147,40,12
+  CONTROL "",IDF_SpriteName5,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE,45,162,40,12
+  CONTROL "",IDF_SpriteName6,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE,45,177,40,12
+  CONTROL "",IDF_SpriteName7,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE,45,192,40,12
+  CONTROL "",IDF_SpriteName8,"EDIT",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_CENTER | ES_MULTILINE,45,207,40,12
+  CONTROL "",IDF_AssignedSprite1,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,89,101,91,15
+  CONTROL "",IDF_AssignedSprite2,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,89,116,91,15
+  CONTROL "",IDF_AssignedSprite3,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,89,131,91,15
+  CONTROL "",IDF_AssignedSprite4,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,89,146,91,15
+  CONTROL "",IDF_AssignedSprite5,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,89,161,91,15
+  CONTROL "",IDF_AssignedSprite6,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,89,176,91,15
+  CONTROL "",IDF_AssignedSprite7,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,89,191,91,15
+  CONTROL "",IDF_AssignedSprite8,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,89,206,91,15
+  CONTROL "Fly Type:",IDF_FlyTypeLabel,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,7,44,55,12
+  CONTROL "",IDF_FlyTypeMenu,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,68,43,112,15
 END
 
 IDD_ObjectWindow RCDATA
@@ -487,6 +512,46 @@ BEGIN
 "[Menus] \n"
 "[Lengths] \n"
 "1004 25 \n"
+,0
+END
+
+IDD_MAP_BASICSETTINGS DIALOG 0,0,199,165
+STYLE WS_POPUP | WS_BORDER | WS_DLGFRAME | WS_SYSMENU | DS_3DLOOK | DS_MODALFRAME
+FONT 8, "MS Shell Dlg"
+CAPTION "Basic Settings"
+BEGIN
+  CONTROL "OK",ID_MAP_BASICSETTINGS_OK,"BUTTON",WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,57,143,40,14
+  CONTROL "Cancel",ID_MAP_BASICSETTINGS_Cancel,"BUTTON",WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,102,143,40,14
+  CONTROL "Memorable Map",ID_MAP_BASICSETTINGS_NAME,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_LEFT,11,16,173,14
+  CONTROL "Map Name:",ID_MAP_BASICSETTINGS_NAME_LABEL,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,12,4,50,8
+  CONTROL "Map Type:",ID_MAP_BASICSETTINGS_TYPE_LABEL,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | BS_GROUPBOX | BS_TEXT | BS_LEFT,12,36,170,28
+  CONTROL "Width:",ID_MAP_BASICSETTINGS_WSIZE_L,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,18,68,50,11
+  CONTROL "Height:",ID_MAP_BASICSETTINGS_HSIZE_L,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,73,68,50,11
+  CONTROL "1",IDF_MAP_WSIZE,"INTEGERSPIN",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,18,80,49,14
+  CONTROL "1",IDF_MAP_HSIZE,"INTEGERSPIN",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_RIGHT | ES_MULTILINE,73,80,49,14
+  CONTROL "Wind",IDF_MAP_WIND,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_AUTOCHECKBOX | BS_TEXT,129,80,40,14
+  CONTROL "Default Floor Type:",ID_MAP_BASICSETTINGS_FLOOR_L,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,18,101,70,8
+  CONTROL "",IDF_MAP_DEFAULT_FLOOR,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWN | CBS_HASSTRINGS,91,99,93,15
+  CONTROL "Fighting",IDF_MAP_TYPE_RADIO2,"BUTTON",WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTORADIOBUTTON | BS_TEXT,73,47,46,14
+  CONTROL "Watching",IDF_MAP_TYPE_RADIO3,"BUTTON",WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTORADIOBUTTON | BS_TEXT,129,47,46,14
+  CONTROL "Walking",IDF_MAP_TYPE_RADIO1,"BUTTON",WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTORADIOBUTTON | BS_TEXT,18,47,46,14
+  CONTROL "Default Weather:",ID_MAP_BASICSETTINGS_WEATHER_L,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,18,121,70,8
+  CONTROL "",IDF_MAP_DEFAULT_WEATHER,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWN | CBS_HASSTRINGS,91,119,93,15
+END
+
+IDD_MAP_BASICSETTINGS RCDATA
+BEGIN
+"[Checks] \n"
+"1152 0 \n"
+"1147 0 \n"
+"1153 0 \n"
+"1146 0 \n"
+"[Menus] \n"
+"[Ranges] \n"
+"1150 1 50 \n"
+"1151 1 50 \n"
+"[Lengths] \n"
+"1144 25 \n"
 ,0
 END
 
@@ -528,7 +593,12 @@ BEGIN
     MENUITEM "BMP to XXP",ID_BMP2XXP
     MENUITEM "Display Palette",ID_DisplayPalette
     MENUITEM "Object Manager",ID_ObjManager
+    MENUITEM "Start Map Editor",ID_STARTMAPEDITOR
     MENUITEM "Start Game",ID_STARTGAME
+  END
+  POPUP "Map Editor",GRAYED
+  BEGIN
+    MENUITEM "Basic Settings",ID_MAPEDITOR_BASICS
   END
 END
 
@@ -538,6 +608,7 @@ ID_SoundInput,1,0,
 ID_SCREENSIZE,1,1,0,
 ID_LANG,1,5,0,
 ID_DEV,2,0,
+ID_MAPEDITOR,3,0,
 0
 END
 
@@ -563,4 +634,4 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
 //*WI* LASTTYPE    2
-//*WI* LASTRES     8
+//*WI* LASTRES     9

@@ -20,14 +20,15 @@ MODULE sprite7up
                                      createSpriteObjBackGround, setOffset, addToOffset,                   &
                                      createSpriteObjSky, addTempFilter, getAllIndByName, getAllIndByType, &
                                      addTempFiltertoAllByName, addTempFiltertoAllByType,                  &
-                                     setWeather, killAllByName, killAllByType       
+                                     setWeather, killAllByName, killAllByType, spritePoz, &
+                                     changeSprite, changeSpriteEditor, addPointerToLastSpritePoz
 
     type SpriteObj 
          integer(2)               :: w, h, spriteI
          type(imageFile), pointer :: imageF       
          integer(1)               :: filter, bufferNum, tempFilter, tempFilterCountDown  
          integer(4)               :: ind
-         logical                  :: active
+         logical                  :: active, unique
          type(counterTimer)       :: timer
 
          contains 
@@ -39,16 +40,19 @@ MODULE sprite7up
     end type
 
     type spritePoz
-         character(NAME_MAX_LEN)  :: name
-         integer(4)               :: typFlag
-         integer(4)               :: x, y, yh, ind 
-         integer(2)               :: fly     
-         integer(1)               :: bufferNum
+         character(NAME_MAX_LEN)   :: name
+         integer(4)                :: typFlag
+         integer(4)                :: x, y, yh, ind 
+         integer(2)                :: fly     
+         integer(1)                :: bufferNum
+         type(objectData), pointer :: objectD
+         logical                   :: dontCountMe 
 
          contains        
 
-         procedure                :: killMe => killMe
-
+         procedure                :: killMe       => killMe
+         procedure                :: changeSprite => changeSprite 
+         procedure                :: dropMySprite => dropMySprite
     end type 
 
     type BlockMap
@@ -57,7 +61,7 @@ MODULE sprite7up
         integer(4)                                 :: nextIndexS, nextIndexP
     end type
 
-    type(BlockMap), dimension(layerNum)         :: layerBlocks
+    type(BlockMap), dimension(layerNum), target :: layerBlocks
 
     integer(2), dimension(layerNum, 2)          :: layerDimensions
 
@@ -67,9 +71,6 @@ MODULE sprite7up
                                                    BLOCKMAP_INF   = 1, & 
                                                    BLOCKMAP_FIX   = 0, &
                                                    BLOCKMAP_EXP   = 1                                                
-
-    integer(1), parameter                       :: SIZE_INIT      = 64, &
-                                                   SIZE_ADD       = 32
 
     integer(1), parameter, dimension(6)         :: tempFilterValueChangers = &
                 (/ 0, 1, 2, 2, 1 , 0/)                            
@@ -82,10 +83,65 @@ MODULE sprite7up
     !   SpritePoz Things
     !
 
+    subroutine addPointerToLastSpritePoz(p, b)
+        type(spritePoz), pointer, intent(inout) :: p
+        integer(1)                              :: b        
+
+        p => layerBlocks(b)%pozList(layerBlocks(b)%nextIndexP)
+
+    end subroutine
+
+    subroutine changeSpriteEditor(this, wind)
+        class(spritePoz), intent(inout) :: this        
+        logical                         :: wind
+
+        call this%changeSprite(this%objectD%getEditorSprite(wind, .FALSE., &
+             layerBlocks(this%bufferNum)%spriteList(this%ind)%imageF%name  ))
+
+    end subroutine
+
+    subroutine changeSprite(this, imageName)
+        class(spritePoz), intent(inout) :: this        
+        character(*)                    :: imageName
+        logical                         :: unique    
+        integer(1)                      :: filter
+
+        unique = layerBlocks(this%bufferNum)%spriteList(this%ind)%unique
+        filter = layerBlocks(this%bufferNum)%spriteList(this%ind)%filter
+
+        call this%dropMySprite()
+
+        call AddSpriteThing(this%name, imageName, this%bufferNum, this%x, this%y, & 
+                            filter, this%fly, unique, this%objectD%name)
+
+    end subroutine
+
+    subroutine dropMySprite(this)
+        class(spritePoz), intent(inout) :: this        
+        integer(4)                      :: pozInd = 0
+
+        if  (layerBlocks(this%bufferNum)%spriteList(this%ind)%unique .EQV. .TRUE.) then 
+            layerBlocks(this%bufferNum)%spriteList(this%ind)%active = .FALSE.
+        else
+            pozInd = 0
+            pozInd = getPozInd(pozInd, this%ind, this%bufferNum)
+            pozInd = getPozInd(pozInd, this%ind, this%bufferNum)
+
+            !
+            !  If the sprite had only one occurences, delete it.
+            !
+
+            if (pozInd == -1) layerBlocks(this%bufferNum)%spriteList(this%ind)%active = .FALSE.
+
+        end if
+
+    end subroutine
+
     subroutine killMe(this)
-        class(spritePoz), intent(inout) :: this
-        
-        layerBlocks(this%bufferNum)%spriteList(this%ind)%active = .FALSE.
+        class(spritePoz), intent(inout) :: this        
+
+        call this%dropMySprite()
+        this%dontCountMe = .TRUE.
 
     end subroutine       
 
@@ -454,11 +510,11 @@ MODULE sprite7up
 
         case(WEATHER_DAY_RAIN)    
              defaultFilter = NO_FILTER
-             call createSpriteObjWeather("Rain", "Rain", defaultFilter)
+             call createSpriteObjWeather("Rain", "Rain", defaultFilter, "")
 
         case(WEATHER_NIGHT_RAIN)    
              defaultFilter = FILTER_BLUE                
-             call createSpriteObjWeather("Rain", "Rain", defaultFilter)
+             call createSpriteObjWeather("Rain", "Rain", defaultFilter, "")
 
         end select
 
@@ -476,19 +532,18 @@ MODULE sprite7up
 
     end subroutine  
 
-    subroutine createSpriteObjWeather(spriteName, imageName, filter)
-         character(*)  :: imageName, spriteName   
+    subroutine createSpriteObjWeather(spriteName, imageName, filter, gameObjName)
+         character(*)  :: imageName, spriteName, gameObjName   
          integer(1)    :: filter
 
-         call createSpriteObj(spriteName, imageName, LAYER_WEATHER, 1, 1, TYPE_EMPTY, filter, 0, .TRUE.)
+         call createSpriteObj(spriteName, imageName, LAYER_WEATHER, 1, 1, filter, 0, .TRUE., gameObjName)
 
     end subroutine 
 
-    subroutine createSpriteObjSky(spriteName, imageName, x, y, typFlag, filter, fly, unique)
-         character(*)  :: imageName, spriteName   
+    subroutine createSpriteObjSky(spriteName, imageName, x, y, filter, fly, unique, gameObjName)
+         character(*)  :: imageName, spriteName, gameObjName   
          integer(4)    :: x, y
          integer(1)    :: filter
-         integer(4)    :: typFlag
          integer(2)    :: fly
          logical       :: unique
         
@@ -497,44 +552,37 @@ MODULE sprite7up
       !  the shadow becomes the main unit and the creature is just drawn on the SKY layer.
       !
 
-         call createSpriteObj(spriteName, imageName, LAYER_PLAYGROUND, x, y, typFlag, filter, fly, unique)
+         call createSpriteObj(spriteName, imageName, LAYER_PLAYGROUND, x, y, filter, fly, unique, gameObjName)
 
     end subroutine 
 
-    subroutine createSpriteObjPlayGround(spriteName, imageName, x, y, typFlag, filter, unique)
-         character(*)  :: imageName, spriteName   
+    subroutine createSpriteObjPlayGround(spriteName, imageName, x, y, filter, unique, gameObjName)
+         character(*)  :: imageName, spriteName, gameObjName   
          integer(4)    :: x, y
          integer(1)    :: filter
-         integer(4)    :: typFlag
          logical       :: unique
 
-         call createSpriteObj(spriteName, imageName, LAYER_PLAYGROUND, x, y, typFlag, filter, 0, unique)
+         call createSpriteObj(spriteName, imageName, LAYER_PLAYGROUND, x, y, filter, 0, unique,gameObjName   )
 
     end subroutine 
 
-    subroutine createSpriteObjBackGround(spriteName, imageName, filter)
-         character(*)  :: imageName, spriteName   
+    subroutine createSpriteObjBackGround(spriteName, imageName, filter, gameObjName)
+         character(*)  :: imageName, spriteName, gameObjName   
          integer(1)    :: filter
 
-         call createSpriteObj(spriteName, imageName, LAYER_BACKGROUND, 1, 1, TYPE_FLOOR, filter, 0, .TRUE.)
+         call createSpriteObj(spriteName, imageName, LAYER_BACKGROUND, 1, 1, filter, 0, .TRUE., gameObjName)
 
     end subroutine 
    
 
-    subroutine createSpriteObj(spriteName, imageName, bufferNum, x, y, typFlag, filter, fly, unique)
-         character(*)  :: imageName, spriteName   
+    subroutine createSpriteObj(spriteName, imageName, bufferNum, x, y, filter, fly, unique, gameObjName)
+         character(*)  :: imageName, spriteName, gameObjName   
          integer(4)    :: x, y, f
          integer(1)    :: filter, bufferNum  
          integer(4)    :: typFlag
          integer(1)    :: rc
          integer(2)    :: fly
          logical       :: unique
-         logical       :: alreadyThere
-
-         type(SpriteObj), dimension(:), allocatable :: spriteListTemp
-         type(spritePoz), dimension(:), allocatable :: pozListTemp
-
-         integer(4)    :: ind
 
          if (bufferNum /= LAYER_FOREGROUND .AND. bufferNum /= LAYER_INTERFACE &
        .AND. bufferNum /= LAYER_TRANSITION) then
@@ -543,13 +591,50 @@ MODULE sprite7up
              end if      
          end if
 
+         call AddSpriteThing(spriteName, imageName, bufferNum, x, y, filter, fly, unique, gameObjName)   
+
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%ind = &
+         layerBlocks(bufferNum)%nextIndexS
+
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%y   = y
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%yh  = y + &
+         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%h
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%x   = x
+
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%fly      = fly
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%name     = spriteName
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%bufferNum = bufferNum  
+
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%typFlag  = &
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%objectD%objType
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%dontCountMe = .FALSE.
+
+
+    end subroutine
+
+    subroutine AddSpriteThing(spriteName, imageName, bufferNum, x, y, filter, fly, unique, gameObjName)
+         character(*)  :: imageName, spriteName, gameObjName   
+         integer(4)    :: x, y, f
+         integer(1)    :: filter, bufferNum  
+         integer(4)    :: typFlag
+         integer(1)    :: rc
+         integer(2)    :: fly
+         logical       :: unique
+         logical       :: alreadyThere
+         integer(4)    :: ind
+
+         type(SpriteObj), dimension(:), allocatable :: spriteListTemp
+         type(spritePoz), dimension(:), allocatable :: pozListTemp
+
          alreadyThere = .FALSE.
 
          if (layerDimensions(bufferNum,1) /= BLOCKMAP_1) then
              if (unique .EQV. .FALSE.) then  
                  do ind = 1, size(layerBlocks(bufferNum)%spriteList), 1
                     if ((layerBlocks(bufferNum)%spriteList(ind)%active             .EQV. .TRUE.) .AND. &
-                        (associated(layerBlocks(bufferNum)%spriteList(ind)%imageF) .EQV. .TRUE.)) then
+                        (associated(layerBlocks(bufferNum)%spriteList(ind)%imageF) .EQV. .TRUE.) .AND. &
+                        (layerBlocks(bufferNum)%spriteList(ind)%unique .EQV. .FALSE. )) then
+
                          if (layerBlocks(bufferNum)%spriteList(ind)%imageF%name == imageName) then
                              layerBlocks(bufferNum)%nextIndexS = layerBlocks(bufferNum)%spriteList(ind)%ind
                              alreadyThere = .TRUE.
@@ -627,30 +712,25 @@ MODULE sprite7up
              layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%ind = &
              layerBlocks(bufferNum)%nextIndexS
     
+             layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%unique = unique
+
              if (layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%imageF%img%numOfFrames > 1) then
                  call layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%timer%timerStart( &
                       PERFECT_WAIT * getSpeed())
              end if
          end if
 
-         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%ind = &
-         layerBlocks(bufferNum)%nextIndexS
-
-         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%y   = y
-         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%yh  = y + &
-         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%h
-         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%x   = x
-
-         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%fly      = fly
-         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%name     = spriteName
-         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%typFlag  = typFlag
-         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%bufferNum = bufferNum  
-
-         !write(test, "(A, ' ', I0, ' ', I0, ' ', I0, ' ', I0)") &
-         !      trim(spriteName), x, y, bufferNum ,layerBlocks(bufferNum)%nextIndexS   
-         !call displayDebug(test)
+         if (gameObjName == "") then
+            call getGameObjByName(&
+                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%objectD, spriteName)   
+         else
+            call getGameObjByName(&
+                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%objectD, gameObjName)   
+         end if
 
     end subroutine
+
+
 
     subroutine initBlockMaps(n, w, h)
         integer(1)              :: n, ind, rc
@@ -765,8 +845,9 @@ MODULE sprite7up
          do from = 1, layerBlocks(n)%nextIndexP, 1
             sInd = layerBlocks(n)%pozList(from)%ind  
 
-            if ((layerBlocks(n)%spriteList(sind)%active  .EQV. .TRUE.)  .AND. &
-     (associated(layerBlocks(n)%spriteList(sind)%imageF) .EQV. .TRUE.)) then
+            if ((layerBlocks(n)%spriteList(sind)%active   .EQV. .TRUE.)  .AND. &
+     (associated(layerBlocks(n)%spriteList(sind)%imageF)  .EQV. .TRUE.)  .AND. &
+                (layerBlocks(n)%pozList(from)%dontCountMe .EQV. .FALSE.)) then
                  to       = to + 1   
                  temp(to) = layerBlocks(n)%pozList(from)   
                  last     = to
