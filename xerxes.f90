@@ -206,6 +206,12 @@
               CASE (ID_MAPEDITOR_BASICS)  
                     intDummy = openBasicSettingsWindow(.FALSE.)
 
+              CASE (ID_ExitMapEditor)
+                    call closeMapEditor()
+
+                    editMode        = .TRUE.
+                    mapEditorActive = .FALSE.
+
               CASE (ID_STARTGAME)
                     editMode        = .FALSE.
                     mapEditorActive = .FALSE.
@@ -227,31 +233,20 @@
                 ! Map Editor
                 call WMenuSetState(ID_MAPEDITOR, ItemEnabled, 1)  
                 call searchForDeadUnits()
+                call doThingsOnMapEditor()    
             else
                 ! Playing the Game
                 call WMenuSetState(ID_MAPEDITOR, ItemEnabled, 0)  
+                call runGameLogic()    
 
             end if
-
-            !intDummy = intDummy + 1
-
-            !if (intDummy > 256) intdummy = 1 
-
-            !if ((intDummy / 16) > 7) call addToOffset(-1,-1)
-            !if ((intDummy / 16) < 8) call addToOffset( 1, 1)
-
-            !if ( intDummy == 1) call &
-                 !addTempFiltertoAllByName(LAYER_PLAYGROUND, "Bird", FILTER_YELLOW, FILTER_TIME_2)
 
             call putSpritesOnBuffer()
         else
             call WMenuSetState(ID_DEV, ItemEnabled      , 1)  
             call WMenuSetState(ID_MAPEDITOR, ItemEnabled, 0)  
            
-
         end if
-        !CALL soundChannelLoop()
-        !call playAdlib()
 
       END DO
       CALL WindowClose()                 ! Remove program window

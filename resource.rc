@@ -8,20 +8,20 @@
 //
 // Winteracter resource script
 //
-// Modified : 04/okt./2026 19:02:59
+// Modified : 05/okt./2026 11:16:38
 //
 ///////////////////////////////////////////////////
 //
 // Number of resources
 //
 //*WN* NMENU       1
-//*WN* NITEM       29
+//*WN* NITEM       30
 //*WN* NDIALOG     9
 //*WN* NFIELD      157
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
-//*WN* NIDENTIFIER 206
+//*WN* NIDENTIFIER 207
 //*WN* NINCLUDE    0
 //*WN* NOPTROW     0
 ///////////////////////////////////////////////////
@@ -230,6 +230,7 @@
 #define IDF_MAP_DEFAULT_FLOOR            1155
 #define ID_MAP_BASICSETTINGS_WEATHER_L   1156
 #define IDF_MAP_DEFAULT_WEATHER          1157
+#define ID_ExitMapEditor                40030
 
 ///////////////////////////////////////////////////
 //
@@ -599,6 +600,7 @@ BEGIN
   POPUP "Map Editor",GRAYED
   BEGIN
     MENUITEM "Basic Settings",ID_MAPEDITOR_BASICS
+    MENUITEM "Exit Map Editor",ID_ExitMapEditor
   END
 END
 
@@ -633,5 +635,5 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FORTSAVE    1
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
-//*WI* LASTTYPE    100
-//*WI* LASTRES     0
+//*WI* LASTTYPE    1
+//*WI* LASTRES     1

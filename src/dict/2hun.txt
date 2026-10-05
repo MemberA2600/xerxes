@@ -136,3 +136,4 @@ dayRain => Nappal Esõvel
 nightNorm => Éjszaka Alap
 nightRain => Éjszaka Esõvel
 defaultWeather => Alapértelmezett Idõjárás:
+exitMapEditor => Pályaszerkesztõ Bezárása

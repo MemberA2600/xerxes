@@ -63,7 +63,18 @@ MODULE engineConstants
                                      IND_JOY_BUTTON3        = 7 , &  
                                      IND_JOY_BUTTON4        = 8 , &
                                      IND_JOY_BUTTON5        = 9 , &
-                                     IND_JOY_BUTTON6        = 10  
+                                     IND_JOY_BUTTON6        = 10, &
+
+                                     PRESS_LEFT             = 1 , &  
+                                     PRESS_RIGHT            = 2 , &  
+                                     PRESS_UP               = 3 , &  
+                                     PRESS_DOWN             = 4 , &  
+                                     PRESS_ATTACK           = 5 , &  
+                                     PRESS_CHARGE           = 6 , &  
+                                     PRESS_SPELL1           = 7 , &  
+                                     PRESS_SPELL2           = 8 , &
+                                     PRESS_SPELL3           = 9 , &
+                                     PRESS_MENU             = 10
 
     integer(1), parameter            :: SIZE_INIT           = 64, &
                                         SIZE_ADD            = 32

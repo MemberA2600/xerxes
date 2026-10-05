@@ -136,3 +136,4 @@ dayRain => Day with Raining
 nightNorm => Night Normal
 nightRain => Night with Raining
 defaultWeather => Default Weather:
+exitMapEditor => Exit Map Editor

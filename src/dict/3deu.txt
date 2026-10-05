@@ -136,3 +136,4 @@ dayRain => Tag mit Regen
 nightNorm => Nacht Normal
 nightRain => Nacht mit Regen
 defaultWeather => Standardwetter:
+exitMapEditor => Karteneditor Beenden

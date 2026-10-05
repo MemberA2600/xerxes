@@ -21,7 +21,8 @@ MODULE sprite7up
                                      createSpriteObjSky, addTempFilter, getAllIndByName, getAllIndByType, &
                                      addTempFiltertoAllByName, addTempFiltertoAllByType,                  &
                                      setWeather, killAllByName, killAllByType, spritePoz, &
-                                     changeSprite, changeSpriteEditor, addPointerToLastSpritePoz
+                                     changeSprite, changeSpriteEditor, addPointerToLastSpritePoz, &
+                                     getOffsetX, getOffsetY, setSize
 
     type SpriteObj 
          integer(2)               :: w, h, spriteI
@@ -42,7 +43,7 @@ MODULE sprite7up
     type spritePoz
          character(NAME_MAX_LEN)   :: name
          integer(4)                :: typFlag
-         integer(4)                :: x, y, yh, ind 
+         integer(4)                :: x, y, yh, xw, ind 
          integer(2)                :: fly     
          integer(1)                :: bufferNum
          type(objectData), pointer :: objectD
@@ -475,6 +476,18 @@ MODULE sprite7up
 
     end subroutine
 
+    function getOffsetX() result(r)
+        integer(4)          :: r
+
+        r = xOffset 
+    end function 
+
+    function getOffsetY() result(r)
+        integer(4)          :: r
+
+        r = yOffset     
+    end function 
+
     subroutine setOffset(x, y)
         integer(4)          :: x, y
         
@@ -490,6 +503,16 @@ MODULE sprite7up
         
         xOffset = xOffset + x
         yOffset = yOffset + y
+
+        call offsetCorr()
+
+    end subroutine
+
+    subroutine setSize(w, h)
+        integer(4)          :: w, h
+
+        wSize = w
+        hSize = h
 
         call offsetCorr()
 
@@ -609,6 +632,8 @@ MODULE sprite7up
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%yh  = y + &
          layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%h
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%x   = x
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%xw  = x + &
+         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%w
 
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%fly      = fly
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%name     = spriteName
@@ -739,7 +764,7 @@ MODULE sprite7up
 
     end subroutine
 
-
+    
 
     subroutine initBlockMaps(n, w, h)
         integer(1)              :: n, ind, rc

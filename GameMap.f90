@@ -11,17 +11,22 @@ MODULE GameMap
     USE ImageFactory
     USE sprite7up    
     USE gameobject    
+    USE inputreader
+    USE screen
 
     implicit none
 
     private
-    public   :: initAllUnitLists, searchForDeadUnits, openBasicSettingsWindow, mapBasicSettings
+    public   :: initAllUnitLists, searchForDeadUnits, openBasicSettingsWindow, mapBasicSettings, &
+                runGameLogic, doThingsOnMapEditor, closeMapEditor
 
     logical  :: canKill = .FALSE.
     character(NAME_MAX_LEN), dimension(:), allocatable :: baseFloorList 
     character(NAME_MAX_LEN), dimension(4), parameter   :: weatherNamesKeys = (/ & 
                                                        "dayNorm", "nightNorm", "dayRain","nightRain" /) 
     character(NAME_MAX_LEN), dimension(4)              :: weatherNames
+
+    integer(1), parameter                              :: stepOnMap = 10
 
     type Unit
          type(spritePoz), pointer      :: sp 
@@ -39,10 +44,11 @@ MODULE GameMap
         
          contains   
 
-         procedure         initList    => initList
-         procedure         dropList    => dropList 
-         procedure         addUnit     => addUnit 
-         procedure         removeDeads => removeDeads
+         procedure         initList        => initList
+         procedure         dropList        => dropList 
+         procedure         addUnit         => addUnit 
+         procedure         removeDeads     => removeDeads
+         procedure         removeOutsiders => removeOutsiders
 
     end type
 
@@ -77,6 +83,9 @@ MODULE GameMap
         class(Unit), intent(inout) :: this
 
         if (associated(this%sp)) call this%sp%killMe()
+        nullify(this%sp)
+
+
         !call currentMap%killUnit(this%ind)
     
     end subroutine
@@ -116,6 +125,18 @@ MODULE GameMap
 !
 !   UnitList Stuff
  
+    subroutine removeOutsiders(this, w, h)
+        class(UnitList), intent(inout)        :: this
+        integer(4)                            :: w, h
+        integer(8)                            :: ind
+        
+        do ind = 1, size(this%units), 1
+           if (associated(this%units(ind)%sp)) then 
+               if (this%units(ind)%sp%xw > w .OR. this%units(ind)%sp%yh > h) call this%units(ind)%killMe() 
+           end if 
+        end do
+
+    end subroutine
 
     subroutine addUnit(this, name, x, y)
         class(UnitList), intent(inout)        :: this
@@ -137,7 +158,7 @@ MODULE GameMap
             call move_alloc(tempUnits, this%units)
 
             do ind = this%siz + 1, size(this%units), 1
-               if (associated(this%units(ind)%sp)) call this%units(ind)%killMe()
+               if (associated(this%units(ind)%sp)) nullify(this%units(ind)%sp)
             end do
         end if
 
@@ -156,6 +177,10 @@ MODULE GameMap
             
         allocate(this%units(SIZE_INIT), stat = rc)
         if (rc /= 0) call displayDebug("Failed to allocate unit list!") 
+
+        do ind = 1, size(this%units), 1
+           if (associated(this%units(ind)%sp)) nullify(this%units(ind)%sp)
+        end do
 
     end subroutine 
 
@@ -219,6 +244,12 @@ MODULE GameMap
 
     end subroutine    
 
+    subroutine dropAllUnitLists()
+        call currentMap%floors%dropList()
+        call currentMap%realUnits%dropList()
+
+    end subroutine    
+
     subroutine addUnitToList(name, x, y, typ)
         integer(4)                            :: x, y
         character(*)                          :: name
@@ -247,6 +278,8 @@ MODULE GameMap
        integer(1)              :: num 
 
        integer                 :: w, h, m 
+
+       call initAllUnitLists() 
 
        success           = 0
        canKill           = .FALSE.
@@ -354,6 +387,7 @@ MODULE GameMap
        end do 
 
        if (success == 1) then  
+
            call WDialogGetRadioButton(IDF_MAP_TYPE_RADIO1, m)
            CALL Wdialoggetinteger(IDF_MAP_WSIZE, w)
            CALL Wdialoggetinteger(IDF_MAP_HSIZE, h)        
@@ -397,8 +431,15 @@ MODULE GameMap
                end select
 
                call setWeather(selectedWeather, currentMap%wind)
-           end if
-    
+           end if  
+
+           if (currentMap%width /= widthOld .OR. currentMap%height /= heightOld .OR. (load)) then
+               call currentMap%floors%removeOutsiders(   currentMap%width, currentMap%height)
+               call currentMap%realUnits%removeOutsiders(currentMap%width, currentMap%height)
+
+               call setSize(currentMap%width, currentMap%height) 
+           end if 
+
        else 
            if (load) then 
   
@@ -438,6 +479,30 @@ MODULE GameMap
             canKill = .FALSE.
         end if
 
+    end subroutine
+
+    subroutine runGameLogic()
+        if (WinfoDialog(CurrentDialog) == 0) then
+
+
+
+        end if
+    end subroutine
+
+    subroutine doThingsOnMapEditor()
+        if (WinfoDialog(CurrentDialog) == 0) then
+            if (getInGameControl(PRESS_LEFT )) call addToOffSet(-1 * stepOnMap ,              0 )
+            if (getInGameControl(PRESS_RIGHT)) call addToOffSet(     stepOnMap ,              0 )
+            if (getInGameControl(PRESS_UP   )) call addToOffSet( 0             , -1 * stepOnMap )
+            if (getInGameControl(PRESS_DOWN )) call addToOffSet( 0             ,      stepOnMap )
+
+        end if
+
+    end subroutine
+
+    subroutine closeMapEditor()
+        call dropAllUnitLists()
+        call eraseBuff()
     end subroutine
 
 END MODULE GameMap

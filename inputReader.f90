@@ -22,7 +22,7 @@ MODULE inputReader
     private
     public              :: inputWindow, checkOnInputSettings, readInput, openJoyDLL, closeJoyDLL, &
                            restoreKeyButtons, restoreJoyButtons, getControllerSettings, &
-                           setControllerSettings, pickColorFromScreen
+                           setControllerSettings, pickColorFromScreen, getInGameControl
 
     logical             :: canKill, justACancel
     integer(2)          :: lastPressedKey
@@ -740,9 +740,6 @@ MODULE inputReader
         integer             :: vk
         integer(c_short)    :: state
         logical             :: found
-        integer(4)          :: rc, diff1024
-        type(XINPUT_STATE)  :: jstate
-        integer(1)          :: ind
 
         found = .false.
     
@@ -759,7 +756,18 @@ MODULE inputReader
         else
             lastPressedKey = 0
         end if
-    
+
+        call readJoystick()
+
+    end subroutine
+
+    subroutine readJoystick()
+        integer(c_short)    :: state
+        logical             :: found
+        integer(4)          :: rc, diff1024
+        type(XINPUT_STATE)  :: jstate
+        integer(1)          :: ind
+
         rc = XInput(0, jstate)
         
         if (rc == 0) then
@@ -838,5 +846,42 @@ MODULE inputReader
         end if
 
     end subroutine
+
+    function getInGameControl(b) result(r)
+        logical             :: r
+        integer(1)          :: b, joyB 
+        integer(4)          :: vk 
+        integer(c_short)    :: state
+
+        r = .FALSE.
+
+        if (buttons(b) < 255 .AND. buttons(b) > 0) then
+            vk = buttons(b)
+            state = GetAsyncKeyState(vk)
+            if (state < 0_c_short) then
+                r= .true.
+            end if
+        end if
+
+        if (r .EQV. .FALSE.) then
+            call readJoystick()
+            joyB = buttons(b + 10)
+
+            select case(joyb)
+            case(IND_JOY_LEFT)
+                r = joyLeft
+            case(IND_JOY_RIGHT)
+                r = joyRight
+            case(IND_JOY_UP)
+                r = joyUp
+            case(IND_JOY_DOWN)
+                r = joyDown
+            case default
+                r = joyButton(joyB-4)
+            end select            
+
+        end if
+
+    end function
 
 END MODULE inputReader
