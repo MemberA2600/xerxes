@@ -524,7 +524,7 @@ MODULE GameMap
     end subroutine
 
     subroutine doThingsOnMapEditor()
-        if (WinfoDialog(CurrentDialog) == 0) then
+        if (WinfoDialog(CurrentDialog) == 0 .OR. placeActive) then
             if (getInGameControl(PRESS_LEFT )) call addToOffSet(-1 * stepOnMap ,              0 )
             if (getInGameControl(PRESS_RIGHT)) call addToOffSet(     stepOnMap ,              0 )
             if (getInGameControl(PRESS_UP   )) call addToOffSet( 0             , -1 * stepOnMap )
@@ -607,7 +607,7 @@ MODULE GameMap
 
         DO
             call WinSleep(10)
-
+            call doThingsOnMapEditor()
             if (isAKeyPressed(BUTTON_ESC) .OR. isAKeyPressed(BUTTON_MOUSE_R)) exit
 
             call putSpritesOnBuffer() 
@@ -661,11 +661,11 @@ MODULE GameMap
                        color  = 253 
                        filter = placeFilter
 
-                       X = int(X / 32) * 32.0 
-                       Y = int(Y / 32) * 32.0 
+                       X = int(X / 32) * 32.0 + modulo(getOffsetX(), 32) 
+                       Y = int(Y / 32) * 32.0 + modulo(getOffsetY(), 32)  
 
                        call drawSpriteWithRectagle(int(X),int(Y), &
-                                                   color, 4, placeImg, NO_FILTER) 
+                                                   color, 1, placeImg, NO_FILTER) 
                     
                    end select
       
@@ -720,7 +720,7 @@ MODULE GameMap
                spriteName =  obj%getEditorSprite(currentMap%wind, .TRUE., "") 
                call getImageFileByName(img, spriteName) 
 
-               call drawSpriteWithRectagle(9, 9, 253, 4, img, NO_FILTER)
+               call drawSpriteWithRectagle(9, 9, 253, 1, img, NO_FILTER)
                placeImg     => img 
                placeObjName =  selectedFloorName 
                placeObj     => obj 
