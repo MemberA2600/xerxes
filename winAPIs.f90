@@ -71,6 +71,7 @@ MODULE winAPIs
      subRoutine timerRestart(this)
         class(CounterTimer), intent(inout) :: this    
 
+        this%trials  = 0
         this%started = getTime()
 
      end subRoutine   
@@ -83,11 +84,6 @@ MODULE winAPIs
 
         if (this%diffCheck > 0) then         
             now = getTime()
-
-        !write(text, "('Start: ', I0, ' |Now: ', I0, ' |Diff: ', I0, ' |Wait: ', I0, ' | OK:', L)") &
-        !              this%started, now, this%diffCheck, this%diffCheck - (now - this%started), &
-        !              (now - this%started) > this%diffCheck 
-        !call displayDebug(text) 
 
             ended = (now - this%started) > this%diffCheck
         else

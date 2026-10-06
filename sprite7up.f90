@@ -20,9 +20,8 @@ MODULE sprite7up
                                      createSpriteObjBackGround, setOffset, addToOffset,                   &
                                      createSpriteObjSky, addTempFilter, getAllIndByName, getAllIndByType, &
                                      addTempFiltertoAllByName, addTempFiltertoAllByType,                  &
-                                     setWeather, killAllByName, killAllByType, spritePoz, &
-                                     changeSprite, changeSpriteEditor, addPointerToLastSpritePoz, &
-                                     getOffsetX, getOffsetY, setSize
+                                     setWeather, spritePoz, getOffsetX, getOffsetY, setSize, &
+                                     changeSprite, changeSpriteEditor, addPointerToLastSpritePoz                                     
 
     type SpriteObj 
          integer(2)               :: w, h, spriteI
@@ -303,39 +302,39 @@ MODULE sprite7up
     !   BlockMap Stuff
     !
 
-    subroutine killAllByName(b, n)
-        character(*)                         :: n
-        integer(1)                           :: b
-        integer                              :: ind, rc        
-        integer, dimension(:,:), allocatable :: l
-
-        call getAllIndByName(b, n, l)
-
-        do ind = 1, size(l, 1), 1
-           layerBlocks(b)%spriteList(l(ind, 2))%active = .FALSE.
-        end do
-
-        deallocate(l, stat = RC)
-        if (rc /= 0) call displayDebug("Failed to dealloc list of indexes!")
-
-    end subroutine
-
-    subroutine killAllByType(b, typ)
-        integer(1)                           :: b
-        integer                              :: typ
-        integer                              :: ind, rc        
-        integer, dimension(:,:), allocatable :: l
-
-        call getAllIndByType(b, typ, l)
-
-        do ind = 1, size(l, 1), 1
-           layerBlocks(b)%spriteList(l(ind, 2))%active = .FALSE.
-        end do
-
-        deallocate(l, stat = RC)
-        if (rc /= 0) call displayDebug("Failed to dealloc list of indexes!")
-
-    end subroutine
+!    subroutine killAllByName(b, n)
+!        character(*)                         :: n
+!        integer(1)                           :: b
+!        integer                              :: ind, rc        
+!        integer, dimension(:,:), allocatable :: l
+!
+!        call getAllIndByName(b, n, l)
+!
+!        do ind = 1, size(l, 1), 1
+!           layerBlocks(b)%spriteList(l(ind, 2))%active = .FALSE.
+!        end do
+!
+!        deallocate(l, stat = RC)
+!        if (rc /= 0) call displayDebug("Failed to dealloc list of indexes!")
+!
+!    end subroutine
+!
+!    subroutine killAllByType(b, typ)
+!        integer(1)                           :: b
+!        integer                              :: typ
+!        integer                              :: ind, rc        
+!        integer, dimension(:,:), allocatable :: l
+!
+!        call getAllIndByType(b, typ, l)
+!
+!        do ind = 1, size(l, 1), 1
+!           layerBlocks(b)%spriteList(l(ind, 2))%active = .FALSE.
+!        end do
+!
+!        deallocate(l, stat = RC)
+!        if (rc /= 0) call displayDebug("Failed to dealloc list of indexes!")
+!
+!    end subroutine
 
     subroutine addTempFiltertoAllByName(b, n, f, t)
         integer(1)                           :: f, t, b

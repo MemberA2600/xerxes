@@ -43,6 +43,12 @@ MODULE engineConstants
                                      OBJ_FILE_TYPE    = 'OBJ ', &
                                      MAP_FILE_TYPE    = 'MAP '
 
+    integer(2), parameter         :: BUTTON_MOUSE_L         = 1,  &
+                                     BUTTON_MOUSE_R         = 2,  &
+                                     BUTTON_ENTER           = 13,  &
+                                     BUTTON_ESC             = 27
+
+
     integer(1), parameter         :: IND_KEY_LEFT           = 1 , &  
                                      IND_KEY_RIGHT          = 2 , &  
                                      IND_KEY_UP             = 3 , &  
@@ -119,7 +125,7 @@ MODULE engineConstants
                                         TYPE_FLOOR          = 1   ,&
                                         TYPE_PLAYER_MAP     = 2   ,&
                                         TYPE_TREE           = 3   ,&
-                                        TYPE_WEATHER        = 4
+                                        TYPE_WEATHER        = 4   
 
     integer(1), parameter            :: WEATHER_DAY_NORM    = 1,  &
                                         WEATHER_NIGHT_NORM  = 2,  &
@@ -149,5 +155,7 @@ MODULE engineConstants
     character(NAME_MAX_LEN), dimension(2) , target :: twoSpriteList       = (/ "normal", "wind"/)
     character(2), dimension(8), parameter :: directions = (/ &
     "N ", "NW", "W ", "SW", "S ", "SE", "E ", "NE" /)    
+
+    integer(1), dimension(8), parameter :: flashing = (/ 0, -1, -2, -3, -3, -2, -1, 0 /)
 
 END MODULE engineConstants

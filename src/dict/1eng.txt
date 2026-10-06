@@ -137,3 +137,7 @@ nightNorm => Night Normal
 nightRain => Night with Raining
 defaultWeather => Default Weather:
 exitMapEditor => Exit Map Editor
+addFloor => Add Floor
+select => Select
+noWeather => No Weather
+exit => Exit

@@ -137,3 +137,7 @@ nightNorm => Éjszaka Alap
 nightRain => Éjszaka Esõvel
 defaultWeather => Alapértelmezett Idõjárás:
 exitMapEditor => Pályaszerkesztõ Bezárása
+addFloor => Padló Hozzáadása
+select => Kiválasztás
+noWeather => Nincs Idõjárás
+exit => Kilépés

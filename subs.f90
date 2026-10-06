@@ -22,7 +22,7 @@ MODULE subs
                            getWindowDim, setScreenSize, timer, setSpeed, &
                            randInt, getTime, FileDialog, countCharInString, &
                            getNextPoz, dFile, f2bitsTo1Bit, getNullTermString, &
-                           CWD, setCWD, getScreenSizeId, getSpeed, getDir
+                           CWD, setCWD, getScreenSizeId, getSpeed, getDir, getLastOK
 
       CHARACTER(20)     :: msgString
       INTEGER(KIND = 1) :: speed, timer, screenSize

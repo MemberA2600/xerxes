@@ -137,3 +137,7 @@ nightNorm => Nacht Normal
 nightRain => Nacht mit Regen
 defaultWeather => Standardwetter:
 exitMapEditor => Karteneditor Beenden
+addFloor => Boden Hinzufügen
+select => Ordner
+noWeather => Ohnes Wetter
+exit => Beenden

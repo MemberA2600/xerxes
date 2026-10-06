@@ -10,7 +10,7 @@ MODULE screen
     PRIVATE
     PUBLIC    :: initScreenBuff, eraseBuff, initRealScreen,  &
                  getGameScreenSize, buffer2Real, setBufferPixel, &
-                 displayPalette, getBufferPixel
+                 displayPalette, getBufferPixel, drawRectangle
              
     INTEGER(KIND = 4), DIMENSION(:,:,:), &
                        ALLOCATABLE  :: screenBuffers
@@ -25,6 +25,43 @@ MODULE screen
     LOGICAL                         :: bitmapCreated = .FALSE., dontDelete = .FALSE.
 
     CONTAINS 
+
+    RECURSIVE subroutine drawRectangle(x, y, w, h, c, b, fill, s)
+        integer(4) :: x , y , w , h
+        integer(4) :: nx, ny, nw, nh
+
+        integer(2) :: c, b, s  
+        integer(2) :: ns    
+  
+        logical    :: fill, caller
+
+        integer(4) :: indX, indY
+
+        do indY = y, y + h, 1 
+           if (indY == y .OR. indY == y + h) then
+               do indX = x, x + w, 1 
+                  call setBufferPixel(b, indX, indY, c) 
+               end do 
+           else 
+               call setBufferPixel(b, x    , indY, c)
+               call setBufferPixel(b, x + w, indY, c)  
+           end if  
+        end do
+
+        ns = s - 1
+        nx = x + 1
+        ny = y + 1
+        nw = w - 2
+        nh = h - 2
+        
+        if ((fill .EQV. .FALSE.) .AND. s == 0) return
+        if (w < 1 .AND. h < 1) return 
+        if (w < 1) w = 1 
+        if (h < 1) h = 1 
+
+        call drawRectangle(nx, ny, nw, nh, c, b, fill, ns)
+
+    end subroutine    
 
     SUBROUTINE initScreenBuff(numOfLayers)
         INTEGER(KIND = 2) :: numOfLayers    
@@ -169,7 +206,11 @@ MODULE screen
         integer(2) :: n, x, y       
         integer(2) :: p
 
-        p =  screenBuffers(n, x, y) 
+        if (x < 1 .OR. x > wOfScreenBuffer .OR. y < 1 .OR. y > hOfScreenBuffer ) then
+            p = -1
+        else
+            p =  screenBuffers(n, x, y) 
+        end if
 
     end function
 
@@ -177,6 +218,8 @@ MODULE screen
         integer(2) :: n, x, y, c
         
         dontDelete = .FALSE.
+
+        if (x < 1 .OR. x > wOfScreenBuffer .OR. y < 1 .OR. y > hOfScreenBuffer ) return
 
         if (c > 0) then
             screenBuffers(n, x, y) = getColorValue(c)

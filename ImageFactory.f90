@@ -20,7 +20,7 @@ MODULE ImageFactory
     public                  :: bitMapWindow, checkImageWindowFields, dropImageList, dropAllImages, &
                                initImageList, loadImageHeader, loadImageByName, addToSCRBuffByName, &
                                imageFile, assignSpriteToPointer, setSpeedScreen, testSpeedLoop, &
-                               loadAllInFolder, getImageList
+                               loadAllInFolder, getImageList, changeRGB, getImageFileByName
 
     !
     !   Images are pretty complex and compact.
@@ -85,6 +85,22 @@ MODULE ImageFactory
         do num = 1, size(imageList), 1
            spriteNames(num) = imageList(num)%name 
         end do
+
+    end subroutine
+
+    subroutine getImageFileByName(i, name) 
+         character(*)                   :: name 
+         type(imageFile), pointer       :: i
+         integer(8)                     :: num
+
+         do num = 1, size(imageList), 1
+            if (imageList(num)%name == name) then
+                i => imageList(num)
+                return  
+            end if  
+         end do
+
+         call displayDebug("Pointer not set for ImageFile!")
 
     end subroutine
 
@@ -747,6 +763,8 @@ MODULE ImageFactory
 
                   CASE(IDF_ColorPick)
                      pickerActive = .TRUE.
+                     call WMessageEnable(MouseButDown, Disabled)
+                     call WMessageEnable(MouseButUp,   Disabled)
 
                      call WDialogGetInteger(IDF_SpriteIndex, ind)
                      call WDialogGetInteger(IDF_FilterInd  , filter)
@@ -758,6 +776,9 @@ MODULE ImageFactory
                      c = pickColorFromScreen()   
                      pickerActive = .FALSE.
                      call WCursorShape(CurArrow)
+
+                     call WMessageEnable(MouseButDown, ENABLED)
+                     call WMessageEnable(MouseButUp,   ENABLED)
 
                      if (c > 0) then 
                          imageLoader%img%transpColor = c 

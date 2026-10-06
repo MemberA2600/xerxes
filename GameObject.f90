@@ -653,7 +653,7 @@ MODULE GameObject
                                  '0123456789') == 0) 
 
                   If (((bool .EQV. .FALSE.) .AND. flag == 1)   .OR. &
-                      ((bool .EQV. .TRUE.)  .AND. flag == 0))  add = .TRUE.
+                      ( flag == 0))  add = .TRUE.
 
                end select
 

@@ -45,6 +45,7 @@
       LOGICAL                        :: editMode, mapEditorActive = .FALSE., firstTime = .TRUE.
       CHARACTER(20)                  :: msgString
       INTEGER                        :: intDummy, beepF
+      integer(1)                     :: currMon, lastMon
         
       CHARACTER(1)                   :: txtDummy  
 
@@ -140,6 +141,7 @@
 
      call playTIAbyName("StartUp", 0)  
      !call displayDebugNum(getSpeed())
+     currMon = getLastOK()
 !
 !   Main message loop
 !
@@ -150,6 +152,13 @@
                call WMenuSetState(ID_SoundInput, ItemEnabled, 1)  
            end if
         END IF  
+        
+        lastMon = currMon
+        currMon = getLastOK()
+
+        if ( currMon  /= lastMon ) then
+             call autoSizeScreen() 
+        end if
 
         CALL WMessagePeek(ITYPE,MESSAGE)   
         CALL setUpTo256()
@@ -211,6 +220,9 @@
 
                     editMode        = .TRUE.
                     mapEditorActive = .FALSE.
+
+              CASE (ID_ADD_FLOOR)
+                    call FloorChooser()
 
               CASE (ID_STARTGAME)
                     editMode        = .FALSE.
@@ -278,6 +290,7 @@
             call WMenuSetString(ID_StartMapEditor   , trim(getWordInCurrentLang( "startMapEditor"     )))
             call WMenuSetString(ID_MapEditor        , trim(getWordInCurrentLang( "mapEditor"          )))
             call WMenuSetString(ID_MAPEDITOR_BASICS , trim(getWordInCurrentLang( "basicSettings"      )))
+            call WMenuSetString(ID_ADD_FLOOR        , trim(getWordInCurrentLang( "addFloor"           )))
 
       end subroutine  
 
@@ -393,6 +406,8 @@
                 call objectWindowThings()
             case(IDD_MAP_BASICSETTINGS)
                 call mapBasicSettings()
+            case(IDD_ADD_FLOOR)
+                call floorAdderCheck()
             end select
 
         end subroutine

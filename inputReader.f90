@@ -22,7 +22,7 @@ MODULE inputReader
     private
     public              :: inputWindow, checkOnInputSettings, readInput, openJoyDLL, closeJoyDLL, &
                            restoreKeyButtons, restoreJoyButtons, getControllerSettings, &
-                           setControllerSettings, pickColorFromScreen, getInGameControl
+                           setControllerSettings, pickColorFromScreen, getInGameControl, isAKeyPressed
 
     logical             :: canKill, justACancel
     integer(2)          :: lastPressedKey
@@ -291,6 +291,8 @@ MODULE inputReader
 
     function pickColorFromScreen() result(r)
         integer(2)              :: r
+        TYPE(WIN_MESSAGE)       :: MESSAGE
+        integer                 :: iType
 
         r = 0
         pixelColor = -1 
@@ -300,6 +302,7 @@ MODULE inputReader
         lastPressedKey = 0
         DO
             call WinSleep(10)
+            call WMessagePeek(itype, message)
             call readInput()
             call getPixelColor()
 
@@ -846,6 +849,20 @@ MODULE inputReader
         end if
 
     end subroutine
+
+    function isAKeyPressed(vk) result(r)
+        integer(4)          :: vk
+        logical             :: r
+        integer(c_short)    :: state
+
+        r = .FALSE.
+        state = GetAsyncKeyState(vk)
+
+        if (state < 0_c_short) then
+            r = .true.
+        end if
+
+    end function
 
     function getInGameControl(b) result(r)
         logical             :: r

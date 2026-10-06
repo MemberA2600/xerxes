@@ -13,20 +13,31 @@ MODULE GameMap
     USE gameobject    
     USE inputreader
     USE screen
+    USE winapis
+    USE KERNEL32, WinSleep => Sleep
 
     implicit none
 
     private
     public   :: initAllUnitLists, searchForDeadUnits, openBasicSettingsWindow, mapBasicSettings, &
-                runGameLogic, doThingsOnMapEditor, closeMapEditor
+                runGameLogic, doThingsOnMapEditor, closeMapEditor, FloorChooser, floorAdderCheck
 
     logical  :: canKill = .FALSE.
-    character(NAME_MAX_LEN), dimension(:), allocatable :: baseFloorList 
+    character(NAME_MAX_LEN), dimension(:), allocatable :: baseFloorList, floorList 
     character(NAME_MAX_LEN), dimension(4), parameter   :: weatherNamesKeys = (/ & 
                                                        "dayNorm", "nightNorm", "dayRain","nightRain" /) 
     character(NAME_MAX_LEN), dimension(4)              :: weatherNames
 
     integer(1), parameter                              :: stepOnMap = 10
+    integer(1)                                         :: lastNum
+
+    type(counterTimer)                                 :: timerC
+
+    logical                                            :: placeActive     = .FALSE., allowed
+    character(NAME_MAX_LEN)                            :: placeObjName
+    type(objectData), pointer                          :: placeObj         
+    type(imageFile) , pointer                          :: placeImg
+    integer(1)                                         :: placeTyp, placeFilter
 
     type Unit
          type(spritePoz), pointer      :: sp 
@@ -49,6 +60,7 @@ MODULE GameMap
          procedure         addUnit         => addUnit 
          procedure         removeDeads     => removeDeads
          procedure         removeOutsiders => removeOutsiders
+         procedure         removeByName    => removeByName    
 
     end type
 
@@ -138,6 +150,19 @@ MODULE GameMap
 
     end subroutine
 
+    subroutine removeByName(this, n)
+        class(UnitList), intent(inout)        :: this
+        character(*)                          :: n
+        integer(8)                            :: ind
+        
+        do ind = 1, size(this%units), 1
+           if (associated(this%units(ind)%sp)) then 
+               if (this%units(ind)%sp%name == n) call this%units(ind)%killMe() 
+           end if 
+        end do
+
+    end subroutine
+
     subroutine addUnit(this, name, x, y)
         class(UnitList), intent(inout)        :: this
         type(Unit), dimension(:), allocatable :: tempUnits
@@ -181,6 +206,9 @@ MODULE GameMap
         do ind = 1, size(this%units), 1
            if (associated(this%units(ind)%sp)) nullify(this%units(ind)%sp)
         end do
+
+        call timerC%timerStart(PERFECT_WAIT)
+        lastNum = 1        
 
     end subroutine 
 
@@ -284,6 +312,7 @@ MODULE GameMap
        success           = 0
        canKill           = .FALSE.
        currentMap%paused = .TRUE.
+       placeActive       = .FALSE.
 
        do
          if (WInfoDialog(CurrentDialog) == 0) exit
@@ -440,6 +469,10 @@ MODULE GameMap
                call setSize(currentMap%width, currentMap%height) 
            end if 
 
+           if (defaultFloorOld /= defaultFloor .AND. (load .EQV. .FALSE.)) then
+               call currentMap%realUnits%removeByName(defaultFloor)
+           end if   
+
        else 
            if (load) then 
   
@@ -479,6 +512,7 @@ MODULE GameMap
             canKill = .FALSE.
         end if
 
+
     end subroutine
 
     subroutine runGameLogic()
@@ -503,6 +537,203 @@ MODULE GameMap
     subroutine closeMapEditor()
         call dropAllUnitLists()
         call eraseBuff()
+    end subroutine
+
+    subroutine FloorChooser()
+       TYPE(WIN_MESSAGE)       :: MESSAGE
+       integer                 :: windVal 
+
+       canKill           = .FALSE.
+
+       do
+         if (WInfoDialog(CurrentDialog) == 0) exit
+         call sleep(1)
+       end do 
+       
+
+       call getUnitNames(floorList, TYPE_FLOOR, 0) 
+       CALL WDialogLoad(IDD_ADD_FLOOR)
+       CALL WDialogTitle(getWordInCurrentLang("addFloor")) 
+
+       CALL WDialogPutString(ID_FloorSelect    , getWordInCurrentLang("select")) 
+       CALL WDialogPutString(ID_FloorExit      , getWordInCurrentLang("exit")) 
+       CALL WDialogPutString(IDF_NO_WEATHER_BOX, getWordInCurrentLang("noWeather")) 
+
+       call wDialogPutMenu(IDF_FLOORBOX, floorList, size(floorList), 1)  
+
+       do
+          CALL WDialogSelect(IDD_ADD_FLOOR)
+          CALL WDialogShow(ITYPE=Modal)     
+    
+          if (WinfoDialog(CurrentDialog) == IDD_ADD_FLOOR) then 
+              SELECT CASE (WinfoDialog(ExitButton))  
+                  CASE(ExitField) 
+                     EXIT
+                  CASE(ID_FloorSelect) 
+                     placeActive   = .TRUE.
+                     placeTyp      = TYPE_FLOOR
+
+                     call WMessageEnable(MouseButDown, Disabled)
+                     call WMessageEnable(MouseButUp,   Disabled)
+
+                     call WDialogGetCheckBox(IDF_NO_WEATHER_BOX, windVal)
+                     if (windVal == 1) then   
+                         weatherOld      = currentMap%defWeather  
+                         call setWeather(weatherOld, .FALSE.)
+                         placeFilter     = NO_FILTER
+                     else
+                         placeFilter = currentMap%defFilter
+                     end if 
+
+                     call doThePlacer()
+
+                     if (windVal == 1) call setWeather(currentMap%defWeather, currentMap%wind)
+
+                     call WMessageEnable(MouseButDown, ENABLED)
+                     call WMessageEnable(MouseButUp,   ENABLED)
+
+                     placeActive       = .FALSE.
+                  CASE(ID_FloorExit)
+                     EXIT
+                  END SELECT
+              end if
+       end do 
+
+       canKill = .TRUE.
+
+    end subroutine
+
+    subroutine doThePlacer()
+
+        DO
+            call WinSleep(10)
+
+            if (isAKeyPressed(BUTTON_ESC) .OR. isAKeyPressed(BUTTON_MOUSE_R)) exit
+
+            call putSpritesOnBuffer() 
+            call placerDraw()
+            call buffer2Real()
+
+            if (isAKeyPressed(BUTTON_ENTER) .OR. getInGameControl(PRESS_ATTACK)) then
+
+
+            end if
+
+        END DO
+
+    end subroutine
+
+    subroutine placerDraw()
+        USE IFWIN
+
+        type(T_POINT)       :: mousePos
+        integer(BOOL)       :: rc
+        integer(HANDLE)     :: hWnd
+        TYPE(WIN_MESSAGE)   :: MESSAGE
+
+        integer             :: X , Y, iType
+        real                :: rX, rY
+        character(40)       :: text
+        integer(2)          :: color
+        integer(1)          :: filter 
+
+        rc = GetCursorPos(mousePos)
+        
+        if (rc /= 0) then
+            hWnd = GetActiveWindow()
+            rc = ScreenToClient(hWnd, mousePos)
+            call WMessagePeek(itype, message)
+
+            if (rc /= 0) then
+                X  = mousePos%x        
+                Y  = mousePos%y 
+
+                call IGrUnitsFromPixels(X, Y, rX, rY)   
+                rY = 1.0 - rY
+
+                if (rx >= 0.0 .AND. rx <= 1.0 .AND. rY >= 0.0 .AND. rY <= 1.0) then
+                    
+                   X = min(wOfScreenBuffer - 1, int(       rX  * wOfScreenBuffer))
+                   Y = min(hOfScreenBuffer, int((1.0 - rY) * hOfScreenBuffer))
+
+                   select case(placeTyp) 
+                   case(TYPE_FLOOR) 
+                       color  = 253 
+                       filter = placeFilter
+
+                       X = int(X / 32) * 32.0 
+                       Y = int(Y / 32) * 32.0 
+
+                       call drawSpriteWithRectagle(int(X),int(Y), &
+                                                   color, 4, placeImg, NO_FILTER) 
+                    
+                   end select
+      
+                end if
+  
+            end if
+        end if
+
+    end subroutine
+
+    subroutine drawSpriteWithRectagle(x, y, c, s, img, f)
+        type(imageFile) , pointer :: img
+        integer(4)                :: x, y
+        integer(2)                :: c
+        integer(1)                :: s, f
+
+        if (timerC%timerEnded()) then
+            call timerC%timerRestart()  
+            lastNum = lastNum + 1
+
+            if (lastNum > 8) lastNum = 1 
+        end if
+
+        call img%addToScreenBuffer(1, LAYER_FOREGROUND, x, y, f) 
+
+      ! x, y, w, h, c, b, fill, s   
+        call drawRectangle(x - s, y - s, img%img%width + (s*2), img%img%height + (s*2), changeRGB(c, &
+                           flashing(lastNum), flashing(lastNum), flashing(lastNum)), &
+                           LAYER_FOREGROUND, .FALSE., s)
+
+    end subroutine
+
+    subroutine floorAdderCheck()
+        integer(4)                :: selectedFloor
+        character(NAME_MAX_LEN)   :: selectedFloorName, spriteName
+        type(objectData), pointer :: obj         
+        type(imageFile) , pointer :: img
+
+        if (WinfoDialog(CurrentDialog) == IDD_ADD_FLOOR .AND. (placeActive .EQV. .FALSE.)) then
+
+           call putSpritesOnBuffer() 
+
+           call WDialogGetMenu(IDF_FLOORBOX, selectedFloor) 
+           selectedFloorName = floorList(selectedFloor)
+ 
+           if (currentMap%defaultFloor%sp%name == selectedFloorName) then
+               call WDialogFieldState(ID_FloorSelect, DISABLED) 
+           else
+               call WDialogFieldState(ID_FloorSelect, ENABLED) 
+ 
+               call getGameObjByName(obj, selectedFloorName) 
+               spriteName =  obj%getEditorSprite(currentMap%wind, .TRUE., "") 
+               call getImageFileByName(img, spriteName) 
+
+               call drawSpriteWithRectagle(9, 9, 253, 4, img, NO_FILTER)
+               placeImg     => img 
+               placeObjName =  selectedFloorName 
+               placeObj     => obj 
+
+           end if  
+           call buffer2Real()
+
+        end if
+
+        if (canKill .EQV. .TRUE.) then 
+            CALL WDialogUnLoad()
+            canKill = .FALSE.
+        end if
     end subroutine
 
 END MODULE GameMap

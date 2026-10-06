@@ -8,20 +8,20 @@
 //
 // Winteracter resource script
 //
-// Modified : 05/okt./2026 11:16:38
+// Modified : 05/okt./2026 19:14:13
 //
 ///////////////////////////////////////////////////
 //
 // Number of resources
 //
 //*WN* NMENU       1
-//*WN* NITEM       30
-//*WN* NDIALOG     9
-//*WN* NFIELD      157
+//*WN* NITEM       31
+//*WN* NDIALOG     10
+//*WN* NFIELD      161
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
-//*WN* NIDENTIFIER 207
+//*WN* NIDENTIFIER 213
 //*WN* NINCLUDE    0
 //*WN* NOPTROW     0
 ///////////////////////////////////////////////////
@@ -231,6 +231,12 @@
 #define ID_MAP_BASICSETTINGS_WEATHER_L   1156
 #define IDF_MAP_DEFAULT_WEATHER          1157
 #define ID_ExitMapEditor                40030
+#define ID_ADD_FLOOR                    40031
+#define ID_FloorSelect                   1158
+#define IDD_ADD_FLOOR                     111
+#define ID_FloorExit                     1159
+#define IDF_FLOORBOX                     1160
+#define IDF_NO_WEATHER_BOX               1161
 
 ///////////////////////////////////////////////////
 //
@@ -556,6 +562,26 @@ BEGIN
 ,0
 END
 
+IDD_ADD_FLOOR DIALOG 0,0,191,91
+STYLE WS_POPUP | WS_BORDER | WS_DLGFRAME | WS_SYSMENU | DS_3DLOOK | DS_MODALFRAME
+FONT 8, "MS Shell Dlg"
+CAPTION "Add Floor"
+BEGIN
+  CONTROL "Select",ID_FloorSelect,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,130,57,50,14
+  CONTROL "Exit",ID_FloorExit,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,130,73,50,14
+  CONTROL "",IDF_FLOORBOX,"LISTBOX",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_VSCROLL | WS_TABSTOP | LBS_NOTIFY | LBS_HASSTRINGS | LBS_USETABSTOPS,5,5,116,81
+  CONTROL "No Weather",IDF_NO_WEATHER_BOX,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_AUTOCHECKBOX | BS_TEXT | BS_MULTILINE,130,32,54,20
+END
+
+IDD_ADD_FLOOR RCDATA
+BEGIN
+"[Checks] \n"
+"1161 1 \n"
+"[Menus] \n"
+"[Trackbars] \n"
+,0
+END
+
 ///////////////////////////////////////////////////
 //
 // Menus
@@ -600,6 +626,7 @@ BEGIN
   POPUP "Map Editor",GRAYED
   BEGIN
     MENUITEM "Basic Settings",ID_MAPEDITOR_BASICS
+    MENUITEM "Add Floor",ID_ADD_FLOOR
     MENUITEM "Exit Map Editor",ID_ExitMapEditor
   END
 END
@@ -635,5 +662,5 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FORTSAVE    1
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
-//*WI* LASTTYPE    1
-//*WI* LASTRES     1
+//*WI* LASTTYPE    2
+//*WI* LASTRES     10
