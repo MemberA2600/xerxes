@@ -21,7 +21,8 @@ MODULE sprite7up
                                      createSpriteObjSky, addTempFilter, getAllIndByName, getAllIndByType, &
                                      addTempFiltertoAllByName, addTempFiltertoAllByType,                  &
                                      setWeather, spritePoz, getOffsetX, getOffsetY, setSize, &
-                                     changeSprite, changeSpriteEditor, addPointerToLastSpritePoz                                     
+                                     changeSprite, changeSpriteEditor, addPointerToLastSpritePoz, &
+                                     checkCollision, addPointerByNameXY
 
     type SpriteObj 
          integer(2)               :: w, h, spriteI
@@ -42,7 +43,7 @@ MODULE sprite7up
     type spritePoz
          character(NAME_MAX_LEN)   :: name
          integer(4)                :: typFlag
-         integer(4)                :: x, y, yh, xw, ind 
+         integer(4)                :: x, y, yh, xw, ind, hitBoxW, hitBoxH, hitBoxAlign 
          integer(2)                :: fly     
          integer(1)                :: bufferNum
          type(objectData), pointer :: objectD
@@ -50,9 +51,12 @@ MODULE sprite7up
 
          contains        
 
-         procedure                :: killMe       => killMe
-         procedure                :: changeSprite => changeSprite 
-         procedure                :: dropMySprite => dropMySprite
+         procedure                :: killMe             => killMe
+         procedure                :: changeSprite       => changeSprite 
+         procedure                :: dropMySprite       => dropMySprite
+         procedure                :: checkCollision     => checkCollision
+         procedure                :: checkAllCollisions => checkAllCollisions 
+
     end type 
 
     type BlockMap
@@ -83,11 +87,160 @@ MODULE sprite7up
     !   SpritePoz Things
     !
 
+    subroutine checkAllCollisions(this)
+        class(spritePoz)         :: this
+        type(spritePoz), pointer :: that
+
+        integer(4)       :: ind
+        logical          :: colliding
+
+        do ind = 1, layerBlocks(this%bufferNum)%nextIndexP, 1
+           colliding = this%checkCollision(layerBlocks(this%bufferNum)%pozList(ind))     
+        
+           if (colliding) then
+               that => layerBlocks(this%bufferNum)%pozList(ind) 
+
+           end if 
+
+        end do
+
+    end subroutine
+
+    function checkCollision(this, that) result(r)
+        class(spritePoz) :: this
+        type(spritePoz)  :: that
+        logical          :: r
+        integer          :: x1 , x2 , y1 , y2 , checkX, checkY, &
+                            pX1, pX2, pY1, pY2, startX, startY, boxW, boxH 
+    
+        type(imageData), pointer :: iD1, iD2
+        r = .FALSE.
+    
+        if (.NOT. (this%objectD%solid .AND. that%objectD%solid)) return
+        if (this%name == that%name) return
+
+        if (this%dontCountMe .OR. that%dontCountMe) return    
+
+        if ((associated(layerblocks(this%bufferNum)%spriteList(this%ind)%imageF) .EQV. .FALSE.) .OR. &
+                       (layerblocks(this%bufferNum)%spriteList(this%ind)%active  .EQV. .FALSE.)) return
+
+        if ((associated(layerblocks(that%bufferNum)%spriteList(that%ind)%imageF) .EQV. .FALSE.) .OR. &
+                       (layerblocks(that%bufferNum)%spriteList(that%ind)%active  .EQV. .FALSE.)) return
+
+        if ((this%x < XOffset .OR. this%x > XOffset + wSize)  .AND. &
+            (this%y < YOffset .OR. this%y > YOffset + hSize)) return 
+
+        if ((that%x < XOffset .OR. that%x > XOffset + wSize)  .AND. &
+            (that%y < YOffset .OR. that%y > YOffset + hSize)) return 
+
+        iD1 => layerblocks(this%bufferNum)%spriteList(this%ind)%imageF%img
+        iD2 => layerblocks(that%bufferNum)%spriteList(that%ind)%imageF%img
+
+        call calculateHBXY(this, x1, y1)
+        call calculateHBXY(that, x2, y2)
+    
+        r = x1 < x2 + that%hitBoxW .AND. &
+            x2 < x1 + this%hitBoxW .AND. &
+            y1 < y2 + that%hitBoxH .AND. &
+            y2 < y1 + this%hitBoxH
+    
+        if (r .EQV. .FALSE.) return
+        r = .FALSE.
+
+     !  Choose the smaller hitbox.
+        if (this%hitBoxW * this%hitBoxH <= &
+            that%hitBoxW * that%hitBoxH) then
+    
+            startX = x1
+            startY = y1
+            boxW = this%hitBoxW
+            boxH = this%hitBoxH
+        else
+            startX = x2
+            startY = y2
+            boxW = that%hitBoxW
+            boxH = that%hitBoxH
+        end if
+    
+        do checkY = startY, startY + boxH - 1
+            do checkX = startX, startX + boxW - 1
+    
+              ! Skip pixels outside the shared hitbox area.
+                if (checkX < x1 .OR. checkX >= x1 + this%hitBoxW) cycle
+                if (checkY < y1 .OR. checkY >= y1 + this%hitBoxH) cycle
+                if (checkX < x2 .OR. checkX >= x2 + that%hitBoxW) cycle
+                if (checkY < y2 .OR. checkY >= y2 + that%hitBoxH) cycle
+    
+              ! Convert screen coordinates to sprite-local coordinates.
+              ! Assumes x and y are each sprite's top-left screen position.
+                pX1 = checkX -  this%x + 1
+                pY1 = checkY - (this%y - this%fly) + 1
+    
+                pX2 = checkX -  that%x + 1
+                pY2 = checkY - (that%y - that%fly) + 1
+    
+                ! Check the two sprite pixels here.
+                if (pX1 < 1 .OR. pX1 > iD1%width ) cycle
+                if (pY1 < 1 .OR. pY1 > iD1%height) cycle
+                if (pX2 < 1 .OR. pX2 > iD2%width ) cycle
+                if (pY2 < 1 .OR. pY2 > iD2%height) cycle                
+
+                if (iD1%returnColorOfPixel(layerblocks(&
+                    this%bufferNum)%spriteList(this%ind)%spriteI, pX1, pY1) /= -1 .AND. &
+                    iD2%returnColorOfPixel(layerblocks(&
+                    that%bufferNum)%spriteList(that%ind)%spriteI, pX2, pY2) /= -1) then 
+                    r = .TRUE.
+                    return
+                end if
+            end do
+        end do
+
+
+    end function checkCollision
+
+    subroutine calculateHBXY(sp, x, y)
+        type(spritePoz), intent(in) :: sp
+        integer                     :: x, y
+    
+        select case(sp%hitBoxAlign)
+        case(ALIGN_CENTER)  
+            x = sp%xw - (layerBlocks(sp%bufferNum)%spriteList(sp%ind)%w / 2) - (sp%hitBoxW / 2)
+            y = sp%yh - (layerBlocks(sp%bufferNum)%spriteList(sp%ind)%h / 2) - (sp%hitBoxH / 2)
+
+        case(ALIGN_BOTTOM)
+            x = sp%xw - (layerBlocks(sp%bufferNum)%spriteList(sp%ind)%w / 2) - (sp%hitBoxW / 2)
+            y = sp%yh - sp%hitBoxH 
+
+        end select
+
+        y = y - sp%fly
+
+    end subroutine
+
     subroutine addPointerToLastSpritePoz(p, b)
         type(spritePoz), pointer, intent(inout) :: p
         integer(1)                              :: b        
-
+  
         p => layerBlocks(b)%pozList(layerBlocks(b)%nextIndexP)
+  
+    end subroutine
+
+    subroutine addPointerByNameXY(p, b, n, x, y)
+        type(spritePoz), pointer, intent(inout) :: p
+        integer(1)                              :: b  
+        character(*)                            :: n
+        integer(4)                              :: x, y, num      
+
+        do num = 1, layerBlocks(b)%nextIndexP, 1
+           if (n == layerBlocks(b)%pozList(num)%name .AND. & 
+               x == layerBlocks(b)%pozList(num)%x    .AND. &  
+               y == layerBlocks(b)%pozList(num)%y    ) then
+               p => layerBlocks(b)%pozList(num)
+               return
+           end if  
+        end do
+
+        call displayDebug("No pointer was set for Map Object " // n // " !")
 
     end subroutine
 
@@ -301,40 +454,6 @@ MODULE sprite7up
     !
     !   BlockMap Stuff
     !
-
-!    subroutine killAllByName(b, n)
-!        character(*)                         :: n
-!        integer(1)                           :: b
-!        integer                              :: ind, rc        
-!        integer, dimension(:,:), allocatable :: l
-!
-!        call getAllIndByName(b, n, l)
-!
-!        do ind = 1, size(l, 1), 1
-!           layerBlocks(b)%spriteList(l(ind, 2))%active = .FALSE.
-!        end do
-!
-!        deallocate(l, stat = RC)
-!        if (rc /= 0) call displayDebug("Failed to dealloc list of indexes!")
-!
-!    end subroutine
-!
-!    subroutine killAllByType(b, typ)
-!        integer(1)                           :: b
-!        integer                              :: typ
-!        integer                              :: ind, rc        
-!        integer, dimension(:,:), allocatable :: l
-!
-!        call getAllIndByType(b, typ, l)
-!
-!        do ind = 1, size(l, 1), 1
-!           layerBlocks(b)%spriteList(l(ind, 2))%active = .FALSE.
-!        end do
-!
-!        deallocate(l, stat = RC)
-!        if (rc /= 0) call displayDebug("Failed to dealloc list of indexes!")
-!
-!    end subroutine
 
     subroutine addTempFiltertoAllByName(b, n, f, t)
         integer(1)                           :: f, t, b
@@ -552,7 +671,7 @@ MODULE sprite7up
         do bufferN = 1, layerNum, 1
            if (bufferN /= LAYER_FOREGROUND .AND. bufferN /= LAYER_INTERFACE &
          .AND. bufferN /= LAYER_TRANSITION) then
-               do ind = 1, layerBlocks(bufferN)%nextIndexS, 1 
+               do ind = 1, size(layerBlocks(bufferN)%spriteList), 1 
                   if ((layerBlocks(bufferN)%spriteList(ind)%active .EQV. .TRUE.) .AND. &
           (associated(layerBlocks(bufferN)%spriteList(ind)%imageF) .EQV. .TRUE.)) then
                        layerBlocks(bufferN)%spriteList(ind)%filter = defaultFilter 
@@ -607,13 +726,14 @@ MODULE sprite7up
    
 
     subroutine createSpriteObj(spriteName, imageName, bufferNum, x, y, filter, fly, unique, gameObjName)
-         character(*)  :: imageName, spriteName, gameObjName   
-         integer(4)    :: x, y, f
-         integer(1)    :: filter, bufferNum  
-         integer(4)    :: typFlag
-         integer(1)    :: rc
-         integer(2)    :: fly
-         logical       :: unique
+         character(*)          :: imageName, spriteName, gameObjName   
+         integer(4)            :: x, y, f
+         integer(1)            :: filter, bufferNum  
+         integer(4)            :: typFlag
+         integer(1)            :: rc, hitBoxTyp
+         integer(2)            :: fly
+         logical               :: unique
+         integer(1), parameter :: FULL = 0, NORM = 1, FLOORR = 2
 
          if (bufferNum /= LAYER_FOREGROUND .AND. bufferNum /= LAYER_INTERFACE &
        .AND. bufferNum /= LAYER_TRANSITION) then
@@ -642,6 +762,48 @@ MODULE sprite7up
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%objectD%objType
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%dontCountMe = .FALSE.
 
+         if (layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%objectD%solid) then
+             select case(layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%typFlag)
+             case(TYPE_FLOOR)
+                 hitBoxTyp = FLOORR
+
+             case default 
+                 hitBoxTyp = NORM
+
+             end select
+
+             select case(hitBoxTyp)
+             case(FULL)
+                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxW = &
+                 layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%w    
+
+                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxH = &
+                 layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%h 
+                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxAlign =  ALIGN_CENTER
+
+             case(FLOORR)
+                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxW = &
+                 layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%w * 3 / 4     
+
+                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxH = &
+                 layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%h * 3 / 4     
+                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxAlign =  ALIGN_CENTER
+
+             case default
+                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxW = &
+                 layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%w     
+
+                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxH = &
+                 layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%h / 2
+                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxAlign =  ALIGN_BOTTOM
+
+             end select
+         else
+             layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxW     =  0
+             layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxH     =  0
+             layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxAlign =  0
+
+         end if
 
     end subroutine
 
@@ -652,7 +814,7 @@ MODULE sprite7up
          integer(4)    :: typFlag
          integer(1)    :: rc
          integer(2)    :: fly
-         logical       :: unique
+         logical       :: unique       
          logical       :: alreadyThere
          integer(4)    :: ind
 
@@ -769,7 +931,8 @@ MODULE sprite7up
         integer(1)              :: n, ind, rc
         character(40)           :: test
         integer(2)              :: w, h
-
+        integer(4)              :: num
+        
         call setDimensions()
         xOffset   = 0
         yOffset   = 0
@@ -791,12 +954,23 @@ MODULE sprite7up
                 allocate(layerBlocks(ind)%pozList   (1), stat = rc)
                 if (rc /= 0) call displayDebug("Failed to allocate pozList!") 
     
+                layerBlocks(ind)%spriteList(1)%active = .FALSE.
+                layerBlocks(ind)%spriteList(1)%unique = .FALSE.
+                nullify(layerBlocks(ind)%spriteList(1)%imageF)
+
            case(BLOCKMAP_INF) 
                 allocate(layerBlocks(ind)%spriteList(SIZE_INIT), stat = rc)
                 if (rc /= 0) call displayDebug("Failed to allocate spriteList!") 
     
                 allocate(layerBlocks(ind)%pozList   (SIZE_INIT), stat = rc)
                 if (rc /= 0) call displayDebug("Failed to allocate pozList!") 
+
+                do num = 1, SIZE_INIT, 1
+                    layerBlocks(ind)%spriteList(num)%active = .FALSE.
+                    layerBlocks(ind)%spriteList(num)%unique = .FALSE.
+                    nullify(layerBlocks(ind)%spriteList(num)%imageF)
+                end do
+
            end select 
         end do 
 
@@ -839,7 +1013,8 @@ MODULE sprite7up
     end subroutine
 
     subroutine putSpritesOnBuffer()
-        integer(1) :: ind, n, sInd
+        integer(1) :: n
+        integer(1) :: ind, sInd
         integer(2) :: x, y
         !character(40)       :: test
         
@@ -887,7 +1062,7 @@ MODULE sprite7up
             end if
          end do
    
-         layerBlocks(n)%nextIndexP = last
+         layerBlocks(n)%nextIndexP = to
          call move_alloc(temp, layerBlocks(n)%pozList)  
 
          last        = 0

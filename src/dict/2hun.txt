@@ -141,3 +141,5 @@ addFloor => Padló Hozzáadása
 select => Kiválasztás
 noWeather => Nincs Idõjárás
 exit => Kilépés
+defaultMusic => Alapértelmezett Zene:
+clear => Törlés

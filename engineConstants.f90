@@ -158,4 +158,6 @@ MODULE engineConstants
 
     integer(1), dimension(8), parameter :: flashing = (/ 0, -1, -2, -3, -3, -2, -1, 0 /)
 
+    integer(1), parameter :: ALIGN_CENTER = 1, ALIGN_BOTTOM = 2
+
 END MODULE engineConstants

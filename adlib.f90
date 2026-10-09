@@ -21,7 +21,7 @@ MODULE adlib
                                                   getAdlibName, shortWaitCode2Mask, shortWaitMask2Code, &
                                                   initAdlibList, loadAdlibHeader, playAdlibbyName, &
                                                   dropAdlibList, playRandomAdlib, changeAdlibVolumeChanger, &
-                                                  chipStart 
+                                                  chipStart, getMusicList 
                                                   
                                                   
     real                                       :: adlibVolumeChanger = 1.0    
@@ -80,6 +80,24 @@ MODULE adlib
 
     contains
  
+    subroutine getMusicList(r)
+         integer(2)                                                        :: ind, rc   
+         character(NAME_MAX_LEN), dimension(:), allocatable, intent(inout) :: r   
+         
+         if (allocated(r)) then
+             deallocate(r, stat = rc)
+             if (rc /= 0) call displayDebug("Failed to deallocate musicList!")
+         end if
+
+         allocate(r(size(adlibList  )), stat = rc)
+         if (rc /= 0) call displayDebug("Failed to allocate musicList!")        
+
+         do ind = 1, size(adlibList), 1
+            r(ind) = adlibList(ind)%name
+         end do    
+
+    end subroutine 
+
     subroutine volChange(buf, last)
         integer(8)                                           :: ind
         integer(8)                                           :: last

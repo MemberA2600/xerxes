@@ -20,7 +20,8 @@ MODULE ImageFactory
     public                  :: bitMapWindow, checkImageWindowFields, dropImageList, dropAllImages, &
                                initImageList, loadImageHeader, loadImageByName, addToSCRBuffByName, &
                                imageFile, assignSpriteToPointer, setSpeedScreen, testSpeedLoop, &
-                               loadAllInFolder, getImageList, changeRGB, getImageFileByName
+                               loadAllInFolder, getImageList, changeRGB, getImageFileByName, imageData, &
+                               returnColorOfPixel 
 
     !
     !   Images are pretty complex and compact.
@@ -45,6 +46,9 @@ MODULE ImageFactory
                                                       width, height
          integer(2), dimension(:,:,:), allocatable :: frames
 
+         contains
+
+         procedure                                 ::  returnColorOfPixel
     end type
 
     type imageFile
@@ -72,6 +76,18 @@ MODULE ImageFactory
     integer                                        :: testIndex    
 
     contains
+
+    function returnColorOfPixel(this, f, x, y) result(c)
+        class(imageData)    :: this
+        integer(2)          :: f
+        integer(4)          :: x, y
+        integer(2)          :: c
+
+        c = this%frames(f, x, y) 
+
+        if (this%transpColor == c .AND. this%transpColor /= 1) c = -1
+
+    end function
 
     subroutine getImageList(spriteNames )
         character(NAME_MAX_LEN), dimension(:), allocatable, intent(out) :: spriteNames 
@@ -303,7 +319,7 @@ MODULE ImageFactory
     subroutine addToScreenBuffer(this, frameNum, bufferNum, x, y, filter)
         class(imageFile), intent(inout) :: this
         integer(2)                      :: frameNum, bufferNum, x, y, filter
-        integer(2)                      :: xPix, yPix, color, xOnBuff, yOnBuff
+        integer(2)                      :: xPix, yPix, color, xOnBuff, yOnBuff, div
         integer(2), dimension(3)        :: rgb        
 
         if (allocated(this%img) .EQV. .FALSE.) call this%loadImage()
@@ -409,6 +425,10 @@ MODULE ImageFactory
                    color = changeRGB(color,  -3, 3, 3)
 
               case(FILTER_SHADOW)
+                   div = wOfScreenBuffer / standards(getScreenSizeId(), 1)  
+                   if (div < 1) div = 1 
+                   div = div * 2 
+
                    if (modulo((xPix + yPix), 2) == 1) then 
                        color = -1 
                    else 

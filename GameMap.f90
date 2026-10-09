@@ -15,6 +15,7 @@ MODULE GameMap
     USE screen
     USE winapis
     USE KERNEL32, WinSleep => Sleep
+    USE adlib
 
     implicit none
 
@@ -23,7 +24,7 @@ MODULE GameMap
                 runGameLogic, doThingsOnMapEditor, closeMapEditor, FloorChooser, floorAdderCheck
 
     logical  :: canKill = .FALSE.
-    character(NAME_MAX_LEN), dimension(:), allocatable :: baseFloorList, floorList 
+    character(NAME_MAX_LEN), dimension(:), allocatable :: baseFloorList, floorList, musicList 
     character(NAME_MAX_LEN), dimension(4), parameter   :: weatherNamesKeys = (/ & 
                                                        "dayNorm", "nightNorm", "dayRain","nightRain" /) 
     character(NAME_MAX_LEN), dimension(4)              :: weatherNames
@@ -38,14 +39,19 @@ MODULE GameMap
     type(objectData), pointer                          :: placeObj         
     type(imageFile) , pointer                          :: placeImg
     integer(1)                                         :: placeTyp, placeFilter
+    integer(4)                                         :: XOnScreen, YOnScreen 
 
     type Unit
          type(spritePoz), pointer      :: sp 
+         integer(4)                    :: x, y
+         integer(1)                    :: layerNum
+         character(NAME_MAX_LEN)       :: name
 
          contains                  
 
-         procedure                     :: killMe  => killMe
-         procedure                     :: setUnit => setUnit
+         procedure                     :: killMe     => killMe
+         procedure                     :: setUnit    => setUnit
+         procedure                     :: setPointer => setPointer
 
     end type
 
@@ -69,7 +75,7 @@ MODULE GameMap
          integer(1)                            :: nameLen, typ = MAP_WALKING, &
                                                   defWeather = WEATHER_DAY_NORM, &
                                                   defFilter  = NO_FILTER      
-         character(NAME_MAX_LEN)               :: name 
+         character(NAME_MAX_LEN)               :: name, musicPlaying, defaultMusic 
          integer(4)                            :: width, height
          logical                               :: wind = .FALSE., paused = .TRUE.
             
@@ -94,12 +100,26 @@ MODULE GameMap
     subroutine killMe(this)
         class(Unit), intent(inout) :: this
 
+        call this%setPointer()
         if (associated(this%sp)) call this%sp%killMe()
         nullify(this%sp)
-
-
+        this%name = ""
         !call currentMap%killUnit(this%ind)
     
+    end subroutine
+
+    subroutine setPointer(this)
+        class(Unit), intent(inout)            :: this
+
+        !call displayDebug(this%name)
+
+        nullify(this%sp)
+        if (this%name == "") return
+
+        call addPointerByNameXY(this%sp, this%layerNum, this%name, this%x, this%y)
+
+        !call displayDebug("SZAR!!")
+
     end subroutine
 
     subroutine setUnit(this, name, x, y, layerNum)
@@ -131,6 +151,10 @@ MODULE GameMap
         end select
 
         call addPointerToLastSpritePoz(this%sp, layerNum)
+        this%x        = x
+        this%y        = y
+        this%name     = name
+        this%layerNum = layerNum
 
     end subroutine
 
@@ -143,6 +167,7 @@ MODULE GameMap
         integer(8)                            :: ind
         
         do ind = 1, size(this%units), 1
+           call this%units(ind)%setPointer()
            if (associated(this%units(ind)%sp)) then 
                if (this%units(ind)%sp%xw > w .OR. this%units(ind)%sp%yh > h) call this%units(ind)%killMe() 
            end if 
@@ -156,6 +181,7 @@ MODULE GameMap
         integer(8)                            :: ind
         
         do ind = 1, size(this%units), 1
+           call this%units(ind)%setPointer()
            if (associated(this%units(ind)%sp)) then 
                if (this%units(ind)%sp%name == n) call this%units(ind)%killMe() 
            end if 
@@ -190,6 +216,10 @@ MODULE GameMap
         this%siz = this%siz + 1
 
         call this%units(this%siz)%setUnit(name, x, y, LAYER_PLAYGROUND)
+        
+        do ind = 1, this%siz, 1
+           call this%units(ind)%setPointer()  
+        end do    
 
     end subroutine
 
@@ -204,6 +234,7 @@ MODULE GameMap
         if (rc /= 0) call displayDebug("Failed to allocate unit list!") 
 
         do ind = 1, size(this%units), 1
+           this%units(ind)%name = ""
            if (associated(this%units(ind)%sp)) nullify(this%units(ind)%sp)
         end do
 
@@ -245,6 +276,7 @@ MODULE GameMap
         newSiz = this%siz
 
         do ind = 1, this%siz, 1
+           call this%units(ind)%setPointer()
            if (associated(this%units(ind)%sp)) then
                ind2           = ind2 + 1 
                tempList(ind2) = this%units(ind) 
@@ -258,6 +290,7 @@ MODULE GameMap
         call move_alloc(tempList, this%units)
 
         do ind = this%siz + 1, size(this%units), 1
+           call this%units(ind)%setPointer()
            if (associated(this%units(ind)%sp)) call this%units(ind)%killMe()
         end do
 
@@ -301,10 +334,10 @@ MODULE GameMap
        logical                 :: load
 
        integer(1)              :: success
-       INTEGER                 :: ITYPE, selectedFloor, selectedWeather, windVal
+       INTEGER                 :: ITYPE, selectedFloor, selectedWeather, windVal, musicVal
        TYPE(WIN_MESSAGE)       :: MESSAGE
        integer(1)              :: num 
-
+       integer(2)              :: ind 
        integer                 :: w, h, m 
 
        call initAllUnitLists() 
@@ -320,6 +353,7 @@ MODULE GameMap
        end do 
        
        call getUnitNames(baseFloorList, TYPE_FLOOR, 1) 
+       call getMusicList(musicList) 
 
        CALL WDialogLoad(IDD_MAP_BASICSETTINGS)
        CALL WDialogTitle(getWordInCurrentLang("basicSettings")) 
@@ -361,6 +395,8 @@ MODULE GameMap
 
        CALL WDialogPutString(ID_MAP_BASICSETTINGS_FLOOR_L,   getWordInCurrentLang("defaultFloorType")) 
        CALL WDialogPutString(ID_MAP_BASICSETTINGS_WEATHER_L, getWordInCurrentLang("defaultWeather")) 
+       CALL WDialogPutString(ID_MAP_BASICSETTINGS_MUSIC_L , getWordInCurrentLang("defaultMusic")) 
+       CALL WDialogPutString(ID_MAP_BASICSETTINGS_MUSIC_C , getWordInCurrentLang("clear")) 
 
        call wDialogPutMenu(IDF_MAP_DEFAULT_FLOOR, baseFloorList, size(baseFloorList), 0)  
         
@@ -369,6 +405,7 @@ MODULE GameMap
        end do 
 
        call wDialogPutMenu(IDF_MAP_DEFAULT_WEATHER, weatherNames, size(weatherNames), 0)  
+       call wDialogPutMenu(IDF_MAP_DEFAULT_MUSIC  , musicList   , size(musicList   ), 0)  
 
        select case(mapTypeOld) 
        case(1) 
@@ -398,6 +435,15 @@ MODULE GameMap
        call WDialogPutOption(IDF_MAP_DEFAULT_FLOOR  , selectedFloor) 
        call WDialogPutOption(IDF_MAP_DEFAULT_WEATHER, selectedWeather) 
 
+       do ind = 1, size(musicList), 1 
+          if (musicList(ind) == currentMap%defaultMusic) then 
+              musicVal = ind
+              exit    
+          end if  
+       end do 
+
+       call WDialogPutOption(IDF_MAP_DEFAULT_MUSIC  , musicVal) 
+
        do
           CALL WDialogSelect(IDD_MAP_BASICSETTINGS)
           CALL WDialogShow(ITYPE=Modal)     
@@ -411,6 +457,8 @@ MODULE GameMap
                   CASE(ID_MAP_BASICSETTINGS_OK)
                      success = 1
                      EXIT
+                  CASE(ID_MAP_BASICSETTINGS_MUSIC_C)
+                     call WDialogPutOption(IDF_MAP_DEFAULT_MUSIC, 0) 
                   END SELECT
               end if
        end do 
@@ -472,6 +520,9 @@ MODULE GameMap
            if (defaultFloorOld /= defaultFloor .AND. (load .EQV. .FALSE.)) then
                call currentMap%realUnits%removeByName(defaultFloor)
            end if   
+
+           call WDialogGetMenu(IDF_MAP_DEFAULT_MUSIC, musicVal) 
+           currentMap%defaultMusic = musicList(musicVal) 
 
        else 
            if (load) then 
@@ -616,6 +667,12 @@ MODULE GameMap
 
             if (isAKeyPressed(BUTTON_ENTER) .OR. getInGameControl(PRESS_ATTACK)) then
 
+                select case(placeTyp) 
+                case(TYPE_FLOOR) 
+               
+                    call currentMap%floors%addUnit(placeObj%name, XonScreen + getOffSetX(), &
+                                                   YonScreen + getOffSetY()) 
+                end select
 
             end if
 
@@ -661,11 +718,11 @@ MODULE GameMap
                        color  = 253 
                        filter = placeFilter
 
-                       X = int(X / 32) * 32.0 + modulo(getOffsetX(), 32) 
-                       Y = int(Y / 32) * 32.0 + modulo(getOffsetY(), 32)  
+                       XOnScreen = int(X / 32) * 32 + modulo(getOffsetX(), 32) 
+                       YOnScreen = int(Y / 32) * 32 + modulo(getOffsetY(), 32)  
 
-                       call drawSpriteWithRectagle(int(X),int(Y), &
-                                                   color, 1, placeImg, NO_FILTER) 
+                       call drawSpriteWithRectagle(XOnScreen, YOnScreen , &
+                                                   color, 1, placeImg, placeFilter) 
                     
                    end select
       

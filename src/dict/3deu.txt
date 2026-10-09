@@ -141,3 +141,5 @@ addFloor => Boden Hinzufügen
 select => Ordner
 noWeather => Ohnes Wetter
 exit => Beenden
+defaultMusic => Standardmuzik:
+clear => Löschen

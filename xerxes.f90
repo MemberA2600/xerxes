@@ -117,6 +117,8 @@
 !
 !    Put tests here!  
 !
+
+      !call displayDebugNum(getScreenSizeId())  
       !call openVGM()  
       !call displayDebug(trim(CWD()) // "!!")  
 

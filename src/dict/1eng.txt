@@ -141,3 +141,5 @@ addFloor => Add Floor
 select => Select
 noWeather => No Weather
 exit => Exit
+defaultMusic => Default Music:
+clear => Clear
