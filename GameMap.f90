@@ -99,6 +99,12 @@ MODULE GameMap
                                            x, y, currentMap%defFilter, .FALSE., obj%name)
         end select
 
+        !call displayDebug("Name: " // name)
+        !call displayDebugNumTxt("X: ", x)
+        !call displayDebugNumTxt("Y: ", y)
+        !call displayDebugNumTxt("Size: ", layerBlocks(LAYER_PLAYGROUND)%NextIndexP)
+
+
     end subroutine
 
 !
@@ -108,15 +114,21 @@ MODULE GameMap
         integer(1)                            :: b
         integer(4)                            :: w, h
         integer(8)                            :: ind
-        
+        logical                               :: was        
+
         do b = 1, layerNum, 1
+           was = .FALSE. 
+
            do ind = 1, layerBlocks(b)%nextIndexP, 1 
               if ((layerBlocks(b)%pozList(ind)%xw > w .OR.layerBlocks(b)%pozList(ind)%yh > h) .AND. &
                  (layerBlocks(b)%pozList(ind)%dontCountMe .EQV. .FALSE.)) then 
 
-                  call layerBlocks(b)%pozList(ind)%killMe()  
+                  call layerBlocks(b)%pozList(ind)%killMe(.FALSE.)  
+                  was = .TRUE.  
               end if  
            end do 
+           if (was) call reorderPoz(b) 
+
         end do
 
     end subroutine
@@ -125,15 +137,20 @@ MODULE GameMap
         character(*)                          :: n
         integer(8)                            :: ind
         integer(1)                            :: b
+        logical                               :: was        
         
         do b = 1, layerNum, 1
            do ind = 1, layerBlocks(b)%nextIndexP, 1 
               if (layerBlocks(b)%pozList(ind)%name == n.AND. &
                  (layerBlocks(b)%pozList(ind)%dontCountMe .EQV. .FALSE.)) then 
 
-                  call layerBlocks(b)%pozList(ind)%killMe()  
+                  call layerBlocks(b)%pozList(ind)%killMe(.FALSE.)  
+                  was = .TRUE.  
+
               end if  
            end do 
+           if (was) call reorderPoz(b) 
+
         end do
 
     end subroutine
@@ -314,7 +331,7 @@ MODULE GameMap
            end if   
 
            if ((defaultFloorOld /= baseFloorList(selectedFloor)) .OR. (load)) then 
-               if (load .EQV. .FALSE.) call layerBlocks(LAYER_BACKGROUND)%pozList(1)%killMe() 
+               if (load .EQV. .FALSE.) call layerBlocks(LAYER_BACKGROUND)%pozList(1)%killMe(.FALSE.) 
                call setUnit(baseFloorList(selectedFloor), 1, 1, LAYER_BACKGROUND)
            end if 
 
@@ -443,9 +460,10 @@ MODULE GameMap
                                             LAYER_FOREGROUND, .FALSE., 1)
                         call buffer2Real()
                         if (deleted()) then
-                            call selectedUnit%killMe()
-                            call reorderPoz(LAYER_PLAYGROUND)
+                            call selectedUnit%killMe(.TRUE.)
                             nullify(selectedUnit)
+                            !call displayDebugNum(layerBlocks(LAYER_PLAYGROUND)%NextIndexP)
+
                             exit
                         else if (cancelled()) then
                             nullify(selectedUnit)
@@ -586,6 +604,10 @@ MODULE GameMap
     end function
 
     subroutine doThePlacer()
+        integer         :: lastX, lastY
+
+        lastX = -1
+        lastY = -1
 
         DO
             call WinSleep(10)
@@ -597,7 +619,8 @@ MODULE GameMap
             call buffer2Real()
 
             call readinput()
-            if (clicked()) then
+
+            if (clicked() .AND. (lastX /= XonScreen .OR. lastY /= YonScreen)) then
 
                 select case(placeTyp) 
                 case(TYPE_FLOOR) 
@@ -608,6 +631,9 @@ MODULE GameMap
                     call setUnit(placeObj%name, XonScreen + getOffSetX(), & 
                                  YonScreen + getOffSetY(), LAYER_PLAYGROUND) 
                 end select
+
+                lastX = XonScreen 
+                lastY = YonScreen 
 
             end if
 
@@ -624,7 +650,8 @@ MODULE GameMap
            if (layerBlocks(b)%pozList(ind)%x == x .AND.layerBlocks(b)%pozList(ind)%y == y .AND. &
                layerBlocks(b)%pozList(ind)%typFlag == typ                                 .AND. &
               (layerBlocks(b)%pozList(ind)%dontCountMe .EQV. .FALSE.)) then 
-               call layerBlocks(b)%pozList(ind)%killMe()  
+               call layerBlocks(b)%pozList(ind)%killMe(.TRUE.)  
+               exit 
            end if  
         end do 
    

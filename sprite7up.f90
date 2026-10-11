@@ -291,11 +291,16 @@ MODULE sprite7up
 
     end subroutine
 
-    subroutine killMe(this)
+    subroutine killMe(this, reord)
         class(spritePoz), intent(inout) :: this        
+        logical                         :: reord
 
         call this%dropMySprite()
         this%dontCountMe = .TRUE.
+
+        if (reord) then
+           if (layerBlocks(this%bufferNum)%nextIndexP > 1) call reorderPoz(this%bufferNum)
+        end if
 
     end subroutine       
 
@@ -806,6 +811,9 @@ MODULE sprite7up
 
          end if
 
+         if (layerBlocks(bufferNum)%nextIndexP > 1) call reorderPoz(bufferNum)
+
+
     end subroutine
 
     subroutine AddSpriteThing(spriteName, imageName, bufferNum, x, y, filter, fly, unique, gameObjName)
@@ -932,7 +940,7 @@ MODULE sprite7up
         
         do b = 1, layerNum, 1
            do ind = 1, layerBlocks(b)%nextIndexP, 1 
-              if (layerBlocks(b)%pozList(ind)%dontCountMe .EQV. .FALSE.) call layerBlocks(b)%pozList(ind)%killMe() 
+              if (layerBlocks(b)%pozList(ind)%dontCountMe .EQV. .FALSE.) call layerBlocks(b)%pozList(ind)%killMe(.FALSE.) 
            end do 
 
            layerBlocks(b)%nextIndexP = 0 
@@ -1035,7 +1043,7 @@ MODULE sprite7up
         call eraseBuff()
 
         do n = 1, size(layerBlocks), 1
-           if (layerBlocks(n)%nextIndexP > 1) call reorderPoz(n)
+           !if (layerBlocks(n)%nextIndexP > 1) call reorderPoz(n)
 
            do ind = 1, layerBlocks(n)%nextIndexP, 1 
               !write(test, "(I0)") ind
