@@ -146,3 +146,6 @@ clear => Törlés
 clearSelection => Kijelölés Törlése
 selectFloor => Padló Kijelölése
 selectUnit => Egység Kijelölés
+floorDecoration => Talajdekoráció
+unique => Egyedi
+triggerable => Aktiválható

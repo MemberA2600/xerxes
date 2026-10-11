@@ -146,3 +146,6 @@ clear => Clear
 clearSelection => Clear Selection
 selectFloor => Select Floor
 selectUnit => Select Unit
+floorDecoration => Floor Decoration
+unique => Unique
+triggerable => Triggerable

@@ -20,10 +20,10 @@ MODULE GameObject
 
     logical               :: canKill, bullshit
     integer(1)            :: changedPage = 0
-    integer(2), parameter :: typeNum = 4, flyTypeNum = 3
+    integer(2), parameter :: typeNum = 5, flyTypeNum = 3
 
     character(NAME_MAX_LEN), dimension(typeNum ), parameter :: typeNames =  &
-                           (/ "floor", "playerMap", "tree", "weather" /)
+                           (/ "floor", "playerMap", "tree", "weather", "floorDecoration" /)
 
     character(NAME_MAX_LEN), dimension(flyTypeNum), parameter :: flyTypeNames =  &
                            (/ "ground", "hovering", "flying" /)
@@ -43,7 +43,7 @@ MODULE GameObject
          integer(1)                              :: nameLen
          character(NAME_MAX_LEN)                 :: name 
          integer(1)                              :: objType, numOfSprites, flyType
-         logical                                 :: solid
+         logical                                 :: solid, unique, triggerable
 
          character(NAME_MAX_LEN), dimension(:), allocatable :: spriteList
 
@@ -178,6 +178,7 @@ MODULE GameObject
         spriteNameListPointers(TYPE_PLAYER_MAP)%spriteNameList => mapCharacterSpriteList 
         spriteNameListPointers(TYPE_TREE)%spriteNameList       => twoSpriteList       
         spriteNameListPointers(TYPE_WEATHER)%spriteNameList    => singleSpriteList 
+        spriteNameListPointers(TYPE_FLOOR_DECORATION)%spriteNameList      => singleSpriteList 
 
     end subroutine
 
@@ -222,6 +223,9 @@ MODULE GameObject
 
        CALL WDialogPutString(IDF_ObjTypeLabel, getWordInCurrentLang("objectType")) 
        CALL WDialogPutString(IDF_SolidBox    , getWordInCurrentLang("solid")) 
+       CALL WDialogPutString(IDF_UniqueBox   , getWordInCurrentLang("unique")) 
+       CALL WDialogPutString(IDF_TriggerBox  , getWordInCurrentLang("triggerable")) 
+
        CALL WDialogPutString(IDF_SpriteIndexLabel, getWordInCurrentLang("index")) 
        CALL WDialogPutString(IDF_SpriteNameLabel , getWordInCurrentLang("name")) 
        CALL WDialogPutString(IDF_AssignedLabel   , getWordInCurrentLang("assignedSprite")) 
@@ -291,7 +295,7 @@ MODULE GameObject
         character(4)                           :: headerTyp
         integer(2)                             :: nameLen, numOfSprites              
         character(NAME_MAX_LEN)                :: name
-        integer(4)                             :: solidBoxVal, typeVal, flyVal  
+        integer(4)                             :: solidBoxVal, typeVal, flyVal, triggerVal, uniqueVal  
 
         if (addCwd) then
             call loadBinary(trim(CWD()) // "\obj\" // fname, d, siz, .FALSE.)
@@ -323,7 +327,25 @@ MODULE GameObject
  
         typeVal      = d(offset    )
         flyVal       = d(offset + 1)
-        solidBoxVal  = d(offset + 2)
+
+        if (btest(d(offset + 2), 0)) then
+            solidBoxVal  = 1
+        else    
+            solidBoxVal  = 0
+        end if    
+
+        if (btest(d(offset + 2), 1)) then
+            uniqueVal  = 1
+        else    
+            uniqueVal  = 0
+        end if   
+
+        if (btest(d(offset + 2), 2)) then
+            triggerVal  = 1
+        else    
+            triggerVal  = 0
+        end if   
+
         numOfSprites = d(offset + 3)   
 
         offset = offset + 4          
@@ -335,6 +357,9 @@ MODULE GameObject
             call wDialogPutString(ID_ObjName, name)
             call WDialogPutOption(IDF_ObjectTypeMenu, typeVal)   
             call WDialogPutCheckBox(IDF_SolidBox    , solidBoxVal )
+            call WDialogPutCheckBox(IDF_UniqueBox   , uniqueVal   )
+            call WDialogPutCheckBox(IDF_TriggerBox  , triggerVal )
+
             call WDialogPutOption(IDF_FlyTypeMenu, flyVal)   
 
             call createSpriteList(d, numOfSprites, testData%spriteList, offset, siz)
@@ -399,7 +424,7 @@ MODULE GameObject
         character(MAX_PATH_LEN)               :: fname
         integer(2), dimension(:), allocatable :: fullD
         integer(8)                            :: siz, ind                                   
-        integer(4)                            :: solidBoxVal, typeVal, flyVal
+        integer(4)                            :: solidBoxVal, typeVal, flyVal, triggerVal, uniqueVal
 
         fname = FileDialog("obj\", .TRUE., "xxo ")  
 
@@ -411,7 +436,7 @@ MODULE GameObject
         ! Actual Name               
         ! Type                   : 1 byte
         ! FlyType                : 1 byte
-        ! Solid                  : 1 byte    
+        ! Solid, Unique, Trigger : 1 byte    
         ! Number of Sprites      : 1 bytes    
         ! Name Len + Sprite Name : 1 byte + many    
 
@@ -430,7 +455,9 @@ MODULE GameObject
         call writeChars2Bin(fullD, trim(name), 6, len_trim(name))
 
         ind = 6 + len_trim(name)
-        call WDialogGetCheckBox(IDF_SolidBox, solidBoxVal)
+        call WDialogGetCheckBox(IDF_SolidBox  , solidBoxVal)
+        call WDialogGetCheckBox(IDF_UniqueBox , uniqueVal)
+        call WDialogGetCheckBox(IDF_TriggerBox, triggerVal)
 
         call WDialogGetMenu(IDF_ObjectTypeMenu, typeVal) 
         call WDialogGetMenu(IDF_FlyTypeMenu, flyVal) 
@@ -441,7 +468,8 @@ MODULE GameObject
         fullD(ind) = flyVal
         ind = ind + 1
 
-        fullD(ind) = solidBoxVal
+        fullD(ind) = solidBoxVal + (uniqueVal * 2) + (triggerVal * 4) 
+       
         ind = ind + 1
 
         fullD(ind) = size(testData%spriteList)
@@ -471,7 +499,9 @@ MODULE GameObject
         call WDialogPutOption(IDF_AssignedSprite7, 0)   
         call WDialogPutOption(IDF_AssignedSprite8, 0)     
         call WDialogPutOption(IDF_AssignedSprite8, 0)     
-        call WDialogPutCheckBox(IDF_SolidBox, 0)
+        call WDialogPutCheckBox(IDF_SolidBox  , 0)
+        call WDialogPutCheckBox(IDF_UniqueBox , 0)
+        call WDialogPutCheckBox(IDF_TriggerBox, 0)
 
         lastSelectedType = 0
         currPage         = 0   

@@ -328,7 +328,7 @@ MODULE sprite7up
         filter = this%filter
         
         b = this%bufferNum
-        if (typ == TYPE_FLOOR) b = LAYER_BACKGROUND
+        if (typ == TYPE_FLOOR .OR. typ == TYPE_FLOOR_DECORATION) b = LAYER_BACKGROUND
 
         if (this%tempFilter > 0) then
             if (this%tempFilterCountDown == 0) then

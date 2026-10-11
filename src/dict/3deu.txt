@@ -146,3 +146,6 @@ clear => Löschen
 clearSelection => Auswähl Löschen
 selectFloor => Boden Auswahlen
 selectUnit => Einheit Auswahlen
+floorDecoration => Bodenverzierung
+unique => Einzel
+triggerable => Auslösbar
