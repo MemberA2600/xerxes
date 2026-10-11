@@ -8,20 +8,20 @@
 //
 // Winteracter resource script
 //
-// Modified : 07/okt./2026 07:46:57
+// Modified : 10/okt./2026 14:38:12
 //
 ///////////////////////////////////////////////////
 //
 // Number of resources
 //
 //*WN* NMENU       1
-//*WN* NITEM       31
+//*WN* NITEM       35
 //*WN* NDIALOG     10
 //*WN* NFIELD      164
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
-//*WN* NIDENTIFIER 216
+//*WN* NIDENTIFIER 220
 //*WN* NINCLUDE    0
 //*WN* NOPTROW     0
 ///////////////////////////////////////////////////
@@ -240,6 +240,10 @@
 #define ID_MAP_BASICSETTINGS_MUSIC_L     1162
 #define IDF_MAP_DEFAULT_MUSIC            1163
 #define ID_MAP_BASICSETTINGS_MUSIC_C     1164
+#define ID_SELECT                       40032
+#define ID_SELECT_NONE                  40033
+#define ID_SELECT_FLOOR                 40034
+#define ID_SELECT_UNIT                  40035
 
 ///////////////////////////////////////////////////
 //
@@ -631,6 +635,12 @@ BEGIN
   POPUP "Map Editor",GRAYED
   BEGIN
     MENUITEM "Basic Settings",ID_MAPEDITOR_BASICS
+    POPUP "Select"
+    BEGIN
+      MENUITEM "Clear Selection",ID_SELECT_NONE
+      MENUITEM "Select Floor",ID_SELECT_FLOOR
+      MENUITEM "Select Unit",ID_SELECT_UNIT
+    END
     MENUITEM "Add Floor",ID_ADD_FLOOR
     MENUITEM "Exit Map Editor",ID_ExitMapEditor
   END
@@ -643,6 +653,7 @@ ID_SCREENSIZE,1,1,0,
 ID_LANG,1,5,0,
 ID_DEV,2,0,
 ID_MAPEDITOR,3,0,
+ID_SELECT,3,2,0,
 0
 END
 
@@ -667,5 +678,5 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FORTSAVE    1
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
-//*WI* LASTTYPE    2
-//*WI* LASTRES     9
+//*WI* LASTTYPE    1
+//*WI* LASTRES     1

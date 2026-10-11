@@ -22,7 +22,8 @@ MODULE sprite7up
                                      addTempFiltertoAllByName, addTempFiltertoAllByType,                  &
                                      setWeather, spritePoz, getOffsetX, getOffsetY, setSize, &
                                      changeSprite, changeSpriteEditor, addPointerToLastSpritePoz, &
-                                     checkCollision, addPointerByNameXY
+                                     checkCollision, addPointerByNameXY, layerBlocks, checkAllCollisions, &
+                                     DROPALLUNITS, reorderPoz 
 
     type SpriteObj 
          integer(2)               :: w, h, spriteI
@@ -925,7 +926,20 @@ MODULE sprite7up
 
     end subroutine
 
-    
+    subroutine dropAllUnits()
+        integer(1)              :: b
+        integer(8)              :: ind
+        
+        do b = 1, layerNum, 1
+           do ind = 1, layerBlocks(b)%nextIndexP, 1 
+              if (layerBlocks(b)%pozList(ind)%dontCountMe .EQV. .FALSE.) call layerBlocks(b)%pozList(ind)%killMe() 
+           end do 
+
+           layerBlocks(b)%nextIndexP = 0 
+        end do
+
+
+    end subroutine
 
     subroutine initBlockMaps(n, w, h)
         integer(1)              :: n, ind, rc
@@ -1096,5 +1110,24 @@ MODULE sprite7up
          end do
 
     end subroutine
+
+    function checkIfXYOccupied(b, x, y, typ) result(r)
+        integer(1)              :: b, typ
+        integer(4)              :: x, y
+        integer(8)              :: ind
+        logical                 :: r
+
+        r = .FALSE.
+
+        do ind = 1, layerBlocks(b)%nextIndexS, 1
+           if (layerBlocks(b)%pozList(ind)%x == x .AND. layerBlocks(b)%pozList(ind)%y == y) then
+               if (typ == 0 .OR. typ == layerBlocks(b)%pozList(ind)%typFlag) then 
+                   r = .TRUE.
+                   return  
+               end if 
+           end if
+        end do
+
+    end function 
 
 END MODULE sprite7up

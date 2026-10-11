@@ -234,6 +234,10 @@
                     call setLang(MESSAGE%VALUE1 - ID_ENGLISH) 
                     call saveConfig() 
                     call setMenuLabels()
+
+              CASE (ID_SELECT_NONE:ID_SELECT_UNIT)
+                    call setSelection(MESSAGE%VALUE1 - ID_SELECT_NONE)
+
           END SELECT 
 
           CASE (CloseRequest)            ! Close window (e.g. Alt/F4)
@@ -246,7 +250,7 @@
             if (mapEditorActive .EQV. .TRUE.) then
                 ! Map Editor
                 call WMenuSetState(ID_MAPEDITOR, ItemEnabled, 1)  
-                call searchForDeadUnits()
+                !call searchForDeadUnits()
                 call doThingsOnMapEditor()    
             else
                 ! Playing the Game
@@ -293,7 +297,10 @@
             call WMenuSetString(ID_MapEditor        , trim(getWordInCurrentLang( "mapEditor"          )))
             call WMenuSetString(ID_MAPEDITOR_BASICS , trim(getWordInCurrentLang( "basicSettings"      )))
             call WMenuSetString(ID_ADD_FLOOR        , trim(getWordInCurrentLang( "addFloor"           )))
-
+            call WMenuSetString(ID_SELECT           , trim(getWordInCurrentLang( "select"             )))
+            call WMenuSetString(ID_SELECT_NONE      , trim(getWordInCurrentLang( "clearSelection"     )))
+            call WMenuSetString(ID_SELECT_FLOOR     , trim(getWordInCurrentLang( "selectFloor"        )))
+            call WMenuSetString(ID_SELECT_UNIT      , trim(getWordInCurrentLang( "selectUnit"         )))
       end subroutine  
 
       subroutine loadFolders()

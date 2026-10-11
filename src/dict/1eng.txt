@@ -143,3 +143,6 @@ noWeather => No Weather
 exit => Exit
 defaultMusic => Default Music:
 clear => Clear
+clearSelection => Clear Selection
+selectFloor => Select Floor
+selectUnit => Select Unit

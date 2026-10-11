@@ -45,9 +45,9 @@ MODULE engineConstants
 
     integer(2), parameter         :: BUTTON_MOUSE_L         = 1,  &
                                      BUTTON_MOUSE_R         = 2,  &
-                                     BUTTON_ENTER           = 13,  &
-                                     BUTTON_ESC             = 27
-
+                                     BUTTON_ENTER           = 13, &
+                                     BUTTON_ESC             = 27, &
+                                     BUTTON_DELETE          = 46
 
     integer(1), parameter         :: IND_KEY_LEFT           = 1 , &  
                                      IND_KEY_RIGHT          = 2 , &  
@@ -144,7 +144,9 @@ MODULE engineConstants
                                           opl2_default = "Original Plastic Lobotomy", &      
                                           img_default  = "Sexy Sprite              ", &
                                           obj_default  = "Old Ogre Object          ", &
-                                          map_default  = "Memorable Map            "      
+                                          map_default  = "Memorable Map            ", &
+                                          EMPTY_NAME   = "                         "
+       
      
     character(NAME_MAX_LEN), dimension(1) , target :: singleSpriteList       = (/ "default" /)
     character(NAME_MAX_LEN), dimension(24), target :: mapCharacterSpriteList = (/&

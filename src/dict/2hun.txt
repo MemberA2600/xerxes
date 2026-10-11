@@ -143,3 +143,6 @@ noWeather => Nincs Idõjárás
 exit => Kilépés
 defaultMusic => Alapértelmezett Zene:
 clear => Törlés
+clearSelection => Kijelölés Törlése
+selectFloor => Padló Kijelölése
+selectUnit => Egység Kijelölés
