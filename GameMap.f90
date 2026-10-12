@@ -21,22 +21,30 @@ MODULE GameMap
 
     private
     public   :: openBasicSettingsWindow, mapBasicSettings, initMapTimer, &
-                runGameLogic, doThingsOnMapEditor, closeMapEditor, FloorChooser, floorAdderCheck, &
+                runGameLogic, doThingsOnMapEditor, closeMapEditor, UnitChooser, UnitAdderCheck, &
                 setSelection
 
     logical  :: canKill = .FALSE.
-    character(NAME_MAX_LEN), dimension(:), allocatable :: baseFloorList, floorList, musicList 
+    character(NAME_MAX_LEN), dimension(:), allocatable :: baseFloorList, floorList, musicList, decoList 
     character(NAME_MAX_LEN), dimension(4), parameter   :: weatherNamesKeys = (/ & 
                                                        "dayNorm", "nightNorm", "dayRain","nightRain" /) 
     character(NAME_MAX_LEN), dimension(4)              :: weatherNames
+
+    integer(1), parameter :: typeNum = 2
+
+    character(NAME_MAX_LEN), dimension(typeNum ), parameter :: typeNames =  &
+                           (/ "floor", "floorDecoration" /)
+
+    integer(1)            :: selectedType
 
     integer(1), parameter                              :: stepOnMap = 10
     integer(2), parameter                              :: COLOR_GREEN = 253
     integer(1)                                         :: lastNum
 
-    integer(1), parameter                              :: NO_SELECT    = 0, &
-                                                          SELECT_FLOOR = 1, &
-                                                          SELECT_UNITS = 2
+    integer(1), parameter                              :: NO_SELECT          = 0, &
+                                                          SELECT_FLOOR       = 1, &
+                                                          SELECT_DECORATIONS = 3, &
+                                                          SELECT_UNIT        = 2
 
     integer(1)                                         :: selectMode = NO_SELECT
 
@@ -88,15 +96,18 @@ MODULE GameMap
                                                currentMap%defFilter, obj%name)
             else
                 call createSpriteObjPlayGround(name, obj%getEditorSprite(currentMap%wind, .TRUE., ""), &
-                                               x, y, currentMap%defFilter, .FALSE., obj%name)
+                                               x, y, currentMap%defFilter, obj%unique, obj%name)
             end if    
+        case(TYPE_FLOOR_DECORATION)
+            call createSpriteObjPlayGround(name, obj%getEditorSprite(currentMap%wind, .TRUE., ""), &
+                                           x, y, currentMap%defFilter, obj%unique, obj%name)
 
         case(TYPE_TREE)
             call createSpriteObjPlayGround(name, obj%getEditorSprite(currentMap%wind, .TRUE., ""), &
-                                           x, y, currentMap%defFilter, .FALSE., obj%name)
+                                           x, y, currentMap%defFilter, obj%unique, obj%name)
         case(TYPE_PLAYER_MAP)   
             call createSpriteObjPlayGround(name, obj%getEditorSprite(currentMap%wind, .TRUE., ""), &
-                                           x, y, currentMap%defFilter, .FALSE., obj%name)
+                                           x, y, currentMap%defFilter, obj%unique, obj%name)
         end select
 
         !call displayDebug("Name: " // name)
@@ -431,7 +442,9 @@ MODULE GameMap
                         case(SELECT_FLOOR)
                             call setXYOnScreen(rX, rY, 32) 
                             call setSelectedPointer(TYPE_FLOOR, LAYER_PLAYGROUND)
-
+                        case(SELECT_DECORATIONS)
+                            call setXYOnScreen(rX, rY, 32) 
+                            call setSelectedPointer(TYPE_FLOOR_DECORATION, LAYER_PLAYGROUND)
                         end select
                     end if
                  end if
@@ -511,9 +524,11 @@ MODULE GameMap
         call eraseBuff()
     end subroutine
 
-    subroutine FloorChooser()
+    subroutine UnitChooser()
        TYPE(WIN_MESSAGE)       :: MESSAGE
        integer                 :: windVal 
+       character(NAME_MAX_LEN), dimension(typeNum) :: typeNamesTrans
+       integer(1)              :: num 
 
        canKill           = .FALSE.
 
@@ -522,38 +537,52 @@ MODULE GameMap
          call sleep(1)
        end do 
        
+       do num = 1, typeNum, 1
+          typeNamesTrans(num) = getWordInCurrentLang(typeNames(num))  
+       end do 
+
        selectMode            = NO_SELECT 
        nullify(selectedUnit) 
+       selectedType          = 1
 
        call getUnitNames(floorList, TYPE_FLOOR, 0) 
-       CALL WDialogLoad(IDD_ADD_FLOOR)
-       CALL WDialogTitle(getWordInCurrentLang("addFloor")) 
+       call getUnitNames(decoList , TYPE_FLOOR_DECORATION, 0) 
+
+       CALL WDialogLoad(IDD_ADD_UNIT)
+       CALL WDialogTitle(getWordInCurrentLang("addUnit")) 
 
        CALL WDialogPutString(ID_FloorSelect    , getWordInCurrentLang("select")) 
        CALL WDialogPutString(ID_FloorExit      , getWordInCurrentLang("exit")) 
        CALL WDialogPutString(IDF_NO_WEATHER_BOX, getWordInCurrentLang("noWeather")) 
 
-       call wDialogPutMenu(IDF_FLOORBOX, floorList, size(floorList), 1)  
+       call wDialogPutMenu(IDF_UNITBOX, floorList, size(floorList), 1)  
+       call wDialogPutMenu(IDF_UNITTYPES , typeNamesTrans, size(typeNames)  , 1)  
 
        do
-          CALL WDialogSelect(IDD_ADD_FLOOR)
+          CALL WDialogSelect(IDD_ADD_UNIT)
           CALL WDialogShow(ITYPE=Modal)     
     
-          if (WinfoDialog(CurrentDialog) == IDD_ADD_FLOOR) then 
+          if (WinfoDialog(CurrentDialog) == IDD_ADD_UNIT) then 
               SELECT CASE (WinfoDialog(ExitButton))  
                   CASE(ExitField) 
                      EXIT
                   CASE(ID_FloorSelect) 
                      placeActive   = .TRUE.
-                     placeTyp      = TYPE_FLOOR
+
+                     select case(selectedType)
+                     case(1)
+                        placeTyp   = TYPE_FLOOR
+                     case(2)   
+                        placeTyp   = TYPE_FLOOR_DECORATION
+                     end select
 
                      call WMessageEnable(MouseButDown, Disabled)
                      call WMessageEnable(MouseButUp,   Disabled)
 
                      call WDialogGetCheckBox(IDF_NO_WEATHER_BOX, windVal)
                      if (windVal == 1) then   
-                         weatherOld      = currentMap%defWeather  
-                         call setWeather(weatherOld, .FALSE.)
+                         !weatherOld      = currentMap%defWeather  
+                         call setWeather(WEATHER_DAY_NORM, .FALSE.)
                          placeFilter     = NO_FILTER
                      else
                          placeFilter = currentMap%defFilter
@@ -579,7 +608,13 @@ MODULE GameMap
        end do 
 
        canKill = .TRUE.
-       selectMode            = SELECT_FLOOR
+
+       select case(selectedType)
+       case(1)
+           selectMode = SELECT_FLOOR
+       case(2)   
+           selectMode = SELECT_DECORATIONS
+       end select
 
     end subroutine
 
@@ -626,10 +661,22 @@ MODULE GameMap
                 case(TYPE_FLOOR) 
                
                     call deleteAllOnXY(XonScreen + getOffSetX(), &
-                                       YonScreen + getOffSetY(), TYPE_FLOOR, LAYER_PLAYGROUND)
+                                       YonScreen + getOffSetY(), TYPE_FLOOR           , LAYER_PLAYGROUND)
+
+                    call deleteAllOnXY(XonScreen + getOffSetX(), &
+                                       YonScreen + getOffSetY(), TYPE_FLOOR_DECORATION, LAYER_PLAYGROUND)
 
                     call setUnit(placeObj%name, XonScreen + getOffSetX(), & 
                                  YonScreen + getOffSetY(), LAYER_PLAYGROUND) 
+
+                case(TYPE_FLOOR_DECORATION) 
+
+                    call deleteAllOnXY(XonScreen + getOffSetX(), &
+                                       YonScreen + getOffSetY(), TYPE_FLOOR_DECORATION, LAYER_PLAYGROUND)
+
+                    call setUnit(placeObj%name, XonScreen + getOffSetX(), & 
+                                 YonScreen + getOffSetY(), LAYER_PLAYGROUND) 
+
                 end select
 
                 lastX = XonScreen 
@@ -724,7 +771,15 @@ MODULE GameMap
                call setXYOnScreen(rX, rY, 32) 
 
                call drawSpriteWithRectagle(XOnScreen, YOnScreen , &
-                                                   color, 1, placeImg, placeFilter)          
+                                                   color, 1, placeImg, placeFilter)    
+           case(TYPE_FLOOR_DECORATION) 
+               color  = COLOR_GREEN
+               filter = placeFilter
+
+               call setXYOnScreen(rX, rY, 32) 
+
+               call drawSpriteWithRectagle(XOnScreen, YOnScreen , &
+                                                   color, 1, placeImg, placeFilter)        
            end select
         end if
   
@@ -746,34 +801,59 @@ MODULE GameMap
 
     end subroutine
 
-    subroutine floorAdderCheck()
-        integer(4)                :: selectedFloor
-        character(NAME_MAX_LEN)   :: selectedFloorName, spriteName
+    subroutine UnitAdderCheck()
+        integer(4)                :: selectedUnit
+        character(NAME_MAX_LEN)   :: selectedUnitName, spriteName
         type(objectData), pointer :: obj         
         type(imageFile) , pointer :: img
+        integer(4)                :: selectedTypeTemp 
 
         if (canKill .EQV. .TRUE.) then 
             CALL WDialogUnLoad()
             canKill = .FALSE.
         else
-           if (WinfoDialog(CurrentDialog) == IDD_ADD_FLOOR .AND. (placeActive .EQV. .FALSE.)) then
+           if (WinfoDialog(CurrentDialog) == IDD_ADD_UNIT .AND. (placeActive .EQV. .FALSE.)) then
+
+               call WDialogGetMenu(IDF_UNITTYPES, selectedTypeTemp) 
+
+               if (selectedTypeTemp /= selectedType) then
+                   selectedType = selectedTypeTemp 
+                   
+                   select case(selectedType)
+                   case(1)   
+                      call wDialogPutMenu(IDF_UNITBOX, floorList, size(floorList), 1)  
+                      selectMode = SELECT_FLOOR  
+             
+                   case(2)   
+                      call wDialogPutMenu(IDF_UNITBOX, decoList, size(decoList), 1)  
+                      selectMode = SELECT_DECORATIONS
+
+                   end select 
+               end if 
+
                call putSpritesOnBuffer() 
     
-               call WDialogGetMenu(IDF_FLOORBOX, selectedFloor) 
-               selectedFloorName = floorList(selectedFloor)
+               call WDialogGetMenu(IDF_UNITBOX, selectedUnit) 
+
+               select case(selectedType)
+               case(1)   
+                    selectedUnitName = floorList(selectedUnit)
+               case(2)   
+                    selectedUnitName = decoList(selectedUnit)
+               end select 
      
-               if (layerBlocks(LAYER_BACKGROUND)%pozList(1)%name == selectedFloorName) then
+               if (layerBlocks(LAYER_BACKGROUND)%pozList(1)%name == selectedUnitName) then
                    call WDialogFieldState(ID_FloorSelect, DISABLED) 
                else
                    call WDialogFieldState(ID_FloorSelect, ENABLED) 
      
-                   call getGameObjByName(obj, selectedFloorName) 
+                   call getGameObjByName(obj, selectedUnitName) 
                    spriteName =  obj%getEditorSprite(currentMap%wind, .TRUE., "") 
                    call getImageFileByName(img, spriteName) 
-    
+                  
                    call drawSpriteWithRectagle(9, 9, COLOR_GREEN, 1, img, NO_FILTER)
                    placeImg     => img 
-                   placeObjName =  selectedFloorName 
+                   placeObjName =  selectedUnitName
                    placeObj     => obj 
     
                end if  

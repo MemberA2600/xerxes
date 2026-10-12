@@ -8,20 +8,20 @@
 //
 // Winteracter resource script
 //
-// Modified : 11/okt./2026 19:59:14
+// Modified : 12/okt./2026 05:14:47
 //
 ///////////////////////////////////////////////////
 //
 // Number of resources
 //
 //*WN* NMENU       1
-//*WN* NITEM       35
+//*WN* NITEM       36
 //*WN* NDIALOG     10
-//*WN* NFIELD      166
+//*WN* NFIELD      167
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
-//*WN* NIDENTIFIER 222
+//*WN* NIDENTIFIER 224
 //*WN* NINCLUDE    0
 //*WN* NOPTROW     0
 ///////////////////////////////////////////////////
@@ -231,11 +231,11 @@
 #define ID_MAP_BASICSETTINGS_WEATHER_L   1156
 #define IDF_MAP_DEFAULT_WEATHER          1157
 #define ID_ExitMapEditor                40030
-#define ID_ADD_FLOOR                    40031
+#define ID_ADD_UNIT                     40031
 #define ID_FloorSelect                   1158
-#define IDD_ADD_FLOOR                     111
+#define IDF_UNITBOX                      1160
 #define ID_FloorExit                     1159
-#define IDF_FLOORBOX                     1160
+#define IDF_UNITTYPES                    1167
 #define IDF_NO_WEATHER_BOX               1161
 #define ID_MAP_BASICSETTINGS_MUSIC_L     1162
 #define IDF_MAP_DEFAULT_MUSIC            1163
@@ -246,6 +246,8 @@
 #define ID_SELECT_UNIT                  40035
 #define IDF_UniqueBox                    1165
 #define IDF_TriggerBox                   1166
+#define IDD_ADD_UNIT                      101
+#define ID_SELECT_DECORATION            40036
 
 ///////////////////////////////////////////////////
 //
@@ -578,18 +580,19 @@ BEGIN
 ,0
 END
 
-IDD_ADD_FLOOR DIALOG 0,0,191,91
+IDD_ADD_UNIT DIALOG 0,0,252,132
 STYLE WS_POPUP | WS_BORDER | WS_DLGFRAME | WS_SYSMENU | DS_3DLOOK | DS_MODALFRAME
 FONT 8, "MS Shell Dlg"
-CAPTION "Add Floor"
+CAPTION "Add Unit"
 BEGIN
-  CONTROL "Select",ID_FloorSelect,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,130,57,50,14
-  CONTROL "Exit",ID_FloorExit,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,130,73,50,14
-  CONTROL "",IDF_FLOORBOX,"LISTBOX",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_VSCROLL | WS_TABSTOP | LBS_NOTIFY | LBS_HASSTRINGS | LBS_USETABSTOPS,5,5,116,81
-  CONTROL "No Weather",IDF_NO_WEATHER_BOX,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_AUTOCHECKBOX | BS_TEXT | BS_MULTILINE,130,32,54,20
+  CONTROL "Select",ID_FloorSelect,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,196,93,50,14
+  CONTROL "Exit",ID_FloorExit,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,196,110,50,14
+  CONTROL "",IDF_UNITBOX,"LISTBOX",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_VSCROLL | WS_TABSTOP | LBS_NOTIFY | LBS_HASSTRINGS | LBS_USETABSTOPS,5,28,179,102
+  CONTROL "No Weather",IDF_NO_WEATHER_BOX,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_AUTOCHECKBOX | BS_TEXT | BS_MULTILINE,196,71,54,20
+  CONTROL "",IDF_UNITTYPES,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWNLIST | CBS_HASSTRINGS,6,8,176,30
 END
 
-IDD_ADD_FLOOR RCDATA
+IDD_ADD_UNIT RCDATA
 BEGIN
 "[Checks] \n"
 "1161 1 \n"
@@ -645,9 +648,10 @@ BEGIN
     BEGIN
       MENUITEM "Clear Selection",ID_SELECT_NONE
       MENUITEM "Select Floor",ID_SELECT_FLOOR
+      MENUITEM "Select Decoration",ID_SELECT_DECORATION
       MENUITEM "Select Unit",ID_SELECT_UNIT
     END
-    MENUITEM "Add Floor",ID_ADD_FLOOR
+    MENUITEM "Add Unit",ID_ADD_UNIT
     MENUITEM "Exit Map Editor",ID_ExitMapEditor
   END
 END
@@ -684,5 +688,5 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FORTSAVE    1
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
-//*WI* LASTTYPE    2
-//*WI* LASTRES     8
+//*WI* LASTTYPE    1
+//*WI* LASTRES     1

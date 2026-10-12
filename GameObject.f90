@@ -20,6 +20,7 @@ MODULE GameObject
 
     logical               :: canKill, bullshit
     integer(1)            :: changedPage = 0
+
     integer(2), parameter :: typeNum = 5, flyTypeNum = 3
 
     character(NAME_MAX_LEN), dimension(typeNum ), parameter :: typeNames =  &
@@ -27,7 +28,6 @@ MODULE GameObject
 
     character(NAME_MAX_LEN), dimension(flyTypeNum), parameter :: flyTypeNames =  &
                            (/ "ground", "hovering", "flying" /)
-
 
     character(NAME_MAX_LEN), dimension(:), allocatable :: spriteNames 
     integer(2)                                         :: lastSelectedType, maxPages, currPage     
@@ -69,8 +69,6 @@ MODULE GameObject
         character(7)                   :: temp
 
         select case(this%objType)
-        case(TYPE_FLOOR)
-            r = this%getSprite("default")
         case(TYPE_TREE)
             if (wind) then 
                 r = this%getSprite("wind") 
@@ -103,7 +101,7 @@ MODULE GameObject
                     r = this%getSprite("normal") // directions(num)
                 end if
             end if
-        case(TYPE_WEATHER)
+        case default
             r = this%getSprite("default")
         end select
     end function    
@@ -653,7 +651,7 @@ MODULE GameObject
 
     subroutine getUnitNames(listOfUnitNames, typ, flag)
         character(NAME_MAX_LEN), dimension(:), allocatable, intent(inout) :: listOfUnitNames
-        integer(1)                                                        :: typ, flag
+        integer(1)                                                        :: typ, typ2, flag
 
         logical                                                           :: bool, add
 
@@ -672,19 +670,21 @@ MODULE GameObject
 
         num2 = 0
         do num = 1, size(gameObjectList), 1
-           if (gameObjectList(num)%objtype == typ) then 
+           if (gameObjectList(num)%objtype == typ ) then 
                add = .FALSE. 
      
                select case(gameObjectList(num)%objtype) 
                case(TYPE_FLOOR) 
 
-                   bool = (verify(gameObjectList(num)%name(&
+1234              bool = (verify(gameObjectList(num)%name(&
                          len_trim(gameObjectList(num)%name):len_trim(gameObjectList(num)%name)), &
                                  '0123456789') == 0) 
 
                   If (((bool .EQV. .FALSE.) .AND. flag == 1)   .OR. &
                       ( flag == 0))  add = .TRUE.
 
+               case(TYPE_FLOOR_DECORATION)
+                  goto 1234  
                end select
 
 

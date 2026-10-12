@@ -223,8 +223,8 @@
                     editMode        = .TRUE.
                     mapEditorActive = .FALSE.
 
-              CASE (ID_ADD_FLOOR)
-                    call FloorChooser()
+              CASE (ID_ADD_UNIT)
+                    call UnitChooser()
 
               CASE (ID_STARTGAME)
                     editMode        = .FALSE.
@@ -235,7 +235,7 @@
                     call saveConfig() 
                     call setMenuLabels()
 
-              CASE (ID_SELECT_NONE:ID_SELECT_UNIT)
+              CASE (ID_SELECT_NONE:ID_SELECT_DECORATION)
                     call setSelection(MESSAGE%VALUE1 - ID_SELECT_NONE)
 
           END SELECT 
@@ -296,11 +296,13 @@
             call WMenuSetString(ID_StartMapEditor   , trim(getWordInCurrentLang( "startMapEditor"     )))
             call WMenuSetString(ID_MapEditor        , trim(getWordInCurrentLang( "mapEditor"          )))
             call WMenuSetString(ID_MAPEDITOR_BASICS , trim(getWordInCurrentLang( "basicSettings"      )))
-            call WMenuSetString(ID_ADD_FLOOR        , trim(getWordInCurrentLang( "addFloor"           )))
+            call WMenuSetString(ID_ADD_UNIT         , trim(getWordInCurrentLang( "addUnit"            )))
             call WMenuSetString(ID_SELECT           , trim(getWordInCurrentLang( "select"             )))
             call WMenuSetString(ID_SELECT_NONE      , trim(getWordInCurrentLang( "clearSelection"     )))
             call WMenuSetString(ID_SELECT_FLOOR     , trim(getWordInCurrentLang( "selectFloor"        )))
             call WMenuSetString(ID_SELECT_UNIT      , trim(getWordInCurrentLang( "selectUnit"         )))
+            call WMenuSetString(ID_SELECT_DECORATION, trim(getWordInCurrentLang( "selectDecoration"   )))
+
       end subroutine  
 
       subroutine loadFolders()
@@ -415,8 +417,8 @@
                 call objectWindowThings()
             case(IDD_MAP_BASICSETTINGS)
                 call mapBasicSettings()
-            case(IDD_ADD_FLOOR)
-                call floorAdderCheck()
+            case(IDD_ADD_UNIT)
+                call UnitAdderCheck()
             end select
 
         end subroutine
