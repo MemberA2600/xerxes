@@ -651,7 +651,7 @@ MODULE GameObject
 
     subroutine getUnitNames(listOfUnitNames, typ, flag)
         character(NAME_MAX_LEN), dimension(:), allocatable, intent(inout) :: listOfUnitNames
-        integer(1)                                                        :: typ, typ2, flag
+        integer(1)                                                        :: typ, flag
 
         logical                                                           :: bool, add
 
@@ -669,10 +669,11 @@ MODULE GameObject
         if (rc /= 0) call displayDebug("Failed the allocate Temp List of Unit Names!")
 
         num2 = 0
+
         do num = 1, size(gameObjectList), 1
-           if (gameObjectList(num)%objtype == typ ) then 
-               add = .FALSE. 
-     
+           add = .FALSE. 
+
+           if (typ == gameObjectList(num)%objtype ) then 
                select case(gameObjectList(num)%objtype) 
                case(TYPE_FLOOR) 
 
@@ -680,20 +681,29 @@ MODULE GameObject
                          len_trim(gameObjectList(num)%name):len_trim(gameObjectList(num)%name)), &
                                  '0123456789') == 0) 
 
-                  If (((bool .EQV. .FALSE.) .AND. flag == 1)   .OR. &
-                      ( flag == 0))  add = .TRUE.
+                  If (((bool .EQV. .FALSE.) .AND. flag == COLLECT_BASEFLOOR)   .OR. &
+                      ( flag == COLLECT_NORMAL))  add = .TRUE.
 
                case(TYPE_FLOOR_DECORATION)
                   goto 1234  
+                
                end select
-
-
-               if (add) then
-                   num2 = num2 + 1 
-                   tempList(num2) = gameObjectList(num)%name 
-               end if  
-
            end if 
+
+           if (typ == TYPE_EMPTY) then 
+               select case(flag)
+               case(COLLECT_LEFTOVERS)
+                    if (gameObjectList(num)%objtype == TYPE_TREE) then
+                        add = .TRUE.
+                    end if   
+               end select
+           end if 
+
+           if (add) then
+               num2 = num2 + 1 
+               tempList(num2) = gameObjectList(num)%name 
+           end if  
+
         end do
 
         allocate(listOfUnitNames(num2), stat = rc)

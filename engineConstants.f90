@@ -126,7 +126,13 @@ MODULE engineConstants
                                         TYPE_PLAYER_MAP       = 2   ,&
                                         TYPE_TREE             = 3   ,&
                                         TYPE_WEATHER          = 4   ,&
-                                        TYPE_FLOOR_DECORATION = 5    
+                                        TYPE_FLOOR_DECORATION = 5   ,& 
+                                        TYPE_COMMON_UNIT      = 127  
+ 
+    integer(1), parameter           ::  COLLECT_NORMAL        = 0   ,&
+                                        COLLECT_BASEFLOOR     = 1   ,&
+                                        COLLECT_LEFTOVERS     = 2
+    
 
     integer(1), parameter            :: WEATHER_DAY_NORM    = 1,  &
                                         WEATHER_NIGHT_NORM  = 2,  &

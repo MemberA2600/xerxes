@@ -8,7 +8,7 @@
 //
 // Winteracter resource script
 //
-// Modified : 12/okt./2026 05:14:47
+// Modified : 12/okt./2026 16:30:03
 //
 ///////////////////////////////////////////////////
 //
@@ -243,11 +243,11 @@
 #define ID_SELECT                       40032
 #define ID_SELECT_NONE                  40033
 #define ID_SELECT_FLOOR                 40034
-#define ID_SELECT_UNIT                  40035
+#define ID_SELECT_DECORATION            40035
 #define IDF_UniqueBox                    1165
 #define IDF_TriggerBox                   1166
 #define IDD_ADD_UNIT                      101
-#define ID_SELECT_DECORATION            40036
+#define ID_SELECT_UNIT                  40036
 
 ///////////////////////////////////////////////////
 //

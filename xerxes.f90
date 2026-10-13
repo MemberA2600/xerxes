@@ -235,7 +235,7 @@
                     call saveConfig() 
                     call setMenuLabels()
 
-              CASE (ID_SELECT_NONE:ID_SELECT_DECORATION)
+              CASE (ID_SELECT_NONE:ID_SELECT_UNIT)
                     call setSelection(MESSAGE%VALUE1 - ID_SELECT_NONE)
 
           END SELECT 
