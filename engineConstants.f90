@@ -147,6 +147,10 @@ MODULE engineConstants
                                         MAP_FIGHTING = 2,  &
                                         MAP_WATCHING = 3
 
+    integer(1), parameter            :: FLY_INIT_GROUND   = 0,   &
+                                        FLY_INIT_HOVERING = 10,  &
+                                        FLY_INIT_FYLING   = 96
+
     character(NAME_MAX_LEN), parameter :: tia_default  = "Puking Ears              ", &
                                           opl2_default = "Original Plastic Lobotomy", &      
                                           img_default  = "Sexy Sprite              ", &

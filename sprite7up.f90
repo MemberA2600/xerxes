@@ -23,7 +23,7 @@ MODULE sprite7up
                                      setWeather, spritePoz, getOffsetX, getOffsetY, setSize, &
                                      changeSprite, changeSpriteEditor, addPointerToLastSpritePoz, &
                                      checkCollision, addPointerByNameXY, layerBlocks, checkAllCollisions, &
-                                     DROPALLUNITS, reorderPoz 
+                                     DROPALLUNITS, reorderPoz, checkForPossibleOverlaps 
 
     type SpriteObj 
          integer(2)               :: w, h, spriteI
@@ -88,24 +88,74 @@ MODULE sprite7up
     !   SpritePoz Things
     !
 
-    subroutine checkAllCollisions(this)
+    function checkForPossibleOverlaps(b, x, y, w, h, typ, fly) result(r)
+        integer(1)               :: b, typ
+        integer(4)               :: x, y
+        integer(2)               :: w, h, fly
+        logical                  :: r
+        type(spritePoz), pointer :: that
+        integer(4)               :: ind
+        type(spritePoz)          :: dummy
+        integer                  :: x1 , x2 , y1 , y2
+
+        r = .FALSE.
+
+        do ind = 1, layerBlocks(b)%nextIndexP, 1
+           that => layerBlocks(b)%pozList(ind) 
+   
+           if (that%dontCountMe) cycle    
+
+           if ((associated(layerblocks(that%bufferNum)%spriteList(that%ind)%imageF) .EQV. .FALSE.) .OR. &
+                          (layerblocks(that%bufferNum)%spriteList(that%ind)%active  .EQV. .FALSE.)) cycle
+
+           if ((that%x < XOffset .OR. that%x > XOffset + wSize)  .AND. &   
+               (that%y < YOffset .OR. that%y > YOffset + hSize)) cycle 
+            
+           if ((typ          == TYPE_FLOOR .OR. typ          == TYPE_FLOOR_DECORATION) .AND.  &
+               (that%typFlag == TYPE_FLOOR .OR. that%typFlag == TYPE_FLOOR_DECORATION)) cycle 
+
+           dummy%x   = x 
+           dummy%y   = y 
+           dummy%xw  = x + w - 1
+           dummy%yh  = y + h - 1 
+           dummy%fly = fly
+ 
+           call setHitBox(dummy, w, h, .TRUE.) 
+           call calculateHBXY(dummy, x1, y1, w, h)
+           call calculateHBXY(that , x2, y2, layerblocks(that%bufferNum)%spriteList(that%ind)%w, &
+                                             layerblocks(that%bufferNum)%spriteList(that%ind)%h)
+
+           r = x1 < x2 + that%hitBoxW  .AND. &
+               x2 < x1 + dummy%hitBoxW .AND. &
+               y1 < y2 + that%hitBoxH  .AND. &
+               y2 < y1 + dummy%hitBoxH
+     
+           if (r .EQV. .TRUE.) return
+
+        end do
+
+    end function
+
+    function checkAllCollisions(this) result(colliding)
         class(spritePoz)         :: this
         type(spritePoz), pointer :: that
 
         integer(4)       :: ind
         logical          :: colliding
 
+        colliding = .FALSE.
+
         do ind = 1, layerBlocks(this%bufferNum)%nextIndexP, 1
            colliding = this%checkCollision(layerBlocks(this%bufferNum)%pozList(ind))     
         
            if (colliding) then
                that => layerBlocks(this%bufferNum)%pozList(ind) 
-
+             ! Still don't know how this will work. :D   
            end if 
 
         end do
 
-    end subroutine
+    end function
 
     function checkCollision(this, that) result(r)
         class(spritePoz) :: this
@@ -137,8 +187,10 @@ MODULE sprite7up
         iD1 => layerblocks(this%bufferNum)%spriteList(this%ind)%imageF%img
         iD2 => layerblocks(that%bufferNum)%spriteList(that%ind)%imageF%img
 
-        call calculateHBXY(this, x1, y1)
-        call calculateHBXY(that, x2, y2)
+        call calculateHBXY(this , x1, y1, layerblocks(this%bufferNum)%spriteList(this%ind)%w, &
+                                          layerblocks(this%bufferNum)%spriteList(this%ind)%h)
+        call calculateHBXY(that , x2, y2, layerblocks(that%bufferNum)%spriteList(that%ind)%w, &
+                                          layerblocks(that%bufferNum)%spriteList(that%ind)%h)
     
         r = x1 < x2 + that%hitBoxW .AND. &
             x2 < x1 + this%hitBoxW .AND. &
@@ -199,17 +251,18 @@ MODULE sprite7up
 
     end function checkCollision
 
-    subroutine calculateHBXY(sp, x, y)
+    subroutine calculateHBXY(sp, x, y, w, h)
         type(spritePoz), intent(in) :: sp
-        integer                     :: x, y
-    
+        integer, intent(out)        :: x, y
+        integer(2)                  :: w, h
+
         select case(sp%hitBoxAlign)
         case(ALIGN_CENTER)  
-            x = sp%xw - (layerBlocks(sp%bufferNum)%spriteList(sp%ind)%w / 2) - (sp%hitBoxW / 2)
-            y = sp%yh - (layerBlocks(sp%bufferNum)%spriteList(sp%ind)%h / 2) - (sp%hitBoxH / 2)
+            x = sp%xw - (w / 2) - (sp%hitBoxW / 2)
+            y = sp%yh - (h / 2) - (sp%hitBoxH / 2)
 
         case(ALIGN_BOTTOM)
-            x = sp%xw - (layerBlocks(sp%bufferNum)%spriteList(sp%ind)%w / 2) - (sp%hitBoxW / 2)
+            x = sp%xw - (w / 2) - (sp%hitBoxW / 2)
             y = sp%yh - sp%hitBoxH 
 
         end select
@@ -736,10 +789,9 @@ MODULE sprite7up
          integer(4)            :: x, y, f
          integer(1)            :: filter, bufferNum  
          integer(4)            :: typFlag
-         integer(1)            :: rc, hitBoxTyp
+         integer(1)            :: rc
          integer(2)            :: fly
          logical               :: unique
-         integer(1), parameter :: FULL = 0, NORM = 1, FLOORR = 2
 
          if (bufferNum /= LAYER_FOREGROUND .AND. bufferNum /= LAYER_INTERFACE &
        .AND. bufferNum /= LAYER_TRANSITION) then
@@ -754,11 +806,11 @@ MODULE sprite7up
          layerBlocks(bufferNum)%nextIndexS
 
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%y   = y
-         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%yh  = y + &
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%yh  = y - 1 + &
          layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%h
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%x   = x
-         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%xw  = x + &
-         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%w
+         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%xw  = x - 1 + &
+         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%w 
 
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%fly      = fly
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%name     = spriteName
@@ -768,51 +820,51 @@ MODULE sprite7up
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%objectD%objType
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%dontCountMe = .FALSE.
 
-         if (layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%objectD%solid) then
-             select case(layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%typFlag)
-             case(TYPE_FLOOR)
-                 hitBoxTyp = FLOORR
+         call setHitBox(layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)     , &
+                        layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%w, &
+                        layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%h, &
+                        layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%objectD%solid)   
 
+         if (layerBlocks(bufferNum)%nextIndexP > 1) call reorderPoz(bufferNum)
+
+    end subroutine
+
+    subroutine setHitBox(poz, w, h, solid)
+         type(SpritePoz), intent(inout) :: poz
+         logical                        :: solid
+         integer(1), parameter          :: FULL = 0, BOTTOM = 1
+         integer(1)                     :: hitBoxTyp
+         integer(2)                     :: w, h
+
+         if (solid) then
+             select case(poz%typFlag)
+             case(TYPE_FLOOR)
+                 hitBoxTyp = FULL
+             case(TYPE_FLOOR_DECORATION)
+                 hitBoxTyp = FULL
              case default 
-                 hitBoxTyp = NORM
+                 hitBoxTyp = BOTTOM
 
              end select
 
              select case(hitBoxTyp)
              case(FULL)
-                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxW = &
-                 layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%w    
-
-                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxH = &
-                 layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%h 
-                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxAlign =  ALIGN_CENTER
-
-             case(FLOORR)
-                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxW = &
-                 layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%w * 3 / 4     
-
-                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxH = &
-                 layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%h * 3 / 4     
-                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxAlign =  ALIGN_CENTER
+                 poz%hitBoxW     = w    
+                 poz%hitBoxH     = h
+                 poz%hitBoxAlign = ALIGN_CENTER
 
              case default
-                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxW = &
-                 layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%w     
-
-                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxH = &
-                 layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%h / 2
-                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxAlign =  ALIGN_BOTTOM
+                 poz%hitBoxW     = w     
+                 poz%hitBoxH     = h / 4
+                 poz%hitBoxAlign = ALIGN_BOTTOM
 
              end select
          else
-             layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxW     =  0
-             layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxH     =  0
-             layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%hitBoxAlign =  0
+             poz%hitBoxW     =  0
+             poz%hitBoxH     =  0
+             poz%hitBoxAlign =  0
 
          end if
-
-         if (layerBlocks(bufferNum)%nextIndexP > 1) call reorderPoz(bufferNum)
-
 
     end subroutine
 

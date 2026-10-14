@@ -24,7 +24,7 @@ MODULE winAPIs
     TYPE CounterTimer
        
         integer(8) :: freq
-        integer(8) :: started, diffCheck = 0, trials = 0
+        integer(8) :: started, diffCheck = 0!, trials = 0
 
         contains
         procedure  :: timerInit    => timerInit
@@ -54,7 +54,7 @@ MODULE winAPIs
 
         this%diffCheck = 0 
         this%started   = 0 
-        this%trials    = 0 
+     !   this%trials    = 0 
 
      end subRoutine   
 
@@ -64,14 +64,14 @@ MODULE winAPIs
 
         call this%timerRestart()
         this%diffCheck = diffCheck 
-        this%trials    = 0 
+     !   this%trials    = 0 
 
      end subRoutine     
 
      subRoutine timerRestart(this)
         class(CounterTimer), intent(inout) :: this    
 
-        this%trials  = 0
+        !this%trials  = 0
         this%started = getTime()
 
      end subRoutine   
@@ -90,16 +90,16 @@ MODULE winAPIs
             ended = .TRUE.
         end if    
 
-        if (ended .EQV. .TRUE.) then
-            this%trials    = 0 
-        else
-            this%trials    = this%trials + 1
+        !if (ended .EQV. .TRUE.) then
+        !    this%trials    = 0 
+        !else
+        !    this%trials    = this%trials + 1
 
-            if (this%trials >= this%diffCheck) then
-                call this%timerRestart()            
-                ended = .TRUE.
-            end if
-        end if
+        !    if (this%trials >= this%diffCheck) then
+        !        call this%timerRestart()            
+        !        ended = .TRUE.
+        !    end if
+        !end if
 
      end function   
 

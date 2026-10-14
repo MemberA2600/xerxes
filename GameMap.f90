@@ -41,7 +41,7 @@ MODULE GameMap
     integer(1)            :: selectedType
 
     integer(1), parameter                              :: stepOnMap = 10
-    integer(2), parameter                              :: COLOR_GREEN = 253
+    integer(2), parameter                              :: COLOR_GREEN = 253, COLOR_RED = 241
     integer(1)                                         :: lastNum
 
     integer(1), parameter                              :: NO_SELECT          = 0, &
@@ -103,16 +103,15 @@ MODULE GameMap
                 call createSpriteObjPlayGround(name, obj%getEditorSprite(currentMap%wind, .TRUE., ""), &
                                                x, y, currentMap%defFilter, obj%unique, obj%name)
             end if    
-        case(TYPE_FLOOR_DECORATION)
-            call createSpriteObjPlayGround(name, obj%getEditorSprite(currentMap%wind, .TRUE., ""), &
-                                           x, y, currentMap%defFilter, obj%unique, obj%name)
+        case default
+            if (getFly(placeObj) == 0) then
+                call createSpriteObjPlayGround(name, obj%getEditorSprite(currentMap%wind, .TRUE., ""), &
+                                               x, y, currentMap%defFilter, obj%unique, obj%name)
+            else
+                call createSpriteObjSky(name, obj%getEditorSprite(currentMap%wind, .TRUE., ""), x, y, &
+                                              currentMap%defFilter, getFly(placeObj), obj%unique, obj%name)
 
-        case(TYPE_TREE)
-            call createSpriteObjPlayGround(name, obj%getEditorSprite(currentMap%wind, .TRUE., ""), &
-                                           x, y, currentMap%defFilter, obj%unique, obj%name)
-        case(TYPE_PLAYER_MAP)   
-            call createSpriteObjPlayGround(name, obj%getEditorSprite(currentMap%wind, .TRUE., ""), &
-                                           x, y, currentMap%defFilter, obj%unique, obj%name)
+            end if
         end select
 
         !call displayDebug("Name: " // name)
@@ -676,7 +675,7 @@ MODULE GameMap
 
             call readinput()
 
-            if (clicked() .AND. (lastX /= XonScreen .OR. lastY /= YonScreen)) then
+            if (clicked() .AND. (lastX /= XonScreen .OR. lastY /= YonScreen) .AND. (allowed)) then
 
                 select case(placeTyp) 
                 case(TYPE_FLOOR) 
@@ -698,7 +697,7 @@ MODULE GameMap
                     call setUnit(placeObj%name, XonScreen + getOffSetX(), & 
                                  YonScreen + getOffSetY(), LAYER_PLAYGROUND) 
 
-                case(TYPE_COMMON_UNIT) 
+                case default 
 
                     call setUnit(placeObj%name, XonScreen + getOffSetX(), & 
                                  YonScreen + getOffSetY(), LAYER_PLAYGROUND) 
@@ -791,34 +790,44 @@ MODULE GameMap
               
            select case(placeTyp) 
            case(TYPE_FLOOR) 
-               color  = COLOR_GREEN
-               filter = placeFilter
-
                call setXYOnScreen(rX, rY, 32) 
-
-               call drawSpriteWithRectagle(XOnScreen, YOnScreen , &
-                                                   color, 1, placeImg, filter )    
+  
            case(TYPE_FLOOR_DECORATION) 
-               color  = COLOR_GREEN
-               filter = placeFilter
-
                call setXYOnScreen(rX, rY, 32) 
 
-               call drawSpriteWithRectagle(XOnScreen, YOnScreen , &
-                                                   color, 1, placeImg, filter )    
            case(TYPE_COMMON_UNIT) 
-               color  = COLOR_GREEN
-               filter = placeFilter
-
-               call setXYOnScreen(rX, rY, 32) 
-
-               call drawSpriteWithRectagle(XOnScreen, YOnScreen , &
-                                                   color, 1, placeImg, filter )  
+               call setXYOnScreen(rX, rY, 8) 
     
            end select
+
+           if (checkForPossibleOverlaps(LAYER_PLAYGROUND   ,XOnScreen, YOnScreen, &
+                                        placeImg%img%width, placeImg%img%height, &
+                                        placeTyp, getFly(placeObj))) then
+               color   = COLOR_RED
+               filter  = FILTER_RED
+               allowed = .FALSE. 
+           else 
+               color  = COLOR_GREEN
+               filter = placeFilter
+               allowed = .TRUE. 
+           end if 
+
+           call drawSpriteWithRectagle(XOnScreen, YOnScreen , &
+                                                   color, 1, placeImg, filter )  
         end if
   
     end subroutine
+
+    function getFly(obj) result(r)   
+        type(objectData)                    :: obj
+        integer(2)                          :: r
+        integer(2), dimension(3), parameter :: cList = (/ FLY_INIT_GROUND,   &
+                                                          FLY_INIT_HOVERING, & 
+                                                          FLY_INIT_FYLING    /) 
+
+        r = cList(obj%flyType) 
+
+    end function 
 
     subroutine drawSpriteWithRectagle(x, y, c, s, img, f)
         type(imageFile) , pointer :: img
@@ -827,7 +836,12 @@ MODULE GameMap
         integer(1)                :: s, f
 
         call timerCT()
-        call img%addToScreenBuffer(1, LAYER_FOREGROUND, x, y, f) 
+        if (getFly(placeObj) == 0) then
+            call img%addToScreenBuffer(1, LAYER_FOREGROUND, x, y, f) 
+        else
+            call img%addToScreenBuffer(1, LAYER_FOREGROUND, x, y, FILTER_SHADOW) 
+            call img%addToScreenBuffer(1, LAYER_FOREGROUND, x, y - getFly(placeObj), f) 
+        end if
 
       ! x, y, w, h, c, b, fill, s   
         call drawRectangle(x - s, y - s, img%img%width + (s*2), img%img%height + (s*2), changeRGB(c, &
@@ -891,11 +905,13 @@ MODULE GameMap
                    call getGameObjByName(obj, selectedUnitName) 
                    spriteName =  obj%getEditorSprite(currentMap%wind, .TRUE., "") 
                    call getImageFileByName(img, spriteName) 
-                  
-                   call drawSpriteWithRectagle(9, 9, COLOR_GREEN, 1, img, NO_FILTER)
+
                    placeImg     => img 
                    placeObjName =  selectedUnitName
-                   placeObj     => obj 
+                   placeObj     => obj
+                  
+                   call drawSpriteWithRectagle(9, 9, COLOR_GREEN, 1, img, NO_FILTER)
+ 
     
                end if  
                call buffer2Real()

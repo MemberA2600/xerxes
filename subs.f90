@@ -284,9 +284,10 @@ MODULE subs
      function largeToInt64(li) result(v)
         use ifwin
         type(T_LARGE_INTEGER), intent(in) :: li
-        integer(8)                        :: v
-
-        v = int(li%HighPart, 8) * 4294967296_8 + int(li%LowPart, 8)
+        integer(8)                       :: v
+        
+        v = ishft(int(li%HighPart, 8), 32) + &
+            iand(int(li%LowPart, 8), 4294967295_8)
      end function
 
      function randInt(low, high) result(r)
