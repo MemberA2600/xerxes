@@ -88,7 +88,7 @@ MODULE sprite7up
     !   SpritePoz Things
     !
 
-    function checkForPossibleOverlaps(b, x, y, w, h, typ, fly) result(r)
+    function checkForPossibleOverlaps(b, x, y, w, h, typ, fly, img) result(r)
         integer(1)               :: b, typ
         integer(4)               :: x, y
         integer(2)               :: w, h, fly
@@ -97,6 +97,8 @@ MODULE sprite7up
         integer(4)               :: ind
         type(spritePoz)          :: dummy
         integer                  :: x1 , x2 , y1 , y2
+        type(imageData), pointer :: iD2, iD1
+        type(imageFile), pointer :: img
 
         r = .FALSE.
 
@@ -110,28 +112,38 @@ MODULE sprite7up
 
            if ((that%x < XOffset .OR. that%x > XOffset + wSize)  .AND. &   
                (that%y < YOffset .OR. that%y > YOffset + hSize)) cycle 
-            
            if ((typ          == TYPE_FLOOR .OR. typ          == TYPE_FLOOR_DECORATION) .AND.  &
                (that%typFlag == TYPE_FLOOR .OR. that%typFlag == TYPE_FLOOR_DECORATION)) cycle 
 
-           dummy%x   = x 
-           dummy%y   = y 
-           dummy%xw  = x + w - 1
-           dummy%yh  = y + h - 1 
-           dummy%fly = fly
- 
+           dummy%x       = x 
+           dummy%y       = y 
+           dummy%xw      = x + w - 1
+           dummy%yh      = y + h - 1 
+           dummy%fly     = fly
+           dummy%typFlag = typ 
+
            call setHitBox(dummy, w, h, .TRUE.) 
            call calculateHBXY(dummy, x1, y1, w, h)
+
            call calculateHBXY(that , x2, y2, layerblocks(that%bufferNum)%spriteList(that%ind)%w, &
                                              layerblocks(that%bufferNum)%spriteList(that%ind)%h)
+
 
            r = x1 < x2 + that%hitBoxW  .AND. &
                x2 < x1 + dummy%hitBoxW .AND. &
                y1 < y2 + that%hitBoxH  .AND. &
                y2 < y1 + dummy%hitBoxH
      
-           if (r .EQV. .TRUE.) return
+           if (r .EQV. .FALSE.) cycle
 
+           iD1 => img%img
+           iD2 => layerblocks(that%bufferNum)%spriteList(that%ind)%imageF%img
+    
+           r = pixelColl(iD1, iD2, x1, y1, x2, y2, &
+                          dummy%hitBoxW, dummy%hitBoxH, that%hitBoxW, that%hitBoxH, LAYER_PLAYGROUND, &
+                          dummy%x, dummy%y, that%x, that%y, dummy%fly, that%fly)
+
+           if (r .EQV. .TRUE.) return
         end do
 
     end function
@@ -161,8 +173,7 @@ MODULE sprite7up
         class(spritePoz) :: this
         type(spritePoz)  :: that
         logical          :: r
-        integer          :: x1 , x2 , y1 , y2 , checkX, checkY, &
-                            pX1, pX2, pY1, pY2, startX, startY, boxW, boxH 
+        integer          :: x1 , x2 , y1 , y2 
     
         type(imageData), pointer :: iD1, iD2
         r = .FALSE.
@@ -184,9 +195,6 @@ MODULE sprite7up
         if ((that%x < XOffset .OR. that%x > XOffset + wSize)  .AND. &
             (that%y < YOffset .OR. that%y > YOffset + hSize)) return 
 
-        iD1 => layerblocks(this%bufferNum)%spriteList(this%ind)%imageF%img
-        iD2 => layerblocks(that%bufferNum)%spriteList(that%ind)%imageF%img
-
         call calculateHBXY(this , x1, y1, layerblocks(this%bufferNum)%spriteList(this%ind)%w, &
                                           layerblocks(this%bufferNum)%spriteList(this%ind)%h)
         call calculateHBXY(that , x2, y2, layerblocks(that%bufferNum)%spriteList(that%ind)%w, &
@@ -198,39 +206,60 @@ MODULE sprite7up
             y2 < y1 + this%hitBoxH
     
         if (r .EQV. .FALSE.) return
+
+        iD1 => layerblocks(this%bufferNum)%spriteList(this%ind)%imageF%img
+        iD2 => layerblocks(that%bufferNum)%spriteList(that%ind)%imageF%img
+
+        r = pixelColl(iD1, iD2, x1, y1, x2, y2, &
+                      this%hitBoxW, this%hitBoxH, that%hitBoxW, that%hitBoxH, LAYER_PLAYGROUND, &
+                      this%x, this%y, that%x, that%y, this%fly, that%fly)
+   
+    end function
+
+    function pixelColl(iD1, iD2, x1, y1, x2, y2, hitBoxW1, hitBoxH1, hitBoxW2, hitBoxH2, bufferNum,&
+                       spX1, spY1, spX2, spY2, spFly1, spFly2) result(r)
+        logical          :: r
+        integer          :: x1 , x2 , y1 , y2 , checkX, checkY, &
+                            pX1, pX2, pY1, pY2, startX, startY 
+        integer(2)       :: boxW, boxH 
+        integer(2)       :: hitBoxW1, hitBoxH1, hitBoxW2, hitBoxH2, spX1, spY1, spX2, spY2, spFly1, spFly2
+        integer(1)       :: bufferNum
+    
+        type(imageData), pointer :: iD1, iD2
+
         r = .FALSE.
 
      !  Choose the smaller hitbox.
-        if (this%hitBoxW * this%hitBoxH <= &
-            that%hitBoxW * that%hitBoxH) then
+        if (hitBoxW1 * hitBoxH1 <= &
+            hitBoxW2 * hitBoxH2) then
     
             startX = x1
             startY = y1
-            boxW = this%hitBoxW
-            boxH = this%hitBoxH
+            boxW = hitBoxW1
+            boxH = hitBoxH1
         else
             startX = x2
             startY = y2
-            boxW = that%hitBoxW
-            boxH = that%hitBoxH
+            boxW = hitBoxW2
+            boxH = hitBoxH2
         end if
-    
+
         do checkY = startY, startY + boxH - 1
             do checkX = startX, startX + boxW - 1
     
               ! Skip pixels outside the shared hitbox area.
-                if (checkX < x1 .OR. checkX >= x1 + this%hitBoxW) cycle
-                if (checkY < y1 .OR. checkY >= y1 + this%hitBoxH) cycle
-                if (checkX < x2 .OR. checkX >= x2 + that%hitBoxW) cycle
-                if (checkY < y2 .OR. checkY >= y2 + that%hitBoxH) cycle
+                if (checkX < x1 .OR. checkX >= x1 + hitBoxW1) cycle
+                if (checkY < y1 .OR. checkY >= y1 + hitBoxH1) cycle
+                if (checkX < x2 .OR. checkX >= x2 + hitBoxW2) cycle
+                if (checkY < y2 .OR. checkY >= y2 + hitBoxH2) cycle
     
               ! Convert screen coordinates to sprite-local coordinates.
               ! Assumes x and y are each sprite's top-left screen position.
-                pX1 = checkX -  this%x + 1
-                pY1 = checkY - (this%y - this%fly) + 1
+                pX1 = checkX -  spX1 + 1
+                pY1 = checkY - (spY1 - spFly1) + 1
     
-                pX2 = checkX -  that%x + 1
-                pY2 = checkY - (that%y - that%fly) + 1
+                pX2 = checkX -  spX2 + 1
+                pY2 = checkY - (spY2 - spFly2) + 1
     
                 ! Check the two sprite pixels here.
                 if (pX1 < 1 .OR. pX1 > iD1%width ) cycle
@@ -238,10 +267,8 @@ MODULE sprite7up
                 if (pX2 < 1 .OR. pX2 > iD2%width ) cycle
                 if (pY2 < 1 .OR. pY2 > iD2%height) cycle                
 
-                if (iD1%returnColorOfPixel(layerblocks(&
-                    this%bufferNum)%spriteList(this%ind)%spriteI, pX1, pY1) /= -1 .AND. &
-                    iD2%returnColorOfPixel(layerblocks(&
-                    that%bufferNum)%spriteList(that%ind)%spriteI, pX2, pY2) /= -1) then 
+                if (iD1%returnColorOfPixel(1, pX1, pY1) /= -1 .AND. &
+                    iD2%returnColorOfPixel(1, pX2, pY2) /= -1) then 
                     r = .TRUE.
                     return
                 end if
@@ -249,7 +276,7 @@ MODULE sprite7up
         end do
 
 
-    end function checkCollision
+    end function 
 
     subroutine calculateHBXY(sp, x, y, w, h)
         type(spritePoz), intent(in) :: sp
@@ -258,14 +285,17 @@ MODULE sprite7up
 
         select case(sp%hitBoxAlign)
         case(ALIGN_CENTER)  
-            x = sp%xw - (w / 2) - (sp%hitBoxW / 2)
-            y = sp%yh - (h / 2) - (sp%hitBoxH / 2)
+            x = sp%xw - (w / 2) - (sp%hitBoxW / 2) 
+            y = sp%yh - (h / 2) - (sp%hitBoxH / 2) 
 
         case(ALIGN_BOTTOM)
-            x = sp%xw - (w / 2) - (sp%hitBoxW / 2)
-            y = sp%yh - sp%hitBoxH 
+            x = sp%xw - (w / 2) - (sp%hitBoxW / 2) 
+            y = sp%yh - sp%hitBoxH + 1
 
         end select
+
+        if (abs(x - sp%x) == 1) x = sp%x
+        if (abs(y - sp%y) == 1) y = sp%y
 
         y = y - sp%fly
 
@@ -855,8 +885,10 @@ MODULE sprite7up
 
              case default
                  poz%hitBoxW     = w     
-                 poz%hitBoxH     = h / 4
+                 poz%hitBoxH     = h / 8
                  poz%hitBoxAlign = ALIGN_BOTTOM
+
+                 if (poz%hitBoxH == 0) poz%hitBoxH = 1
 
              end select
          else

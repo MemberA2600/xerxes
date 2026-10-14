@@ -679,12 +679,11 @@ MODULE GameMap
 
                 select case(placeTyp) 
                 case(TYPE_FLOOR) 
-               
-                    call deleteAllOnXY(XonScreen + getOffSetX(), &
-                                       YonScreen + getOffSetY(), TYPE_FLOOR           , LAYER_PLAYGROUND)
-
-                    call deleteAllOnXY(XonScreen + getOffSetX(), &
-                                       YonScreen + getOffSetY(), TYPE_FLOOR_DECORATION, LAYER_PLAYGROUND)
+                   call deleteAllOnXY(XonScreen + getOffSetX(), &
+                                      YonScreen + getOffSetY(), TYPE_FLOOR           , LAYER_PLAYGROUND)
+    
+                   call deleteAllOnXY(XonScreen + getOffSetX(), &
+                                      YonScreen + getOffSetY(), TYPE_FLOOR_DECORATION, LAYER_PLAYGROUND)
 
                     call setUnit(placeObj%name, XonScreen + getOffSetX(), & 
                                  YonScreen + getOffSetY(), LAYER_PLAYGROUND) 
@@ -720,7 +719,7 @@ MODULE GameMap
 
         do ind = 1, layerBlocks(b)%nextIndexP, 1 
            if (layerBlocks(b)%pozList(ind)%x == x .AND.layerBlocks(b)%pozList(ind)%y == y .AND. &
-               layerBlocks(b)%pozList(ind)%typFlag == typ                                 .AND. &
+              (layerBlocks(b)%pozList(ind)%typFlag == typ .OR. typ == TYPE_EMPTY)         .AND. &
               (layerBlocks(b)%pozList(ind)%dontCountMe .EQV. .FALSE.)) then 
                call layerBlocks(b)%pozList(ind)%killMe(.TRUE.)  
                exit 
@@ -790,21 +789,21 @@ MODULE GameMap
               
            select case(placeTyp) 
            case(TYPE_FLOOR) 
-               call setXYOnScreen(rX, rY, 32) 
+               call setXYOnScreen(rX, rY, DIV_FLOOR) 
   
            case(TYPE_FLOOR_DECORATION) 
-               call setXYOnScreen(rX, rY, 32) 
+               call setXYOnScreen(rX, rY, DIV_FLOOR) 
 
            case(TYPE_COMMON_UNIT) 
-               call setXYOnScreen(rX, rY, 8) 
+               call setXYOnScreen(rX, rY, DIV_UNIT) 
     
            end select
 
            if (checkForPossibleOverlaps(LAYER_PLAYGROUND   ,XOnScreen, YOnScreen, &
                                         placeImg%img%width, placeImg%img%height, &
-                                        placeTyp, getFly(placeObj))) then
+                                        placeTyp, getFly(placeObj), placeImg)) then
                color   = COLOR_RED
-               filter  = FILTER_RED
+               filter  = FILTER_RED2
                allowed = .FALSE. 
            else 
                color  = COLOR_GREEN
