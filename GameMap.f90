@@ -682,10 +682,10 @@ MODULE GameMap
                    call deleteAllOnXY(XonScreen + getOffSetX(), &
                                       YonScreen + getOffSetY(), TYPE_FLOOR           , LAYER_PLAYGROUND)
     
-                   call deleteAllOnXY(XonScreen + getOffSetX(), &
-                                      YonScreen + getOffSetY(), TYPE_FLOOR_DECORATION, LAYER_PLAYGROUND)
+                   !call deleteAllOnXY(XonScreen + getOffSetX(), &
+                   !                   YonScreen + getOffSetY(), TYPE_FLOOR_DECORATION, LAYER_PLAYGROUND)
 
-                    call setUnit(placeObj%name, XonScreen + getOffSetX(), & 
+                   call setUnit(placeObj%name, XonScreen + getOffSetX(), & 
                                  YonScreen + getOffSetY(), LAYER_PLAYGROUND) 
 
                 case(TYPE_FLOOR_DECORATION) 

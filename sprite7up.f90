@@ -459,25 +459,26 @@ MODULE sprite7up
 
     end function
 
-    subroutine drawImage(this)
+    subroutine drawImage(this, pozInd)
         class(SpriteObj)        :: this
-        integer(4)              :: x, y, pozInd, typ
+        integer(4)              :: x, y, typ
+        integer(4)              :: pozInd
         character(40)           :: test
         integer(2)              :: fly
 
         if ((associated(this%imageF) .EQV. .FALSE.)  .OR. &
-            (this%active             .EQV. .FALSE.)) return
+            (this%active             .EQV. .FALSE.)  .OR. pozInd == -1) return
 
-        pozInd = 0
+        !pozInd = 0
     
-        do 
-            pozInd = getPozInd(pozInd, this%ind, this%bufferNum)
-            if (pozInd == -1) exit    
+        !do 
+            !pozInd = getPozInd(pozInd, this%ind, this%bufferNum)
+            !if (pozInd == -1) exit    
 
             !write(test, "(A, ' ', I0, ' ', I0)") trim(layerBlocks(this%bufferNum)%pozList(pozInd)%name), x, y 
             !call displayDebug(test)
     
-            if (layerDimensions(this%bufferNum,1) /= BLOCKMAP_1) then  
+        if (layerDimensions(this%bufferNum,1) /= BLOCKMAP_1) then  
     
                 x   = layerBlocks(this%bufferNum)%pozList(pozInd)%x
                 y   = layerBlocks(this%bufferNum)%pozList(pozInd)%y
@@ -495,7 +496,7 @@ MODULE sprite7up
     
                 call this%drawDrawDraw(x, y, fly, typ)
         
-            else
+        else
                 do y = layerBlocks(this%bufferNum)%pozList(pozInd)%y -   & 
                        layerBlocks(this%bufferNum)%spriteList(this%ind)%h, &
                        hSize + layerBlocks(this%bufferNum)%spriteList(this%ind)%h, &
@@ -513,15 +514,15 @@ MODULE sprite7up
                     end do
                 end do
     
-            end if
+        end if
     
-            if (this%timer%getDiffCheck() /= (PERFECT_WAIT * getSpeed())) then
-                call this%timer%timerStart(PERFECT_WAIT * getSpeed())    
-                call this%animateSprite()                  
-            else
-                if (this%timer%timerEnded() .EQV. .TRUE. ) call this%animateSprite()             
-            end if    
-        end do
+        if (this%timer%getDiffCheck() /= (PERFECT_WAIT * getSpeed())) then
+            call this%timer%timerStart(PERFECT_WAIT * getSpeed())    
+            call this%animateSprite()                  
+        else
+            if (this%timer%timerEnded() .EQV. .TRUE. ) call this%animateSprite()             
+        end if    
+        !end do
     end subroutine
 
     subroutine animateSprite(this)
@@ -1134,7 +1135,7 @@ MODULE sprite7up
               !call displayDebug(test // ' ' // layerBlocks(n)%pozList(ind)%name)
 
               sInd = layerBlocks(n)%pozList(ind)%ind  
-              call layerBlocks(n)%spriteList(sind)%drawImage()  
+              call layerBlocks(n)%spriteList(sind)%drawImage(ind)  
            end do 
         end do
 
@@ -1179,7 +1180,11 @@ MODULE sprite7up
 
              do from = to, layerBlocks(n)%nextIndexP, 1
                 yhf = layerBlocks(n)%pozList(from)%yh 
- 
+              !
+              ! Decorations should never go behind the floor texture.
+              !   
+                if (layerBlocks(n)%pozList(from)%typFlag == TYPE_FLOOR_DECORATION) yhf = yhf + 1   
+
                 if ((yhf  < smallestYh)                               .OR. &
                     (yhf == smallestYh                               .AND. &
                      layerBlocks(n)%pozList(from)%ind < smallestInd)) then
