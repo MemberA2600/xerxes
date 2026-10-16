@@ -8,7 +8,7 @@
 //
 // Winteracter resource script
 //
-// Modified : 15/okt./2026 07:21:13
+// Modified : 16/okt./2026 19:24:05
 //
 ///////////////////////////////////////////////////
 //
@@ -16,12 +16,12 @@
 //
 //*WN* NMENU       1
 //*WN* NITEM       38
-//*WN* NDIALOG     10
-//*WN* NFIELD      167
+//*WN* NDIALOG     11
+//*WN* NFIELD      170
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
-//*WN* NIDENTIFIER 226
+//*WN* NIDENTIFIER 230
 //*WN* NINCLUDE    0
 //*WN* NOPTROW     0
 ///////////////////////////////////////////////////
@@ -250,6 +250,10 @@
 #define ID_SELECT_UNIT                  40036
 #define ID_SaveMap                      40037
 #define ID_LoadMap                      40038
+#define ID_UnitName                      1168
+#define IDD_UNIT_SETTINGS_NAME_ONLY       112
+#define ID_UnitOK                        1169
+#define IDF_UNIT_NAME                    1170
 
 ///////////////////////////////////////////////////
 //
@@ -602,6 +606,25 @@ BEGIN
 ,0
 END
 
+IDD_UNIT_SETTINGS_NAME_ONLY DIALOG 0,0,199,44
+STYLE WS_POPUP | WS_BORDER | WS_DLGFRAME | WS_SYSMENU | DS_3DLOOK | DS_MODALFRAME
+FONT 8, "MS Shell Dlg"
+CAPTION "Unit Settings"
+BEGIN
+  CONTROL "Ultra Unit",ID_UnitName,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_LEFT,74,4,103,14
+  CONTROL "OK",ID_UnitOK,"BUTTON",WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,74,23,45,14
+  CONTROL "Unit Name:",IDF_UNIT_NAME,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,6,7,64,8
+END
+
+IDD_UNIT_SETTINGS_NAME_ONLY RCDATA
+BEGIN
+"[Checks] \n"
+"[Trackbars] \n"
+"[Lengths] \n"
+"1168 25 \n"
+,0
+END
+
 ///////////////////////////////////////////////////
 //
 // Menus
@@ -692,5 +715,5 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FORTSAVE    1
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
-//*WI* LASTTYPE    1
-//*WI* LASTRES     1
+//*WI* LASTTYPE    2
+//*WI* LASTRES     11

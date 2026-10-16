@@ -294,7 +294,7 @@ MODULE ImageFactory
 
         call extractBMP(fname, 1)
 
-        if ((imageLoader%img%width > wOfScreenBuffer / 2 .OR. imageLoader%img%height > hOfScreenBuffer / 2) &
+        if ((imageLoader%img%width > wOfScreenBuffer / 4 * 3 .AND. imageLoader%img%height > hOfScreenBuffer / 4 * 3) &
             .OR. forceTransp .EQV. .TRUE.) then
             imageLoader%img%transpColor = 1
         else  
@@ -1180,7 +1180,7 @@ MODULE ImageFactory
 
             call extractBMP(fname, 1)
     
-        if ((imageLoader%img%width > wOfScreenBuffer / 2 .OR. imageLoader%img%height > hOfScreenBuffer / 2) &
+        if ((imageLoader%img%width > wOfScreenBuffer / 4 * 3 .AND. imageLoader%img%height > hOfScreenBuffer / 4 * 3) &
             .OR. forceTransp .EQV. .TRUE.) then
             else  
                 imageLoader%img%transpColor = imageLoader%img%frames(1, 1, 1)  

@@ -155,3 +155,5 @@ mapLoad => Map Load
 mapSave => Map Save
 mapFiles => Map Files
 xerxesMapFile => Xerxes Map File
+unitSettings => Unit Settings
+unitName => Unit Name:

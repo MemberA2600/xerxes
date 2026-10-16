@@ -22,7 +22,7 @@ MODULE GameMap
     private
     public   :: openBasicSettingsWindow, mapBasicSettings, initMapTimer, &
                 runGameLogic, doThingsOnMapEditor, closeMapEditor, UnitChooser, UnitAdderCheck, &
-                setSelection, saveMap, loadMap
+                setSelection, saveMap, loadMap, getUnitNameDialogLoop
 
     logical  :: canKill = .FALSE.
     character(NAME_MAX_LEN), dimension(:), allocatable :: baseFloorList, floorList, musicList, decoList, &
@@ -202,6 +202,7 @@ MODULE GameMap
        integer(1)              :: num 
        integer(2)              :: ind 
        integer                 :: w, h, m 
+       logical                 :: nope 
 
        success           = 0
        canKill           = .FALSE.
@@ -313,6 +314,7 @@ MODULE GameMap
        end do 
 
        call WDialogPutOption(IDF_MAP_DEFAULT_MUSIC  , musicVal) 
+       nope = .FALSE. 
 
        do
           CALL WDialogSelect(IDD_MAP_BASICSETTINGS)
@@ -321,6 +323,7 @@ MODULE GameMap
           if (WinfoDialog(CurrentDialog) == IDD_MAP_BASICSETTINGS) then 
               SELECT CASE (WinfoDialog(ExitButton))  
                   CASE(ExitField) 
+                     nope = .TRUE.
                      EXIT
                   CASE(ID_MAP_BASICSETTINGS_Cancel) 
                      EXIT
@@ -366,16 +369,7 @@ MODULE GameMap
            end if 
 
            if (selectedWeather /= weatherOld .OR. (currentMap%wind .NEQV. windOld)) then
-               select case(selectedWeather)
-               case(WEATHER_DAY_NORM)    
-                    currentMap%defFilter = NO_FILTER
-               case(WEATHER_NIGHT_NORM)    
-                    currentMap%defFilter = FILTER_BLUE
-               case(WEATHER_DAY_RAIN)    
-                    currentMap%defFilter = NO_FILTER
-               case(WEATHER_NIGHT_RAIN)    
-                    currentMap%defFilter = FILTER_BLUE
-               end select
+               call setDefaultFilter(selectedWeather) 
 
                call setWeather(selectedWeather, currentMap%wind)
            end if  
@@ -395,7 +389,7 @@ MODULE GameMap
            end if 
 
        else 
-           if (load) then
+           if ((load) .AND. (nope .EQV. .FALSE.)) then
                if (loadMap()) success = 1
            end if 
        end if 
@@ -403,6 +397,22 @@ MODULE GameMap
        canKill = .TRUE.        
 
     end function
+
+    subroutine setDefaultFilter(w)
+        integer(1)          :: w
+
+        !call displayDebugNum(w)
+
+        select case(w)
+        case(WEATHER_NIGHT_NORM)    
+             currentMap%defFilter = FILTER_BLUE
+        case(WEATHER_NIGHT_RAIN)    
+             currentMap%defFilter = FILTER_BLUE
+        case default
+             currentMap%defFilter = NO_FILTER
+        end select
+
+    end subroutine
 
     subroutine mapBasicSettings()
         integer(4)                  :: mapType
@@ -755,7 +765,7 @@ MODULE GameMap
 
                 case default 
 
-                    call setUnit(placeObj%name, XonScreen + getOffSetX(), & 
+                    call setUnit(getUnitName(), XonScreen + getOffSetX(), & 
                                  YonScreen + getOffSetY(), LAYER_PLAYGROUND, placeObj%name) 
 
                 end select
@@ -767,6 +777,122 @@ MODULE GameMap
 
         END DO
 
+    end subroutine
+
+    function getUnitName() result(unitName)
+        character(NAME_MAX_LEN) :: unitName
+
+        unitName = placeObj%name
+        if (placeObj%triggerable .EQV. .FALSE.) return
+
+        if (placeObj%unique .EQV. .FALSE.) then    
+            call getNextName(unitName)
+        else
+            if (isNameOK(unitName, placeObj) .EQV. .FALSE.) call getNextName(unitName)
+        end if
+
+    end function
+
+    subroutine getNextName(unitName)
+        character(NAME_MAX_LEN), intent(inout) :: unitName
+        integer(2)                             :: num
+        character(NAME_MAX_LEN)                :: tempName
+
+        do num = 1, 999, 1
+           write(tempName, "(A, I3.3)") unitName, num 
+           if (isNameOK(tempName, placeObj)) then
+               unitName = tempName
+               exit 
+           end if  
+        end do
+
+    end subroutine
+
+    function isNameOK(unitName, objectD) result(r)
+        character(*)            :: unitName
+        logical                 :: r
+        type(objectData)        :: objectD    
+        integer(8)              :: ind
+
+        r = .FALSE.
+
+        if (unitName == objectD%name) return
+
+        do ind = 1, layerBlocks(LAYER_PLAYGROUND)%nextIndexP, 1
+            
+             if ((layerBlocks(LAYER_PLAYGROUND)%pozList(ind)%dontCountMe                                           .EQV. .TRUE. )  .OR. &
+                 (layerBlocks(LAYER_PLAYGROUND)%spriteList(layerBlocks(LAYER_PLAYGROUND)%pozList(ind)%ind)%active  .EQV. .FALSE.)  .OR. & 
+      (associated(layerBlocks(LAYER_PLAYGROUND)%spriteList(layerBlocks(LAYER_PLAYGROUND)%pozList(ind)%ind)%imageF) .EQV. .FALSE.)) cycle  
+             
+             if  (layerBlocks(LAYER_PLAYGROUND)%pozList(ind)%name == unitName) return
+
+        end do   
+
+        r = .TRUE.
+
+    end function
+
+    subroutine getUnitNameDialog() 
+        TYPE(WIN_MESSAGE)       :: MESSAGE
+        character(NAME_MAX_LEN) :: unitName
+
+        canKill           = .FALSE.
+
+        unitName = selectedUnit%name
+
+        do
+          if (WInfoDialog(CurrentDialog) == 0) exit
+          call sleep(1)
+        end do 
+
+        CALL WDialogLoad(IDD_UNIT_SETTINGS_NAME_ONLY)
+        CALL WDialogTitle(getWordInCurrentLang("unitSettings")) 
+
+        CALL WDialogPutString(IDF_UNIT_NAME, getWordInCurrentLang("unitName")) 
+        CALL WDialogPutString(ID_UnitName  , unitName) 
+        CALL WDialogPutString(ID_UNITOK    , getWordInCurrentLang("ok")) 
+
+        do
+          CALL WDialogSelect(IDD_UNIT_SETTINGS_NAME_ONLY)
+          CALL WDialogShow(ITYPE=Modal)     
+
+          if (WinfoDialog(CurrentDialog) == IDD_UNIT_SETTINGS_NAME_ONLY) then 
+              SELECT CASE (WinfoDialog(ExitButton))  
+                  CASE(ExitField) 
+                     CALL WDialogGetString(ID_UnitName, unitName)
+                     if (isNameOK(unitName, selectedUnit%objectD)) EXIT
+                  CASE(ID_UnitOK)
+                     EXIT
+                  END SELECT
+              end if
+        end do 
+
+        CALL WDialogGetString(ID_UnitName, unitName)
+        selectedUnit%name = unitName    
+
+        canKill = .TRUE.
+    end subroutine
+
+    subroutine getUnitNameDialogLoop()
+        character(NAME_MAX_LEN) :: unitName
+
+        if (canKill .EQV. .TRUE.) then 
+            CALL WDialogUnLoad()
+            canKill = .FALSE.
+
+        else
+            if (WinfoDialog(CurrentDialog) == IDD_UNIT_SETTINGS_NAME_ONLY) then 
+                CALL WDialogGetString(ID_UnitName, unitName)
+
+                if (isNameOK(unitName, selectedUnit%objectD)) then
+                    call WDialogFieldState(ID_UnitOK, ENABLED)  
+                else
+                    call WDialogFieldState(ID_UnitOK, DISABLED)  
+                end if
+            end if
+
+        end if 
+ 
     end subroutine
 
     subroutine deleteAllOnXY(x, y, typ, b)
@@ -1179,6 +1305,8 @@ MODULE GameMap
         call setUnit(defaultFloor, 1, 1, LAYER_BACKGROUND, "")
 
         currentMap%defWeather = d(offset)
+        call setDefaultFilter(currentMap%defWeather)
+
         offset = offset + 1
         call setWeather(currentMap%defWeather, currentMap%wind)
 

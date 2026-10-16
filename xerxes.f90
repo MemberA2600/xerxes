@@ -424,6 +424,8 @@
                 call mapBasicSettings()
             case(IDD_ADD_UNIT)
                 call UnitAdderCheck()
+            case(IDD_UNIT_SETTINGS_NAME_ONLY)
+                call getUnitNameDialogLoop()
             end select
 
         end subroutine

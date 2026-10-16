@@ -824,15 +824,19 @@ MODULE sprite7up
          integer(1)            :: rc
          integer(2)            :: fly
          logical               :: unique
-
+  
          if (bufferNum /= LAYER_FOREGROUND .AND. bufferNum /= LAYER_INTERFACE &
        .AND. bufferNum /= LAYER_TRANSITION) then
              if (filter == NO_FILTER) then
                  f = defaultFilter 
+             else
+                 f = filter
              end if      
+         else   
+             f = filter
          end if
 
-         call AddSpriteThing(spriteName, imageName, bufferNum, x, y, filter, fly, unique, gameObjName)   
+         call AddSpriteThing(spriteName, imageName, bufferNum, x, y, f, fly, unique, gameObjName)   
 
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%ind = &
          layerBlocks(bufferNum)%nextIndexS
@@ -904,7 +908,7 @@ MODULE sprite7up
 
     subroutine AddSpriteThing(spriteName, imageName, bufferNum, x, y, filter, fly, unique, gameObjName)
          character(*)  :: imageName, spriteName, gameObjName   
-         integer(4)    :: x, y, f
+         integer(4)    :: x, y
          integer(1)    :: filter, bufferNum  
          integer(4)    :: typFlag
          integer(1)    :: rc
@@ -992,7 +996,7 @@ MODULE sprite7up
              layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%imageF%img%height  
     
              layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%spriteI    = 1
-             layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%filter     = f
+             layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%filter     = filter
              layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%tempFilter    = -1
              layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%tempFilterCountDown = 0
     

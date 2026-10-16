@@ -155,3 +155,5 @@ mapLoad => Karte Laden
 mapSave => Karte Speichern
 mapFiles => Kartendateien
 xerxesMapFile => Xerxes-Kartedatei
+unitSettings => Einheiteneinstellungen
+unitName => Einheitenname

@@ -155,3 +155,5 @@ mapLoad => Pálya Betöltése
 mapSave => Pálya Mentése
 mapFiles => Pálya Fájlok
 xerxesMapFile => Xerxész Pálya Fájl
+unitSettings => Egység Beállítások
+unitName => Egység Neve:
