@@ -286,7 +286,7 @@ MODULE GameObject
     subroutine loadObjFile(N, fname, addCwd)
         character(*)                           :: fname
         integer(2)                             :: N
-        integer(2), dimension(:), allocatable  :: d, temp
+        integer(2), dimension(:), allocatable  :: d
         integer(8)                             :: siz, offset
         integer(2)                             :: stat
         logical                                :: addCwd
@@ -308,20 +308,9 @@ MODULE GameObject
             call displayDebug("This is not a valid Xerxes Object file!")
             return
         end if    
-    
-        nameLen = d(offset)
-        offset  = offset + 1
 
-        allocate(temp(nameLen), stat = stat)
-        if (stat /= 0) call displayDebug("Failed to allocate temp for Object Name on Load!")
-
-        call copyBytes(d, temp, offset, offset + nameLen - 1, nameLen) 
-
-        offset = offset + nameLen
-
-        call bin2Char(name, temp, nameLen, .TRUE.) 
-
-        if (name == OBJ_DEFAULT) call displayDebug(fname // " has the default OBJ name!")
+        call getName(d, offset, nameLen, name)
+        if (name == OBJ_DEFAULT) call displayDebug(trim(fname) // " has the default OBJ name!")
  
         typeVal      = d(offset    )
         flyVal       = d(offset + 1)
@@ -381,14 +370,14 @@ MODULE GameObject
 
     subroutine createSpriteList(d, numOfSprites, spriteList, offset, siz)
         integer(2), dimension(:), allocatable  :: d
-        integer(2), dimension(:), allocatable  :: temp
         integer(1)                             :: numOfSprites
         integer(1)                             :: num
         integer(8)                             :: siz
         integer(8), intent(inout)              :: offset
         integer(2)                             :: stat
         character(NAME_MAX_LEN), dimension(:), allocatable, intent(inout) :: spriteList
-        integer(1)                             :: counter, ind, L
+        integer(1)                             :: counter, ind
+        integer(2)                             :: L
 
         if (allocated(spriteList)) then
             deallocate(spriteList, stat = stat)
@@ -400,17 +389,8 @@ MODULE GameObject
 
         num = 0
         do 
-            L      = d(offset)
-            offset = offset + 1
-            num    = num + 1            
-
-            allocate(temp(L), stat = stat)
-            if (stat /= 0) call displayDebug("Failed to allocate temp for Sprite Name on Load!")
-
-            call copyBytes(d, temp, offset, offset + L - 1, L) 
-            call bin2Char(spriteList(num), temp, L, .TRUE.) 
-            offset = offset + L
-
+            num = num + 1
+            call getName(d, offset, L, spriteList(num))
             if (num == numOfSprites) exit
         end do
 

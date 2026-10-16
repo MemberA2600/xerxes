@@ -151,3 +151,7 @@ unique => Egyedi
 triggerable => Aktiválható
 selectDecoration => Díszítés Kijelölése
 commonUnit => Általános Egység
+mapLoad => Pálya Betöltése
+mapSave => Pálya Mentése
+mapFiles => Pálya Fájlok
+xerxesMapFile => Xerxész Pálya Fájl

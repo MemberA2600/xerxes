@@ -151,3 +151,7 @@ unique => Unique
 triggerable => Triggerable
 selectDecoration => Select Decoration
 commonUnit => Common Unit
+mapLoad => Map Load
+mapSave => Map Save
+mapFiles => Map Files
+xerxesMapFile => Xerxes Map File

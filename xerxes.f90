@@ -216,7 +216,10 @@
 
               CASE (ID_MAPEDITOR_BASICS)  
                     intDummy = openBasicSettingsWindow(.FALSE.)
-
+              CASE (ID_SAVEMAP)  
+                    call saveMap()
+              CASE (ID_LOADMAP)  
+                    intDummy = loadMap()
               CASE (ID_ExitMapEditor)
                     call closeMapEditor()
 
@@ -302,6 +305,8 @@
             call WMenuSetString(ID_SELECT_FLOOR     , trim(getWordInCurrentLang( "selectFloor"        )))
             call WMenuSetString(ID_SELECT_UNIT      , trim(getWordInCurrentLang( "selectUnit"         )))
             call WMenuSetString(ID_SELECT_DECORATION, trim(getWordInCurrentLang( "selectDecoration"   )))
+            call WMenuSetString(ID_LOADMAP          , trim(getWordInCurrentLang( "mapLoad   "         )))
+            call WMenuSetString(ID_SAVEMAP          , trim(getWordInCurrentLang( "mapSave"            )))
 
       end subroutine  
 

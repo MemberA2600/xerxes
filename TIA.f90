@@ -6,8 +6,8 @@ MODULE TIA
     !
     USE, INTRINSIC :: ISO_C_BINDING
     USE debugWindow
-    USE dataLoader
     USE waveplayer
+    USE dataLoader
     USE WINTERACTER
     USE RESID
     USE subs
@@ -98,7 +98,7 @@ MODULE TIA
 
     type TIAheader
         character(4)                          :: fileTyp
-        integer(1)                            :: nameLen
+        integer(2)                            :: nameLen
         character(NAME_MAX_LEN)               :: name
         integer(1)                            :: numOfTones
 
@@ -245,7 +245,7 @@ MODULE TIA
         call loadBinary(trim(CWD()) // "\tia\" // fname, d, siz, .FALSE.)
         call makeTiaHeader(d, temp, header, siz)
 
-        if (header%name == TIA_DEFAULT) call displayDebug(fname // " has the default TIA name!")
+        if (header%name == TIA_DEFAULT) call displayDebug(trim(fname) // " has the default TIA name!")
 
         call uncompressTIA(temp, header%numOfTones)        
         call tiaList(N)%createTIASfx(header%name, temp)     
@@ -695,13 +695,7 @@ MODULE TIA
             return
         end if    
     
-        header%nameLen = d(offset)
-        offset         = offset + 1
-
-        call copyBytes(d, temp, offset, offset + header%nameLen - 1, header%nameLen) 
-        offset = offset + header%nameLen
-
-        call bin2Char(header%name, temp, header%nameLen, .TRUE.) 
+        call getName(d, offset, header%nameLen, header%name)
 
         header%numOfTones = d(offset)
         offset            = offset + 1

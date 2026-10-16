@@ -33,7 +33,7 @@ MODULE adlib
 
     type adlibData
          character(4)                          :: header
-         integer(1)                            :: nameLen
+         integer(2)                            :: nameLen
          character(NAME_MAX_LEN)               :: name 
          integer(8)                            :: numOfBytes, loopByte
          integer(2), dimension(:), allocatable :: songBytes
@@ -47,7 +47,7 @@ MODULE adlib
     type adlibItem  
          character(MAX_PATH_LEN)               :: fileName 
          character(4)                          :: header
-         integer(1)                            :: nameLen
+         integer(2)                            :: nameLen
          character(NAME_MAX_LEN)               :: name 
          integer(8)                            :: numOfBytes, loopByte
          integer(8)                            :: firstDataByte, dataLen
@@ -210,7 +210,7 @@ MODULE adlib
         character(*)                           :: fname
         integer(8)                             :: siz
         integer(2)                             :: stat
-        integer(2), dimension(:), allocatable  :: d, temp
+        integer(2), dimension(:), allocatable  :: d
         integer(8)                             :: offset, dataLen
 
         call loadBinary(trim(CWD()) // "\adlib\" // fname, d, siz, .TRUE.)
@@ -223,19 +223,10 @@ MODULE adlib
             call displayDebug("This is not a valid OPL2 file!")
             return
         end if    
-    
-        adlibList(num)%nameLen = d(offset)
-        offset                  = offset + 1
 
-        call copyBytes(d, temp, offset, &
-                       offset + adlibList(num)%nameLen - 1, &
-                       adlibList(num)%nameLen) 
+        call getName(d, offset, adlibList(num)%nameLen, adlibList(num)%name)
 
-        offset = offset + adlibList(num)%nameLen
-
-        call bin2Char(adlibList(num)%name, temp, adlibList(num)%nameLen, .TRUE.) 
-
-        if (adlibList(num)%name == OPL2_DEFAULT) call displayDebug(fname // " has the default OPL2 name!")
+        if (adlibList(num)%name == OPL2_DEFAULT) call displayDebug(trim(fname) // " has the default OPL2 name!")
 
         adlibList(num)%numOfBytes = ReadInt8FromData(d, offset) 
         adlibList(num)%loopByte   = ReadInt8FromData(d, offset) 

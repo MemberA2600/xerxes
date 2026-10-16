@@ -22,7 +22,7 @@ MODULE GameMap
     private
     public   :: openBasicSettingsWindow, mapBasicSettings, initMapTimer, &
                 runGameLogic, doThingsOnMapEditor, closeMapEditor, UnitChooser, UnitAdderCheck, &
-                setSelection
+                setSelection, saveMap, loadMap
 
     logical  :: canKill = .FALSE.
     character(NAME_MAX_LEN), dimension(:), allocatable :: baseFloorList, floorList, musicList, decoList, &
@@ -31,13 +31,19 @@ MODULE GameMap
                                                        "dayNorm", "nightNorm", "dayRain","nightRain" /) 
     character(NAME_MAX_LEN), dimension(4)              :: weatherNames
 
-    integer(1), parameter :: typeNum = 3
-
     integer(1), parameter :: DIV_FLOOR = 32, DIV_UNIT = 8
+    integer(1), parameter :: typeNumWalk = 3, typeNumFight = 2, typeNumWatch = 1
 
-    character(NAME_MAX_LEN), dimension(typeNum ), parameter :: typeNames =  &
+    character(NAME_MAX_LEN), dimension(typeNumWalk), parameter :: typeNamesWalk =  &
                            (/ "floor", "floorDecoration", "commonUnit" /)
 
+    character(NAME_MAX_LEN), dimension(typeNumFight), parameter :: typeNamesFight =  &
+                           (/ "floor", "floorDecoration" /)
+
+    character(NAME_MAX_LEN), dimension(typeNumWatch), parameter :: typeNamesWatch =  &
+                           (/ "floor" /)
+
+    character(NAME_MAX_LEN), dimension(:), allocatable :: typeNamesTrans
     integer(1)            :: selectedType
 
     integer(1), parameter                              :: stepOnMap = 10
@@ -67,7 +73,7 @@ MODULE GameMap
          integer(1)                            :: nameLen, typ = MAP_WALKING, &
                                                   defWeather = WEATHER_DAY_NORM, &
                                                   defFilter  = NO_FILTER      
-         character(NAME_MAX_LEN)               :: name, musicPlaying, defaultMusic 
+         character(NAME_MAX_LEN)               :: name, musicPlaying, defaultMusic = ""
          integer(4)                            :: width, height
          logical                               :: wind = .FALSE., paused = .TRUE.
             
@@ -85,14 +91,21 @@ MODULE GameMap
 !
 !   Unit Stuff
 !
-    subroutine setUnit(name, x, y, layerNum)
+    subroutine setUnit(name, x, y, layerNum, oName)
         type(objectData), pointer             :: obj
         integer(1)                            :: rc
         integer(1)                            :: layerNum
         integer(4)                            :: x, y
-        character(*)                          :: name
+        character(*)                          :: name, oName
+        character(NAME_MAX_LEN)               :: objName
 
-        call getGameObjByName(obj, name)
+        if (oName == "") then
+            objName = name
+        else
+            objName = oName
+        end if
+        
+        call getGameObjByName(obj, objName)
 
         select case(obj%objType)
         case(TYPE_FLOOR)
@@ -104,7 +117,7 @@ MODULE GameMap
                                                x, y, currentMap%defFilter, obj%unique, obj%name)
             end if    
         case default
-            if (getFly(placeObj) == 0) then
+            if (getFly(obj) == 0) then
                 call createSpriteObjPlayGround(name, obj%getEditorSprite(currentMap%wind, .TRUE., ""), &
                                                x, y, currentMap%defFilter, obj%unique, obj%name)
             else
@@ -112,13 +125,13 @@ MODULE GameMap
                                               currentMap%defFilter, getFly(placeObj), obj%unique, obj%name)
 
             end if
+
         end select
 
         !call displayDebug("Name: " // name)
         !call displayDebugNumTxt("X: ", x)
         !call displayDebugNumTxt("Y: ", y)
         !call displayDebugNumTxt("Size: ", layerBlocks(LAYER_PLAYGROUND)%NextIndexP)
-
 
     end subroutine
 
@@ -190,7 +203,6 @@ MODULE GameMap
        integer(2)              :: ind 
        integer                 :: w, h, m 
 
-
        success           = 0
        canKill           = .FALSE.
        currentMap%paused = .TRUE.
@@ -201,6 +213,8 @@ MODULE GameMap
          call sleep(1)
        end do 
        
+       if (load) call DROPALLUNITS() 
+
        call getUnitNames(baseFloorList, TYPE_FLOOR, COLLECT_BASEFLOOR) 
        call getMusicList(musicList) 
 
@@ -290,6 +304,7 @@ MODULE GameMap
        call WDialogPutOption(IDF_MAP_DEFAULT_FLOOR  , selectedFloor) 
        call WDialogPutOption(IDF_MAP_DEFAULT_WEATHER, selectedWeather) 
 
+       musicVal = 0 
        do ind = 1, size(musicList), 1 
           if (musicList(ind) == currentMap%defaultMusic) then 
               musicVal = ind
@@ -347,7 +362,7 @@ MODULE GameMap
 
            if ((defaultFloorOld /= baseFloorList(selectedFloor)) .OR. (load)) then 
                if (load .EQV. .FALSE.) call layerBlocks(LAYER_BACKGROUND)%pozList(1)%killMe(.FALSE.) 
-               call setUnit(baseFloorList(selectedFloor), 1, 1, LAYER_BACKGROUND)
+               call setUnit(baseFloorList(selectedFloor), 1, 1, LAYER_BACKGROUND, "")
            end if 
 
            if (selectedWeather /= weatherOld .OR. (currentMap%wind .NEQV. windOld)) then
@@ -371,16 +386,17 @@ MODULE GameMap
                call setSize(currentMap%width, currentMap%height) 
            end if 
 
-           !if (defaultFloorOld /= defaultFloor .AND. (load .EQV. .FALSE.)) then
-           !    call removeByName(defaultFloor)
-           !end if   
-
            call WDialogGetMenu(IDF_MAP_DEFAULT_MUSIC, musicVal) 
-           currentMap%defaultMusic = musicList(musicVal) 
+
+           If (musicVal > 0) then 
+               currentMap%defaultMusic = musicList(musicVal) 
+           else
+               currentMap%defaultMusic = ""
+           end if 
 
        else 
-           if (load) then 
-  
+           if (load) then
+               if (loadMap()) success = 1
            end if 
        end if 
 
@@ -539,11 +555,56 @@ MODULE GameMap
         call eraseBuff()
     end subroutine
 
+    subroutine setUnitChooserRollDown()
+       integer(1)                                         :: num, rc
+       integer                                            :: typeNum  
+
+       if (allocated(typeNamesTrans)) then
+           deallocate(typeNamesTrans, stat = rc)  
+           if (rc /= 0) call displayDebug("Failed to deallocate translated type names!")  
+       end if
+
+       select case(currentMap%typ) 
+       case(MAP_WALKING)  
+            typeNum   =  typeNumWalk
+       case(MAP_FIGHTING)  
+            typeNum   =  typeNumFight
+       case(MAP_WATCHING)     
+            typeNum   =  typeNumWatch
+       end select 
+
+       allocate(typeNamesTrans(typeNum), stat = rc)  
+       if (rc /= 0) call displayDebug("Failed to allocate translated type names!")  
+
+       select case(currentMap%typ) 
+       case(MAP_WALKING)  
+            typeNum   =  typeNumWalk
+
+            do num = 1, typeNum, 1
+               typeNamesTrans(num) = getWordInCurrentLang(typeNamesWalk(num))  
+            end do 
+       case(MAP_FIGHTING)  
+            typeNum   =  typeNumFight
+
+            do num = 1, typeNum, 1
+               typeNamesTrans(num) = getWordInCurrentLang(typeNamesFight(num))  
+            end do 
+       case(MAP_WATCHING)     
+            typeNum   =  typeNumWatch
+
+            do num = 1, typeNum, 1
+               typeNamesTrans(num) = getWordInCurrentLang(typeNamesWatch (num))  
+            end do 
+
+       end select 
+
+       call wDialogPutMenu(IDF_UNITTYPES, typeNamesTrans, typeNum, 1)  
+
+    end subroutine
+
     subroutine UnitChooser()
        TYPE(WIN_MESSAGE)       :: MESSAGE
        integer                 :: windVal 
-       character(NAME_MAX_LEN), dimension(typeNum) :: typeNamesTrans
-       integer(1)              :: num 
 
        canKill           = .FALSE.
 
@@ -552,10 +613,6 @@ MODULE GameMap
          call sleep(1)
        end do 
        
-       do num = 1, typeNum, 1
-          typeNamesTrans(num) = getWordInCurrentLang(typeNames(num))  
-       end do 
-
        selectMode            = NO_SELECT 
        nullify(selectedUnit) 
        selectedType          = 1
@@ -572,7 +629,7 @@ MODULE GameMap
        CALL WDialogPutString(IDF_NO_WEATHER_BOX, getWordInCurrentLang("noWeather")) 
 
        call wDialogPutMenu(IDF_UNITBOX, floorList, size(floorList), 1)  
-       call wDialogPutMenu(IDF_UNITTYPES , typeNamesTrans, size(typeNames)  , 1)  
+       call setUnitChooserRollDown() 
 
        do
           CALL WDialogSelect(IDD_ADD_UNIT)
@@ -659,7 +716,7 @@ MODULE GameMap
     end function
 
     subroutine doThePlacer()
-        integer         :: lastX, lastY
+        integer                 :: lastX, lastY
 
         lastX = -1
         lastY = -1
@@ -686,7 +743,7 @@ MODULE GameMap
                    !                   YonScreen + getOffSetY(), TYPE_FLOOR_DECORATION, LAYER_PLAYGROUND)
 
                    call setUnit(placeObj%name, XonScreen + getOffSetX(), & 
-                                 YonScreen + getOffSetY(), LAYER_PLAYGROUND) 
+                                 YonScreen + getOffSetY(), LAYER_PLAYGROUND, placeObj%name) 
 
                 case(TYPE_FLOOR_DECORATION) 
 
@@ -694,12 +751,12 @@ MODULE GameMap
                                        YonScreen + getOffSetY(), TYPE_FLOOR_DECORATION, LAYER_PLAYGROUND)
 
                     call setUnit(placeObj%name, XonScreen + getOffSetX(), & 
-                                 YonScreen + getOffSetY(), LAYER_PLAYGROUND) 
+                                 YonScreen + getOffSetY(), LAYER_PLAYGROUND, placeObj%name) 
 
                 case default 
 
                     call setUnit(placeObj%name, XonScreen + getOffSetX(), & 
-                                 YonScreen + getOffSetY(), LAYER_PLAYGROUND) 
+                                 YonScreen + getOffSetY(), LAYER_PLAYGROUND, placeObj%name) 
 
                 end select
 
@@ -925,5 +982,240 @@ MODULE GameMap
         selectMode = s
 
     end subroutine
+
+    subroutine saveMap()
+        integer(1)                            :: rc
+        character(MAX_PATH_LEN)               :: fname
+        integer(2), dimension(:), allocatable :: fullD
+        integer(8)                            :: siz, ind, ind2, numOfUnits                                   
+
+        fname = FileDialog("map\", .TRUE., "xxm ")  
+
+        if (fname == "") return
+
+      !-----------------  
+      ! File Format:
+      !----------------- 
+      ! ## HEADER ##
+      ! 4 bytes: 'MAP '
+      ! 1 BYTE : Name Len
+      ! X BYTES: Name
+
+      siz = 4 + 1 + len_trim(currentMap%name)
+      ! 4 BYTE : Width
+      ! 4 BYTE : Height  
+      ! 1 BYTE : Map Type
+      ! 1 BYTE : Wind    
+
+      siz = siz + 4 + 4 + 1 + 1  
+      ! 1 BYTE : Basic Floor Name Len
+      ! X BYTES: Basic Floor Name  
+      ! 1 BYTE : Weather
+      ! 1 BYTE : Default Music Name Len
+      ! X BYTES: Default Music Name 
+
+      siz = siz + 1 + len_trim(defaultFloor) + 1 + 1 + len_trim(currentMap%defaultMusic) 
+
+      ! 4 BYTES: Number of Units
+
+      siz = siz + 4
+      numOfUnits = 0
+                                   
+      do ind = 1, layerBlocks(LAYER_PLAYGROUND)%nextIndexP, 1
+        
+         if ((layerBlocks(LAYER_PLAYGROUND)%pozList(ind)%dontCountMe                                           .EQV. .TRUE. )  .OR. &
+             (layerBlocks(LAYER_PLAYGROUND)%spriteList(layerBlocks(LAYER_PLAYGROUND)%pozList(ind)%ind)%active  .EQV. .FALSE.)  .OR. & 
+  (associated(layerBlocks(LAYER_PLAYGROUND)%spriteList(layerBlocks(LAYER_PLAYGROUND)%pozList(ind)%ind)%imageF) .EQV. .FALSE.)) cycle  
+  
+              numOfUnits = numOfUnits + 1  
+
+      ! 1 BYTE:  Unit Name Len  
+      ! X BYTES: Unit Name 
+      ! 1 BYTE:  Obj  Name Len  
+      ! X BYTES: Obj  Name 
+      ! 4 BYTES. X
+      ! 4 BYTES. Y
+               
+              siz = siz + 1 + len_trim(layerBlocks(LAYER_PLAYGROUND)%pozList(ind)%name) &
+                        + 1 + len_trim(layerBlocks(LAYER_PLAYGROUND)%pozList(ind)%objectD%name) &
+                        + 4 + 4
+
+      end do  
+
+      allocate(fullD(siz), stat = rc)  
+      if (rc /= 0) call displayDebug("Failed to allocate bytes for saving the Map!")  
+
+      fullD = 0
+      call writeChars2Bin(fullD, MAP_FILE_TYPE, 1, 4)
+      fullD(5) = len_trim(currentMap%name) 
+      call writeChars2Bin(fullD, trim(currentMap%name), 6, len_trim(currentMap%name))
+
+      ind = 6 + len_trim(currentMap%name)  
+      call WriteInt4ToData(fullD, ind, currentMap%width )  
+      call WriteInt4ToData(fullD, ind, currentMap%height)  
+  
+      fullD(ind)    = currentMap%typ 
+      ind = ind + 1       
+
+      if (currentMap%wind) then          
+          fullD(ind)    = 1 
+      else
+          fullD(ind)    = 0
+      end if
+      ind = ind + 1  
+
+      fullD(ind)    = len_trim(defaultFloor) 
+      ind = ind + 1  
+      call writeChars2Bin(fullD, defaultFloor, ind, len_trim(defaultFloor))
+      ind = ind + len_trim(defaultFloor)
+
+      fullD(ind)    = currentMap%defWeather
+      ind = ind + 1  
+
+      fullD(ind)    = len_trim(currentMap%defaultMusic) 
+      ind = ind + 1  
+
+      if (len(currentMap%defaultMusic) > 0) then
+          call writeChars2Bin(fullD, currentMap%defaultMusic, ind, len_trim(currentMap%defaultMusic))
+          ind = ind + len_trim(currentMap%defaultMusic)
+      end if
+
+      call WriteInt4ToData(fullD, ind, numOfUnits)  
+
+      do ind2 = 1, layerBlocks(LAYER_PLAYGROUND)%nextIndexP, 1
+        
+         if ((layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%dontCountMe                                           .EQV. .TRUE. )  .OR. &
+             (layerBlocks(LAYER_PLAYGROUND)%spriteList(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%ind)%active  .EQV. .FALSE.)  .OR. & 
+  (associated(layerBlocks(LAYER_PLAYGROUND)%spriteList(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%ind)%imageF) .EQV. .FALSE.)) cycle  
+  
+         fullD(ind)    = len_trim(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%name) 
+         ind = ind + 1  
+         call writeChars2Bin(fullD, layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%name, &
+                      ind, len_trim(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%name))
+
+         ind = ind + len_trim(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%name)
+
+         fullD(ind)    = len_trim(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%objectD%name) 
+         ind = ind + 1  
+         call writeChars2Bin(fullD, layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%objectD%name, &
+                      ind, len_trim(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%objectD%name))
+
+         ind = ind + len_trim(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%objectD%name)
+
+         call WriteInt4ToData(fullD, ind, layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%x)  
+         call WriteInt4ToData(fullD, ind, layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%y)  
+
+      end do  
+
+      call writeBin2File(fname, fullD, .TRUE., .TRUE.)
+
+    end subroutine
+
+    function loadMap() result(r)
+        logical                                :: r
+        character(MAX_PATH_LEN)                :: fname
+        
+        r = .FALSE.
+
+        fname = FileDialog("map\", .FALSE., "xxm ")    
+        if (fname /= "") r = loadMapFile(fname, .FALSE.)
+    
+    end function 
+
+    function loadMapFile(fname, addCwD) result(r)
+        logical                                :: r
+        character(*)                           :: fname
+        integer(2), dimension(:), allocatable  :: d
+        character(4)                           :: headerTyp
+        integer(2)                             :: nameLen, nameLen2
+        integer(8)                             :: siz, offset
+        integer(1)                             :: stat
+        logical                                :: addCwd
+        integer(4)                             :: numOfUnits, x, y
+        character(MAX_PATH_LEN)                :: uName, oName
+        logical                                :: dbg = .FALSE.
+
+        if (addCwd) then
+            call loadBinary(trim(CWD()) // "\map\" // fname // ".xxm", d, siz, .TRUE.)
+        else
+            call loadBinary(fname, d, siz, .TRUE.)
+        end if
+
+        offset = 1
+        call read4CharFromBin(d, siz, offset, headerTyp)  
+
+        if (headerTyp /= MAP_FILE_TYPE) then
+            call displayDebug("This is not a valid Xerxes Map file!")
+            return
+        end if    
+
+        call getName(d, offset, nameLen, currentMap%name)
+    
+        currentMap%nameLen = nameLen
+
+        if (currentMap%name == MAP_DEFAULT) call displayDebug(trim(fname) // " has the default MAP name!")
+
+        currentMap%width  = ReadInt4FromData(d, offset )
+        currentMap%height = ReadInt4FromData(d, offset )
+
+        if (dbg) then
+            call displayDebug(currentMap%name   )
+            call displayDebugNum(currentMap%width  )
+            call displayDebugNum(currentMap%height )
+        end if
+
+        call setSize(currentMap%width, currentMap%height) 
+        call DROPALLUNITS() 
+
+        currentMap%typ = d(offset)
+        offset = offset + 1
+
+        currentMap%wind = (btest(d(offset) ,0))
+        offset = offset + 1
+
+        call getName(d, offset, nameLen, defaultFloor)
+        if (dbg) call displayDebug(defaultFloor   )
+
+        call setUnit(defaultFloor, 1, 1, LAYER_BACKGROUND, "")
+
+        currentMap%defWeather = d(offset)
+        offset = offset + 1
+        call setWeather(currentMap%defWeather, currentMap%wind)
+
+        if (dbg) call displayDebug("**Weather Done**")
+
+        call getName(d, offset, nameLen, currentMap%defaultMusic)
+
+        if (dbg) call displayDebug(currentMap%defaultMusic)
+
+        numOfUnits = ReadInt4FromData(d, offset )
+        if (dbg) call displayDebugNum(numOfUnits)
+
+        do while(numOfUnits > 0)
+            call getName(d, offset, nameLen , uName)
+            call getName(d, offset, nameLen2, oName)
+
+            !call getGameObjByName(obj, oName)
+
+            x = ReadInt4FromData(d, offset )
+            y = ReadInt4FromData(d, offset )
+           
+            if (dbg) then
+                call displayDebug(uName(1:nameLen) // " (" // oName(1:nameLen2) // ")")
+                call displayDebugNum(x)
+                call displayDebugNum(y)
+            end if
+
+            call setUnit(uName(1:nameLen), x, y, LAYER_PLAYGROUND, oName(1:nameLen2))
+
+            numOfUnits = numOfUnits - 1
+            if (dbg) call displayDebugNum(numOfUnits)
+            if (numOfUnits == 0) exit
+        end do
+
+        if (dbg) call displayDebug("Done.")
+        r = .TRUE.
+
+    end function 
 
 END MODULE GameMap

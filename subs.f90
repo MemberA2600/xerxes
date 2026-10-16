@@ -67,7 +67,7 @@ MODULE subs
             character(MAX_PATH_LEN)                 :: fname  
             logical                                 :: sav
             integer                                 :: iflags, ind             
-            character(25), dimension(7,3)           :: typeList         
+            character(25), dimension(8,3)           :: typeList         
             character(4)                            :: typ
             character(40)                           :: title, ftyp 
             logical                                 :: invert
@@ -99,6 +99,10 @@ MODULE subs
             typeList(7,1) = 'xxo '
             typelist(7,2) = trim(getWordInCurrentLang('objectFiles')) //'|*.xxo|'
             typelist(7,3) = getWordInCurrentLang('xerxesObjectFile')
+
+            typeList(8,1) = 'xxm '
+            typelist(8,2) = trim(getWordInCurrentLang('mapFiles')) //'|*.xxm|'
+            typelist(8,3) = getWordInCurrentLang('xerxesMapFile')
 
             iflags = 8 + 32
 

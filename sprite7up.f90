@@ -722,7 +722,8 @@ MODULE sprite7up
         wSize = w
         hSize = h
 
-        call offsetCorr()
+        !call offsetCorr()
+        call setOffset(0, 0)
 
     end subroutine
 

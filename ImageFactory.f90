@@ -54,7 +54,7 @@ MODULE ImageFactory
     type imageFile
          character(4)                              :: header = IMG_FILE_TYPE
          character(NAME_MAX_LEN)                   :: name 
-         integer(1)                                :: nameLen
+         integer(2)                                :: nameLen
          character(MAX_PATH_LEN)                   :: fileName 
          type(imageData), allocatable              :: img
 
@@ -1037,17 +1037,8 @@ MODULE ImageFactory
             return
         end if    
     
-        imageList(num)%nameLen = d(offset)
-        offset                 = offset + 1
-
-        call copyBytes(d, temp, offset, &
-                       offset + imageList(num)%nameLen - 1, &
-                       imageList(num)%nameLen) 
-
-        offset = offset + imageList(num)%nameLen
-
-        call bin2Char(imageList(num)%name, temp, imageList(num)%nameLen, .TRUE.) 
-        if (imageList(num)%name == IMG_DEFAULT) call displayDebug(fname // " has the default IMG name!")
+        call getName(d, offset, imageList(num)%nameLen, imageList(num)%name)
+        if (imageList(num)%name == IMG_DEFAULT) call displayDebug(trim(fname) // " has the default IMG name!")
 
         imageList(num)%fileName = fname    
 

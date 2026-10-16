@@ -14,7 +14,7 @@ MODULE dataLoader
       PUBLIC :: loadbinary, read4CharFromBin, readIntFromBin, copyBytes, copyBytesHalf, &
                 writeChars2Bin, writeBytes2Bin, writeBin2File, bin2Char, WriteInt8ToData, &
                 ReadInt8FromData, read2CharFromBin, WriteInt2ToData, ReadInt2FromData, &
-                WriteInt4ToData, ReadInt4FromData
+                WriteInt4ToData, ReadInt4FromData, getName
 
       CONTAINS
       
@@ -467,5 +467,31 @@ MODULE dataLoader
           offset = offset + 4   
 
       end function
+
+    subroutine getName(d, offset, nameLen, c)
+        character(NAME_MAX_LEN), intent(out)   :: c 
+        integer(2), dimension(:), allocatable  :: d, temp
+        integer(2), intent(out)                :: nameLen
+        integer(8)                             :: offset
+        integer(1)                             :: stat
+
+        nameLen = d(offset)
+        offset  = offset + 1
+
+        if (nameLen == 0) then
+            c = ""
+            return
+        end if
+
+        allocate(temp(nameLen), stat = stat)
+        if (stat /= 0) call displayDebug("Failed to allocate temp for Name on Load!")
+
+        call copyBytes(d, temp, offset, offset + nameLen - 1, nameLen) 
+
+        offset = offset + nameLen
+
+        call bin2Char(c, temp, nameLen, .TRUE.)
+
+    end subroutine 
 
 END MODULE dataLoader

@@ -8,20 +8,20 @@
 //
 // Winteracter resource script
 //
-// Modified : 12/okt./2026 16:30:03
+// Modified : 15/okt./2026 07:21:13
 //
 ///////////////////////////////////////////////////
 //
 // Number of resources
 //
 //*WN* NMENU       1
-//*WN* NITEM       36
+//*WN* NITEM       38
 //*WN* NDIALOG     10
 //*WN* NFIELD      167
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
-//*WN* NIDENTIFIER 224
+//*WN* NIDENTIFIER 226
 //*WN* NINCLUDE    0
 //*WN* NOPTROW     0
 ///////////////////////////////////////////////////
@@ -248,6 +248,8 @@
 #define IDF_TriggerBox                   1166
 #define IDD_ADD_UNIT                      101
 #define ID_SELECT_UNIT                  40036
+#define ID_SaveMap                      40037
+#define ID_LoadMap                      40038
 
 ///////////////////////////////////////////////////
 //
@@ -652,6 +654,8 @@ BEGIN
       MENUITEM "Select Unit",ID_SELECT_UNIT
     END
     MENUITEM "Add Unit",ID_ADD_UNIT
+    MENUITEM "Load Map",ID_LoadMap
+    MENUITEM "Save Map",ID_SaveMap
     MENUITEM "Exit Map Editor",ID_ExitMapEditor
   END
 END
