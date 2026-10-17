@@ -220,9 +220,9 @@ MODULE sprite7up
                        spX1, spY1, spX2, spY2, spFly1, spFly2) result(r)
         logical          :: r
         integer          :: x1 , x2 , y1 , y2 , checkX, checkY, &
-                            pX1, pX2, pY1, pY2, startX, startY 
+                            pX1, pX2, pY1, pY2, startX, startY, spX1, spY1, spX2, spY2 
         integer(2)       :: boxW, boxH 
-        integer(2)       :: hitBoxW1, hitBoxH1, hitBoxW2, hitBoxH2, spX1, spY1, spX2, spY2, spFly1, spFly2
+        integer(2)       :: hitBoxW1, hitBoxH1, hitBoxW2, hitBoxH2, spFly1, spFly2
         integer(1)       :: bufferNum
     
         type(imageData), pointer :: iD1, iD2

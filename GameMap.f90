@@ -993,7 +993,9 @@ MODULE GameMap
     
            end select
 
-           if (checkForPossibleOverlaps(LAYER_PLAYGROUND   ,XOnScreen, YOnScreen, &
+           if (checkForPossibleOverlaps(LAYER_PLAYGROUND   , &
+                                        XOnScreen + getOffsetX(), &
+                                        YOnScreen + getOffsetY(), &
                                         placeImg%img%width, placeImg%img%height, &
                                         placeTyp, getFly(placeObj), placeImg)) then
                color   = COLOR_RED
