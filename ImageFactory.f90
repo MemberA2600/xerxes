@@ -298,7 +298,7 @@ MODULE ImageFactory
             .OR. forceTransp .EQV. .TRUE.) then
             imageLoader%img%transpColor = 1
         else  
-            imageLoader%img%transpColor = imageLoader%img%frames(1, 1, 1)  
+            imageLoader%img%transpColor = getTransColorFromFrame(imageLoader%img%frames)  
         end if
    
         if (numOfFrames > 1) then
@@ -314,6 +314,62 @@ MODULE ImageFactory
         r = .TRUE.
         pleaseStop = .FALSE.
 
+    end function
+
+    function getTransColorFromFrame(frames) result(r)
+        integer(2), dimension(:,:,:), allocatable :: frames
+        integer(2)                                :: r, c1, c2, c3, c4, w, h, & 
+                                                     mx1, mx2, mx3, mx4, best   
+        integer(2)                                :: colors(4)
+
+        r = frames(1, 1, 1)
+        w = size(frames, 2)    
+        h = size(frames, 3)    
+    
+        if (w < 3 .OR. h < 3) return
+
+        c1 = frames(1, 1, 1)     
+        c2 = frames(1, w, 1)        
+        c3 = frames(1, 1, h)        
+        c4 = frames(1, w, h)        
+   
+        mx1 = countMaxOccurOnFrame(frames, c1, 1_2, 1_2)
+        mx2 = countMaxOccurOnFrame(frames, c2, w,   1_2)
+        mx3 = countMaxOccurOnFrame(frames, c3, 1_2, h)
+        mx4 = countMaxOccurOnFrame(frames, c4, w,   h)
+
+        colors = (/ c1, c2, c3, c4 /)
+        best   = maxloc((/ mx1, mx2, mx3, mx4 /), dim=1)
+        r      = colors(best)
+
+    end function
+
+    function countMaxOccurOnFrame(frames, c, startX, startY) result(n)
+        integer(2), intent(in) :: frames(:,:,:)
+        integer(2), intent(in) :: c, startX, startY
+        integer(2)             :: n
+        integer                :: dx, dy, stepX, stepY, x, y
+    
+        n = 0
+    
+        if (size(frames, 1) < 1) return
+    
+        stepX = -1
+        stepY = -1
+        if (startX == 1) stepX = 1
+        if (startY == 1) stepY = 1
+    
+        do dx = 0, 2
+            do dy = 0, 2 - dx
+                x = startX + dx * stepX
+                y = startY + dy * stepY
+    
+                if (x < 1 .OR. x > size(frames, 2)) cycle
+                if (y < 1 .OR. y > size(frames, 3)) cycle
+    
+                if (frames(1, x, y) == c) n = n + 1
+            end do
+        end do
     end function
 
     subroutine addToScreenBuffer(this, frameNum, bufferNum, x, y, filter)
@@ -1180,10 +1236,11 @@ MODULE ImageFactory
 
             call extractBMP(fname, 1)
     
-        if ((imageLoader%img%width > wOfScreenBuffer / 4 * 3 .AND. imageLoader%img%height > hOfScreenBuffer / 4 * 3) &
+            if ((imageLoader%img%width > wOfScreenBuffer / 4 * 3 .AND. imageLoader%img%height > hOfScreenBuffer / 4 * 3) &
             .OR. forceTransp .EQV. .TRUE.) then
+                imageLoader%img%transpColor = 1    
             else  
-                imageLoader%img%transpColor = imageLoader%img%frames(1, 1, 1)  
+                imageLoader%img%transpColor = getTransColorFromFrame(imageLoader%img%frames)  
             end if
        
             if (numOfFrames > 1) then
