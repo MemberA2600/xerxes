@@ -68,42 +68,52 @@ MODULE GameObject
         integer(1)                     :: num
         character(7)                   :: temp
 
-        select case(this%objType)
-        case(TYPE_TREE)
-            if (wind) then 
-                r = this%getSprite("wind") 
+        select case(this%name)
+        case("Water")    
+            if (wind) then
+                r = "WaterWind"
             else
-                r = this%getSprite("normal") 
-            end if
-        case(TYPE_PLAYER_MAP)
-            if (init .EQV. .TRUE.) then
-                if (wind .EQV. .TRUE.) then
-                    r = "wind"  // directions(randint(1, 8))
-                else
-                    r = "stand" // directions(randint(1, 8))
-                end if
-            else
-                if (current(1:4) == "wind") then            
-                    temp(2:7) = current
-                else
-                    temp      = current
-                end if
-
-                read(temp(6:7), "(I2)") num
-
-                num = num + randint(0, 2) - 1
-                if (num < 1) num = 8
-                if (num > 8) num = 1
-
-                if (wind) then 
-                    r = this%getSprite("wind")   // directions(num)
-                else
-                    r = this%getSprite("normal") // directions(num)
-                end if
-            end if
+                r = "Water"
+            end if 
         case default
-            r = this%getSprite("default")
+            select case(this%objType)
+            case(TYPE_TREE)
+                if (wind) then 
+                    r = this%getSprite("wind") 
+                else
+                    r = this%getSprite("normal") 
+                end if
+            case(TYPE_PLAYER_MAP)
+                if (init .EQV. .TRUE.) then
+                    if (wind .EQV. .TRUE.) then
+                        r = "wind"  // directions(randint(1, 8))
+                    else
+                        r = "stand" // directions(randint(1, 8))
+                    end if
+                else
+                    if (current(1:4) == "wind") then            
+                        temp(2:7) = current
+                    else
+                        temp      = current
+                    end if
+    
+                    read(temp(6:7), "(I2)") num
+    
+                    num = num + randint(0, 2) - 1
+                    if (num < 1) num = 8
+                    if (num > 8) num = 1
+    
+                    if (wind) then 
+                        r = this%getSprite("wind")   // directions(num)
+                    else
+                        r = this%getSprite("normal") // directions(num)
+                    end if
+                end if
+            case default
+                r = this%getSprite("default")
+            end select
         end select
+
     end function    
 
     function getSprite(this, w) result(r)

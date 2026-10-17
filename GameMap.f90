@@ -203,6 +203,7 @@ MODULE GameMap
        integer(2)              :: ind 
        integer                 :: w, h, m 
        logical                 :: nope 
+       integer(8)              :: indP
 
        success           = 0
        canKill           = .FALSE.
@@ -372,6 +373,12 @@ MODULE GameMap
                call setDefaultFilter(selectedWeather) 
 
                call setWeather(selectedWeather, currentMap%wind)
+
+               if (currentMap%wind .NEQV. windOld) then 
+                   do indP = 1, layerBlocks(LAYER_PLAYGROUND)%nextIndexP, 1  
+                      call layerBlocks(LAYER_PLAYGROUND)%pozList(indP)%changeSpriteEditor(currentMap%wind) 
+                   end do 
+               end if
            end if  
 
            if (currentMap%width /= widthOld .OR. currentMap%height /= heightOld .OR. (load)) then
@@ -489,18 +496,10 @@ MODULE GameMap
                      do 
                         call timerCT()  
                         call putSpritesOnBuffer() 
-                        !if (first) then
-                        !    first = .FALSE.
-                        !    call displayDebug(selectedUnit%name)
-                        !    call displayDebugNumTxt("X: ", selectedUnit%x                   - 1)
-                        !    call displayDebugNumTxt("Y: ", selectedUnit%y                   - 1)
-                        !    call displayDebugNumTxt("W: ", selectedUnit%xw - selectedUnit%x + 2)
-                        !    call displayDebugNumTxt("H: ", selectedUnit%yh - selectedUnit%y + 2)
-                        !end if
 
                       ! x, y, w, h, c, b, fill, s   
-                         call drawRectangle(selectedUnit%x                       - 1, &
-                                            selectedUnit%y                       - 1, &
+                         call drawRectangle(selectedUnit%x - getOffsetX()        - 1, &
+                                            selectedUnit%y - getOffsetY()        - 1, &
                                             selectedUnit%xw - selectedUnit%x     + 2, &
                                             selectedUnit%yh - selectedUnit%y     + 2, &
                                             changeRGB(COLOR_GREEN,                                    &
@@ -539,15 +538,19 @@ MODULE GameMap
     subroutine setSelectedPointer(typ, b)
         integer(1)              :: typ, b
         integer(8)              :: ind
+        integer(4)              :: mapX, mapY
 
         nullifY(selectedUnit)
 
+        mapX = XOnScreen + getOffsetX()
+        mapY = YOnScreen + getOffsetY()
+
         do ind = 1, layerBlocks(b)%nextIndexP, 1
         
-           if (xOnScreen >= layerBlocks(b)%pozList(ind)%x                    .AND. &
-               yOnScreen >= layerBlocks(b)%pozList(ind)%y                    .AND. &
-               xOnScreen <= layerBlocks(b)%pozList(ind)%xw                   .AND. &
-               yOnScreen <= layerBlocks(b)%pozList(ind)%yh                   .AND. &
+           if (mapX >= layerBlocks(b)%pozList(ind)%x                         .AND. &
+               mapY >= layerBlocks(b)%pozList(ind)%y                         .AND. &
+               mapX <= layerBlocks(b)%pozList(ind)%xw                        .AND. &
+               mapY <= layerBlocks(b)%pozList(ind)%yh                        .AND. &
               (typ       == layerBlocks(b)%pozList(ind)%typFlag              .OR.  &
               (typ       == TYPE_COMMON_UNIT                                 .AND. & 
                layerBlocks(b)%pozList(ind)%typFlag /= TYPE_FLOOR             .AND. & 
@@ -816,7 +819,9 @@ MODULE GameMap
 
         r = .FALSE.
 
-        if (unitName == objectD%name) return
+        if (objectD%name         == unitName        .AND. &
+           (objectD%unique      .EQV. .FALSE.)      .AND. &
+           (objectD%triggerable .EQV. .TRUE. )    ) return
 
         do ind = 1, layerBlocks(LAYER_PLAYGROUND)%nextIndexP, 1
             
@@ -953,11 +958,17 @@ MODULE GameMap
         Y = min(hOfScreenBuffer, int((1.0 - rY) * hOfScreenBuffer))
 
         if (divider > 1) then
-            XOnScreen = int(X / divider) * divider + modulo(getOffsetX(), divider) 
-            YOnScreen = int(Y / divider) * divider + modulo(getOffsetY(), divider)  
-        else
             XOnScreen = X + getOffsetX()
-            YOnScreen = Y + getOffsetX()
+            YOnScreen = Y + getOffsetY()
+        
+            XOnScreen = XOnScreen - modulo(XOnScreen, int(divider))
+            YOnScreen = YOnScreen - modulo(YOnScreen, int(divider))
+        
+            XOnScreen = XOnScreen - getOffsetX()
+            YOnScreen = YOnScreen - getOffsetY()
+        else
+            XOnScreen = X
+            YOnScreen = Y
         end if
     end subroutine
 

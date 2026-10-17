@@ -23,11 +23,11 @@ MODULE sprite7up
                                      setWeather, spritePoz, getOffsetX, getOffsetY, setSize, &
                                      changeSprite, changeSpriteEditor, addPointerToLastSpritePoz, &
                                      checkCollision, addPointerByNameXY, layerBlocks, checkAllCollisions, &
-                                     DROPALLUNITS, reorderPoz, checkForPossibleOverlaps 
+                                     DROPALLUNITS, reorderPoz, checkForPossibleOverlaps
 
     type SpriteObj 
          integer(2)               :: w, h, spriteI
-         type(imageFile), pointer :: imageF       
+         type(imageFile), pointer :: imageF => null()      
          integer(1)               :: filter, bufferNum, tempFilter, tempFilterCountDown  
          integer(4)               :: ind
          logical                  :: active, unique
@@ -57,7 +57,7 @@ MODULE sprite7up
          procedure                :: dropMySprite       => dropMySprite
          procedure                :: checkCollision     => checkCollision
          procedure                :: checkAllCollisions => checkAllCollisions 
-
+         procedure                :: changeSpriteEditor => changeSpriteEditor 
     end type 
 
     type BlockMap
@@ -335,6 +335,8 @@ MODULE sprite7up
         call this%changeSprite(this%objectD%getEditorSprite(wind, .FALSE., &
              layerBlocks(this%bufferNum)%spriteList(this%ind)%imageF%name  ))
 
+        this%ind = layerBlocks(this%bufferNum)%nextIndexS       
+
     end subroutine
 
     subroutine changeSprite(this, imageName)
@@ -349,7 +351,7 @@ MODULE sprite7up
         call this%dropMySprite()
 
         call AddSpriteThing(this%name, imageName, this%bufferNum, this%x, this%y, & 
-                            filter, this%fly, unique, this%objectD%name)
+                            filter, this%fly, unique, this%objectD%name, .TRUE.)
 
     end subroutine
 
@@ -422,7 +424,7 @@ MODULE sprite7up
             end if
         end if
 
-        if (b == 2) then
+        if (b == LAYER_PLAYGROUND) then
             if (fly > 0) then
                 call this%imageF%addToScreenBuffer(this%spriteI, b - 1, &
                                                    x, y, FILTER_SHADOW)
@@ -468,22 +470,14 @@ MODULE sprite7up
 
         if ((associated(this%imageF) .EQV. .FALSE.)  .OR. &
             (this%active             .EQV. .FALSE.)  .OR. pozInd == -1) return
-
-        !pozInd = 0
     
-        !do 
-            !pozInd = getPozInd(pozInd, this%ind, this%bufferNum)
-            !if (pozInd == -1) exit    
+        typ = layerBlocks(this%bufferNum)%pozList(pozInd)%typFlag
 
-            !write(test, "(A, ' ', I0, ' ', I0)") trim(layerBlocks(this%bufferNum)%pozList(pozInd)%name), x, y 
-            !call displayDebug(test)
-    
         if (layerDimensions(this%bufferNum,1) /= BLOCKMAP_1) then  
     
                 x   = layerBlocks(this%bufferNum)%pozList(pozInd)%x
                 y   = layerBlocks(this%bufferNum)%pozList(pozInd)%y
                 fly = layerBlocks(this%bufferNum)%pozList(pozInd)%fly
-                typ = layerBlocks(this%bufferNum)%pozList(pozInd)%typFlag
             
                 if (layerDimensions(this%bufferNum,2) /= BLOCKMAP_FIX) then
                     if ((x + this%w - 1 < XOffset) .OR. (x > XOffset + wSize)  .OR. & 
@@ -497,6 +491,7 @@ MODULE sprite7up
                 call this%drawDrawDraw(x, y, fly, typ)
         
         else
+
                 do y = layerBlocks(this%bufferNum)%pozList(pozInd)%y -   & 
                        layerBlocks(this%bufferNum)%spriteList(this%ind)%h, &
                        hSize + layerBlocks(this%bufferNum)%spriteList(this%ind)%h, &
@@ -516,14 +511,28 @@ MODULE sprite7up
     
         end if
     
-        if (this%timer%getDiffCheck() /= (PERFECT_WAIT * getSpeed())) then
-            call this%timer%timerStart(PERFECT_WAIT * getSpeed())    
+        if (this%timer%getDiffCheck() /= getWaitTime(this%bufferNum)) then
+            call this%timer%timerStart(getWaitTime(this%bufferNum))    
             call this%animateSprite()                  
         else
             if (this%timer%timerEnded() .EQV. .TRUE. ) call this%animateSprite()             
-        end if    
+        end if  
+
         !end do
     end subroutine
+
+    function getWaitTime(layer) result(waitTime)
+        integer(1)          :: layer
+        integer             :: waitTime
+
+        select case(layer)
+        case(LAYER_WEATHER)
+            waitTime = PERFECT_WAIT / 3 * getSpeed()      
+        case default
+            waitTime = PERFECT_WAIT * getSpeed()
+        end select
+    
+    end function
 
     subroutine animateSprite(this)
        class(SpriteObj)        :: this
@@ -534,7 +543,7 @@ MODULE sprite7up
                this%spriteI = 1
             end if
 
-            call this%timer%timerStart(PERFECT_WAIT * getSpeed())    
+            call this%timer%timerStart(getWaitTime(this%bufferNum))  
         else
             this%spriteI = 1
         end if  
@@ -815,7 +824,6 @@ MODULE sprite7up
 
     end subroutine 
    
-
     subroutine createSpriteObj(spriteName, imageName, bufferNum, x, y, filter, fly, unique, gameObjName)
          character(*)          :: imageName, spriteName, gameObjName   
          integer(4)            :: x, y, f
@@ -836,7 +844,7 @@ MODULE sprite7up
              f = filter
          end if
 
-         call AddSpriteThing(spriteName, imageName, bufferNum, x, y, f, fly, unique, gameObjName)   
+         call AddSpriteThing(spriteName, imageName, bufferNum, x, y, f, fly, unique, gameObjName, .FALSE.)   
 
          layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%ind = &
          layerBlocks(bufferNum)%nextIndexS
@@ -862,6 +870,9 @@ MODULE sprite7up
                         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%objectD%solid)   
 
          if (layerBlocks(bufferNum)%nextIndexP > 1) call reorderPoz(bufferNum)
+
+         !call displayDebugNumTxt("Poz:    ", layerBlocks(bufferNum)%NextIndexP) 
+         !call displayDebugNumTxt("Sprite: ", layerBlocks(bufferNum)%NextIndexS) 
 
     end subroutine
 
@@ -906,14 +917,15 @@ MODULE sprite7up
 
     end subroutine
 
-    subroutine AddSpriteThing(spriteName, imageName, bufferNum, x, y, filter, fly, unique, gameObjName)
+    subroutine AddSpriteThing(spriteName, imageName, bufferNum, x, y, filter, & 
+                              fly, unique, gameObjName, spriteOnly)
          character(*)  :: imageName, spriteName, gameObjName   
          integer(4)    :: x, y
          integer(1)    :: filter, bufferNum  
          integer(4)    :: typFlag
          integer(1)    :: rc
          integer(2)    :: fly
-         logical       :: unique       
+         logical       :: unique, spriteOnly       
          logical       :: alreadyThere
          integer(4)    :: ind
 
@@ -960,6 +972,7 @@ MODULE sprite7up
                 
                      do ind = layerBlocks(bufferNum)%nextIndexS + 1, size(layerBlocks(bufferNum)%spriteList), 1
                         layerBlocks(bufferNum)%spriteList(ind)%active = .FALSE.
+                        nullify(layerBlocks(bufferNum)%spriteList(ind)%imageF)
                      end do
 
                  end if 
@@ -968,18 +981,21 @@ MODULE sprite7up
                  layerBlocks(bufferNum)%nextIndexS + 1       
              end if         
 
-             if (layerBlocks(bufferNum)%nextIndexP == size(layerBlocks(bufferNum)%pozList)) then
-    
-                 allocate(pozListTemp(layerBlocks(bufferNum)%nextIndexP + SIZE_ADD), stat = RC)
-                 if (rc /= 0) call displayDebug("Failed to allocate temporal pozList!")
-    
-                 pozListTemp(1:layerBlocks(bufferNum)%nextIndexP) = layerBlocks(bufferNum)%pozList
-    
-                 call move_alloc(pozListTemp, layerBlocks(bufferNum)%pozList)
-             end if                 
-               
-             layerBlocks(bufferNum)%nextIndexP = & 
-             layerBlocks(bufferNum)%nextIndexP + 1   
+             if (spriteOnly .EQV. .FALSE.) then
+
+                 if (layerBlocks(bufferNum)%nextIndexP == size(layerBlocks(bufferNum)%pozList)) then
+        
+                     allocate(pozListTemp(layerBlocks(bufferNum)%nextIndexP + SIZE_ADD), stat = RC)
+                     if (rc /= 0) call displayDebug("Failed to allocate temporal pozList!")
+        
+                     pozListTemp(1:layerBlocks(bufferNum)%nextIndexP) = layerBlocks(bufferNum)%pozList
+        
+                     call move_alloc(pozListTemp, layerBlocks(bufferNum)%pozList)
+                 end if                 
+                   
+                 layerBlocks(bufferNum)%nextIndexP = & 
+                 layerBlocks(bufferNum)%nextIndexP + 1   
+             end if
          else
              layerBlocks(bufferNum)%nextIndexS = 1            
              layerBlocks(bufferNum)%nextIndexP = 1   
@@ -1009,19 +1025,22 @@ MODULE sprite7up
              layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%unique = unique
 
              if (layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%imageF%img%numOfFrames > 1) then
+
                  call layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%timer%timerStart( &
-                      PERFECT_WAIT * getSpeed())
+                      getWaitTime(layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%bufferNum))
+        
              end if
          end if
 
-         if (gameObjName == "") then
-            call getGameObjByName(&
-                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%objectD, spriteName)   
-         else
-            call getGameObjByName(&
-                 layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%objectD, gameObjName)   
-         end if
-
+         if (spriteOnly .EQV. .FALSE.) then  
+             if (gameObjName == "") then
+                call getGameObjByName(&
+                     layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%objectD, spriteName)   
+             else
+                call getGameObjByName(&
+                     layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%objectD, gameObjName)   
+             end if
+         end if   
     end subroutine
 
     subroutine dropAllUnits()
@@ -1126,18 +1145,15 @@ MODULE sprite7up
 
     subroutine putSpritesOnBuffer()
         integer(1) :: n
-        integer(1) :: ind, sInd
+        integer(4) :: ind, sInd
         integer(2) :: x, y
         !character(40)       :: test
         
         call eraseBuff()
 
         do n = 1, size(layerBlocks), 1
-           !if (layerBlocks(n)%nextIndexP > 1) call reorderPoz(n)
 
            do ind = 1, layerBlocks(n)%nextIndexP, 1 
-              !write(test, "(I0)") ind
-              !call displayDebug(test // ' ' // layerBlocks(n)%pozList(ind)%name)
 
               sInd = layerBlocks(n)%pozList(ind)%ind  
               call layerBlocks(n)%spriteList(sind)%drawImage(ind)  
@@ -1231,5 +1247,7 @@ MODULE sprite7up
         end do
 
     end function 
+
+
 
 END MODULE sprite7up
