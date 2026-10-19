@@ -157,3 +157,5 @@ mapFiles => Kartendateien
 xerxesMapFile => Xerxes-Kartedatei
 unitSettings => Einheiteneinstellungen
 unitName => Einheitenname
+playerSpawner => Spielerstartpunkt
+autoSpawn => Automatisch-Erzeug:

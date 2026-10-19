@@ -1044,10 +1044,8 @@ MODULE ImageFactory
 
         call writeChars2Bin(d, IMG_FILE_TYPE, 1, 4)
 
-        d(5) = len_trim(name)
-        
-        call writeChars2Bin(d, trim(name), 6, len_trim(name))
-        offset = 6 + len_trim(name)
+        offset = 5
+        call putName(d, offset, trim(name))
 
         call WriteInt2ToData(d, offset, imageLoader%img%width)
         call WriteInt2ToData(d, offset, imageLoader%img%height)

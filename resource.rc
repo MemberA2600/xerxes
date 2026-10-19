@@ -8,7 +8,7 @@
 //
 // Winteracter resource script
 //
-// Modified : 16/okt./2026 19:24:05
+// Modified : 18/okt./2026 16:09:19
 //
 ///////////////////////////////////////////////////
 //
@@ -16,12 +16,12 @@
 //
 //*WN* NMENU       1
 //*WN* NITEM       38
-//*WN* NDIALOG     11
-//*WN* NFIELD      170
+//*WN* NDIALOG     12
+//*WN* NFIELD      176
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
-//*WN* NIDENTIFIER 230
+//*WN* NIDENTIFIER 234
 //*WN* NINCLUDE    0
 //*WN* NOPTROW     0
 ///////////////////////////////////////////////////
@@ -254,6 +254,10 @@
 #define IDD_UNIT_SETTINGS_NAME_ONLY       112
 #define ID_UnitOK                        1169
 #define IDF_UNIT_NAME                    1170
+#define IDF_AUTOSPAWN_LABEL              1171
+#define IDD_UNIT_SETTINGS_P_SPAWNER       113
+#define IDF_AUTOSPAWN                    1172
+#define ID_UnitClear                     1173
 
 ///////////////////////////////////////////////////
 //
@@ -618,10 +622,30 @@ END
 
 IDD_UNIT_SETTINGS_NAME_ONLY RCDATA
 BEGIN
-"[Checks] \n"
-"[Trackbars] \n"
 "[Lengths] \n"
 "1168 25 \n"
+,0
+END
+
+IDD_UNIT_SETTINGS_P_SPAWNER DIALOG 0,0,199,73
+STYLE WS_POPUP | WS_BORDER | WS_DLGFRAME | WS_SYSMENU | DS_3DLOOK | DS_MODALFRAME
+FONT 8, "MS Shell Dlg"
+CAPTION "Unit Settings"
+BEGIN
+  CONTROL "Ultra Unit",ID_UnitName,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_LEFT,74,4,103,14
+  CONTROL "OK",ID_UnitOK,"BUTTON",WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,48,53,45,14
+  CONTROL "Unit Name:",IDF_UNIT_NAME,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,6,7,64,8
+  CONTROL "Autospawn:",IDF_AUTOSPAWN_LABEL,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,6,28,64,8
+  CONTROL "",IDF_AUTOSPAWN,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWN | CBS_HASSTRINGS,74,26,103,17
+  CONTROL "Clear",ID_UnitClear,"BUTTON",WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,99,53,45,14
+END
+
+IDD_UNIT_SETTINGS_P_SPAWNER RCDATA
+BEGIN
+"[Menus] \n"
+"[Lengths] \n"
+"1168 25 \n"
+"1172 25 \n"
 ,0
 END
 
@@ -715,5 +739,5 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FORTSAVE    1
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
-//*WI* LASTTYPE    2
-//*WI* LASTRES     11
+//*WI* LASTTYPE    100
+//*WI* LASTRES     0

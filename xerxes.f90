@@ -262,7 +262,7 @@
 
             end if
 
-            call putSpritesOnBuffer()
+            call putSpritesOnBuffer(mapEditorActive)
         else
             call WMenuSetState(ID_DEV, ItemEnabled      , 1)  
             call WMenuSetState(ID_MAPEDITOR, ItemEnabled, 0)  
@@ -417,15 +417,15 @@
                 call checkImageWindowFields()
             case(IDD_SpeedSetter)
                 call testSpeedLoop(editMode)
-                if (editMode .EQV. .FALSE.) call putSpritesOnBuffer()
+                if (editMode .EQV. .FALSE.) call putSpritesOnBuffer(.FALSE.)
             case(IDD_ObjectWindow)
                 call objectWindowThings()
             case(IDD_MAP_BASICSETTINGS)
                 call mapBasicSettings()
             case(IDD_ADD_UNIT)
                 call UnitAdderCheck()
-            case(IDD_UNIT_SETTINGS_NAME_ONLY)
-                call getUnitNameDialogLoop()
+            case default
+                if (isItaUnitSettingsDialog()) call getUnitNameDialogLoop()
             end select
 
         end subroutine

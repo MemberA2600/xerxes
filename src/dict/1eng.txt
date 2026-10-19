@@ -157,3 +157,5 @@ mapFiles => Map Files
 xerxesMapFile => Xerxes Map File
 unitSettings => Unit Settings
 unitName => Unit Name:
+playerSpawner => Player Spawner
+autoSpawn => Auto Spawn

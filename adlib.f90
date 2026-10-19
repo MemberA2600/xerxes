@@ -295,10 +295,10 @@ MODULE adlib
 
         fullD = 0
         call writeChars2Bin(fullD, adlibD%header, 1, 4)
-        fullD(5) = len_trim(name) 
-        call writeChars2Bin(fullD, trim(name), 6, len_trim(name))
 
-        ind = 6 + len_trim(name)
+        ind = 5
+        call putName(fullD, ind, trim(name))
+
         call WriteInt8ToData(fullD, ind, adlibd%numOfBytes) 
         call WriteInt8ToData(fullD, ind, adlibd%loopByte) 
 

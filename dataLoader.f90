@@ -14,7 +14,7 @@ MODULE dataLoader
       PUBLIC :: loadbinary, read4CharFromBin, readIntFromBin, copyBytes, copyBytesHalf, &
                 writeChars2Bin, writeBytes2Bin, writeBin2File, bin2Char, WriteInt8ToData, &
                 ReadInt8FromData, read2CharFromBin, WriteInt2ToData, ReadInt2FromData, &
-                WriteInt4ToData, ReadInt4FromData, getName
+                WriteInt4ToData, ReadInt4FromData, getName, putName
 
       CONTAINS
       
@@ -491,6 +491,28 @@ MODULE dataLoader
         offset = offset + nameLen
 
         call bin2Char(c, temp, nameLen, .TRUE.)
+
+    end subroutine 
+
+    subroutine putName(fullD, ind, c)
+        character(*)                                         :: c
+        character(NAME_MAX_LEN)                              :: temp  
+        integer(8), intent(inout)                            :: ind 
+        integer(2), dimension(:), allocatable, intent(inout) :: fullD
+
+        if (len_trim(c) > NAME_MAX_LEN) then
+            temp = c(1:NAME_MAX_LEN)
+        else
+            temp = c
+        end if
+
+        fullD(ind)    = len_trim(temp) 
+        ind = ind + 1  
+    
+        if (len_trim(temp) > 0) then
+            call writeChars2Bin(fullD, temp, ind, len_trim(temp))
+            ind = ind + len_trim(temp)
+        end if
 
     end subroutine 
 

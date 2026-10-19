@@ -780,6 +780,7 @@ MODULE TIA
         if (stat /= 0) call displayDebug("Failed to allocate full for save TIA on Editor!")
 
         call writeChars2Bin(fullD, header%fileTyp, 1, 4)
+
         fullD(5) = header%nameLen 
         call writeChars2Bin(fullD, header%name, 6, header%nameLen)
 

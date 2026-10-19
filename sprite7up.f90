@@ -511,8 +511,8 @@ MODULE sprite7up
     
         end if
     
-        if (this%timer%getDiffCheck() /= getWaitTime(this%bufferNum)) then
-            call this%timer%timerStart(getWaitTime(this%bufferNum))    
+        if (this%timer%getDiffCheck() /= getWaitTime(this%bufferNum, this%imageF%name)) then
+            call this%timer%timerStart(getWaitTime(this%bufferNum, this%imageF%name))    
             call this%animateSprite()                  
         else
             if (this%timer%timerEnded() .EQV. .TRUE. ) call this%animateSprite()             
@@ -521,9 +521,26 @@ MODULE sprite7up
         !end do
     end subroutine
 
-    function getWaitTime(layer) result(waitTime)
+    function getWaitTime(layer, name) result(waitTime)
         integer(1)          :: layer
         integer             :: waitTime
+        character(*)        :: name
+        integer(1)          :: num
+
+        if (len_trim(name) >= 5) then
+            if (name(1:5) == "Water") then
+                waitTime = PERFECT_WAIT * 1.5 * getSpeed() 
+                return 
+            end if
+
+            do num = 1, len_trim(name) - 3, 1
+               if (name(num:num + 3) == "Wind") then 
+                   waitTime = PERFECT_WAIT * 2 * getSpeed() 
+                   return 
+               end if 
+            end do 
+
+        end if
 
         select case(layer)
         case(LAYER_WEATHER)
@@ -536,6 +553,7 @@ MODULE sprite7up
 
     subroutine animateSprite(this)
        class(SpriteObj)        :: this
+
        if (this%imageF%img%numOfFrames > 1) then
             this%spriteI = this%spriteI + 1
 
@@ -543,7 +561,8 @@ MODULE sprite7up
                this%spriteI = 1
             end if
 
-            call this%timer%timerStart(getWaitTime(this%bufferNum))  
+            !call this%timer%timerStart(getWaitTime(this%bufferNum, this%imageF%name)) 
+            call this%timer%timerReStart() 
         else
             this%spriteI = 1
         end if  
@@ -889,6 +908,8 @@ MODULE sprite7up
                  hitBoxTyp = FULL
              case(TYPE_FLOOR_DECORATION)
                  hitBoxTyp = FULL
+             case(TYPE_PLAYER_SPAWNER)
+                 hitBoxTyp = FULL
              case default 
                  hitBoxTyp = BOTTOM
 
@@ -1027,7 +1048,7 @@ MODULE sprite7up
              if (layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%imageF%img%numOfFrames > 1) then
 
                  call layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%timer%timerStart( &
-                      getWaitTime(layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%bufferNum))
+                      getWaitTime(bufferNum, imageName))
         
              end if
          end if
@@ -1143,19 +1164,24 @@ MODULE sprite7up
 
     end subroutine
 
-    subroutine putSpritesOnBuffer()
+    subroutine putSpritesOnBuffer(mapEditorActive)
         integer(1) :: n
         integer(4) :: ind, sInd
         integer(2) :: x, y
         !character(40)       :: test
+        logical    :: mapEditorActive
         
         call eraseBuff()
 
         do n = 1, size(layerBlocks), 1
 
            do ind = 1, layerBlocks(n)%nextIndexP, 1 
+              if (mapEditorActive .EQV. .FALSE.) then  
+                  if (layerBlocks(n)%pozList(ind)%typFlag == TYPE_PLAYER_SPAWNER) cycle  
+              end if
 
               sInd = layerBlocks(n)%pozList(ind)%ind  
+
               call layerBlocks(n)%spriteList(sind)%drawImage(ind)  
            end do 
         end do

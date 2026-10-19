@@ -21,10 +21,10 @@ MODULE GameObject
     logical               :: canKill, bullshit
     integer(1)            :: changedPage = 0
 
-    integer(2), parameter :: typeNum = 5, flyTypeNum = 3
+    integer(2), parameter :: typeNum = 6, flyTypeNum = 3
 
     character(NAME_MAX_LEN), dimension(typeNum ), parameter :: typeNames =  &
-                           (/ "floor", "playerMap", "tree", "weather", "floorDecoration" /)
+                           (/ "floor", "playerMap", "tree", "weather", "floorDecoration", "playerSpawner" /)
 
     character(NAME_MAX_LEN), dimension(flyTypeNum), parameter :: flyTypeNames =  &
                            (/ "ground", "hovering", "flying" /)
@@ -182,11 +182,19 @@ MODULE GameObject
     end subroutine
 
     subroutine initSpriteNameListPointers()
-        spriteNameListPointers(TYPE_FLOOR)%spriteNameList      => singleSpriteList 
-        spriteNameListPointers(TYPE_PLAYER_MAP)%spriteNameList => mapCharacterSpriteList 
-        spriteNameListPointers(TYPE_TREE)%spriteNameList       => twoSpriteList       
-        spriteNameListPointers(TYPE_WEATHER)%spriteNameList    => singleSpriteList 
-        spriteNameListPointers(TYPE_FLOOR_DECORATION)%spriteNameList      => singleSpriteList 
+        integer(1)              :: num
+
+        do num = 1, typeNum, 1
+           select case(num) 
+           case(TYPE_PLAYER_MAP) 
+                spriteNameListPointers(num)%spriteNameList => mapCharacterSpriteList 
+           case(TYPE_TREE) 
+                spriteNameListPointers(num)%spriteNameList => twoSpriteList       
+           case default             
+                spriteNameListPointers(num)%spriteNameList => singleSpriteList 
+
+           end select 
+        end do    
 
     end subroutine
 
@@ -366,7 +374,9 @@ MODULE GameObject
             gameObjectList(N)%name         = name
             gameObjectList(N)%nameLen      = nameLen
             gameObjectList(N)%objType      = typeVal
-            gameObjectList(N)%solid        = solidBoxVal  
+            gameObjectList(N)%solid        = solidBoxVal
+            gameObjectList(N)%unique       = uniqueVal   
+            gameObjectList(N)%triggerable  = triggerVal 
             gameObjectList(N)%numOfSprites = numOfSprites 
             gameObjectList(N)%flyType      = flyVal
 
@@ -439,10 +449,10 @@ MODULE GameObject
 
         fullD = 0
         call writeChars2Bin(fullD, OBJ_FILE_TYPE, 1, 4)
-        fullD(5) = len_trim(name) 
-        call writeChars2Bin(fullD, trim(name), 6, len_trim(name))
 
-        ind = 6 + len_trim(name)
+        ind = 5
+        call putName(fullD, ind, trim(name))
+
         call WDialogGetCheckBox(IDF_SolidBox  , solidBoxVal)
         call WDialogGetCheckBox(IDF_UniqueBox , uniqueVal)
         call WDialogGetCheckBox(IDF_TriggerBox, triggerVal)
@@ -462,12 +472,9 @@ MODULE GameObject
 
         fullD(ind) = size(testData%spriteList)
         ind = ind + 1
-        !call WriteInt4ToData(fullD, ind, size(testData%spriteList))
+
         do num = 1, size(testData%spriteList), 1
-           fullD(ind) = len_trim(testData%spriteList(num))
-           ind = ind + 1  
-           call writeChars2Bin(fullD, trim(testData%spriteList(num)), ind, len_trim(testData%spriteList(num)))
-           ind = ind + len_trim(testData%spriteList(num)) 
+           call putName(fullD, ind, trim(testData%spriteList(num)))
         end do
 
         call writeBin2File(fname, fullD, .TRUE., .FALSE.)
@@ -667,23 +674,23 @@ MODULE GameObject
                select case(gameObjectList(num)%objtype) 
                case(TYPE_FLOOR) 
 
-1234              bool = (verify(gameObjectList(num)%name(&
+                  bool = (verify(gameObjectList(num)%name(&
                          len_trim(gameObjectList(num)%name):len_trim(gameObjectList(num)%name)), &
                                  '0123456789') == 0) 
 
                   If (((bool .EQV. .FALSE.) .AND. flag == COLLECT_BASEFLOOR)   .OR. &
                       ( flag == COLLECT_NORMAL))  add = .TRUE.
 
-               case(TYPE_FLOOR_DECORATION)
-                  goto 1234  
-                
+               case default
+                    if (flag == COLLECT_NORMAL) add = .TRUE. 
                end select
            end if 
 
            if (typ == TYPE_EMPTY) then 
                select case(flag)
                case(COLLECT_LEFTOVERS)
-                    if (gameObjectList(num)%objtype == TYPE_TREE) then
+                    if (gameObjectList(num)%objtype == TYPE_TREE .OR. &
+                        gameObjectList(num)%objtype == TYPE_PLAYER_SPAWNER) then
                         add = .TRUE.
                     end if   
                end select

@@ -157,3 +157,5 @@ mapFiles => Pálya Fájlok
 xerxesMapFile => Xerxész Pálya Fájl
 unitSettings => Egység Beállítások
 unitName => Egység Neve:
+playerSpawner => Játékos Kezdõpontja
+autoSpawn => Automatikus Megjelenés:

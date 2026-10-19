@@ -22,11 +22,11 @@ MODULE GameMap
     private
     public   :: openBasicSettingsWindow, mapBasicSettings, initMapTimer, &
                 runGameLogic, doThingsOnMapEditor, closeMapEditor, UnitChooser, UnitAdderCheck, &
-                setSelection, saveMap, loadMap, getUnitNameDialogLoop
+                setSelection, saveMap, loadMap, getUnitNameDialogLoop, isItaUnitSettingsDialog
 
     logical  :: canKill = .FALSE.
     character(NAME_MAX_LEN), dimension(:), allocatable :: baseFloorList, floorList, musicList, decoList, &
-                                                          baseUnitList 
+                                                          baseUnitList, playerList 
     character(NAME_MAX_LEN), dimension(4), parameter   :: weatherNamesKeys = (/ & 
                                                        "dayNorm", "nightNorm", "dayRain","nightRain" /) 
     character(NAME_MAX_LEN), dimension(4)              :: weatherNames
@@ -58,6 +58,7 @@ MODULE GameMap
     
 
     integer(1)                                         :: selectMode = NO_SELECT
+    character(NAME_MAX_LEN)                            :: autoSpawnerName, spawnPlayerName
 
     type(counterTimer)                                 :: timerC
 
@@ -106,6 +107,8 @@ MODULE GameMap
         end if
         
         call getGameObjByName(obj, objName)
+
+        if (obj%unique) call removeByObjName(obj%name)
 
         select case(obj%objType)
         case(TYPE_FLOOR)
@@ -183,6 +186,28 @@ MODULE GameMap
 
     end subroutine
 
+    subroutine removeByObjName(n)
+        character(*)                          :: n
+        integer(8)                            :: ind
+        integer(1)                            :: b
+        logical                               :: was        
+        
+        do b = 1, layerNum, 1
+           do ind = 1, layerBlocks(b)%nextIndexP, 1 
+              if (layerBlocks(b)%pozList(ind)%objectD%name == n .AND. &
+                 (layerBlocks(b)%pozList(ind)%dontCountMe .EQV. .FALSE.)) then 
+
+                  call layerBlocks(b)%pozList(ind)%killMe(.FALSE.)  
+                  was = .TRUE.  
+
+              end if  
+           end do 
+           if (was) call reorderPoz(b) 
+
+        end do
+
+    end subroutine
+
 !
 !   Map Stuff
 !
@@ -240,6 +265,10 @@ MODULE GameMap
            currentMap%wind       = .FALSE.           
            defaultFloor          = "Grass"
            currentMap%name       = map_default 
+   
+           autoSpawnerName       = "" 
+           spawnPlayerName       = ""
+
        else 
            CALL WDialogPutString(ID_MAP_BASICSETTINGS_Cancel, getWordInCurrentLang("cancel")) 
            defaultFloor          = layerBlocks(LAYER_BACKGROUND)%pozList(1)%name
@@ -461,7 +490,7 @@ MODULE GameMap
 
     subroutine doThingsOnMapEditor()
         real                :: rX, rY
-        !logical             :: first
+        logical             :: first
 
         if (WinfoDialog(CurrentDialog) == 0 .OR. placeActive) then
             if (getInGameControl(PRESS_LEFT )) call addToOffSet(-1 * stepOnMap ,              0 )
@@ -491,11 +520,11 @@ MODULE GameMap
                     end if
                  end if
                    
-                 !first = .TRUE.   
+                 first = .TRUE.   
                  if (associated(selectedUnit)) then
                      do 
                         call timerCT()  
-                        call putSpritesOnBuffer() 
+                        call putSpritesOnBuffer(.TRUE.) 
 
                       ! x, y, w, h, c, b, fill, s   
                          call drawRectangle(selectedUnit%x - getOffsetX()        - 1, &
@@ -507,6 +536,11 @@ MODULE GameMap
                                             LAYER_FOREGROUND, .FALSE., 1)
                         call buffer2Real()
                         if (deleted()) then
+                            if (autoSpawnerName == selectedUnit%name) then
+                                autoSpawnerName = ""  
+                                spawnPlayerName = ""                      
+                            end if 
+
                             call selectedUnit%killMe(.TRUE.)
                             nullify(selectedUnit)
                             !call displayDebugNum(layerBlocks(LAYER_PLAYGROUND)%NextIndexP)
@@ -515,6 +549,16 @@ MODULE GameMap
                         else if (cancelled()) then
                             nullify(selectedUnit)
                             exit
+                        else if (first) then
+                             first = .FALSE.   
+                             if (selectedUnit%objectD%triggerable .EQV. .TRUE.) then
+                                 select case(selectedUnit%objectD%objType)
+                                 case(TYPE_PLAYER_SPAWNER)   
+                                      call getUnitNameDialog(IDD_UNIT_SETTINGS_P_SPAWNER)  
+                                 case default   
+                                      call getUnitNameDialog(IDD_UNIT_SETTINGS_NAME_ONLY)  
+                                 end select   
+                            end if
                         end if
 
                      end do
@@ -739,7 +783,7 @@ MODULE GameMap
             call doThingsOnMapEditor()
             if (cancelled()) exit
 
-            call putSpritesOnBuffer() 
+            call putSpritesOnBuffer(.TRUE.) 
             call placerDraw()
             call buffer2Real()
 
@@ -786,12 +830,17 @@ MODULE GameMap
         character(NAME_MAX_LEN) :: unitName
 
         unitName = placeObj%name
+        !call displayDebug(unitName)
+        !if (placeObj%triggerable) call displayDebug("Triggerable!")
+        !if (placeObj%unique)      call displayDebug("Unique!")
+        !call displayDebug("----------------")
+
         if (placeObj%triggerable .EQV. .FALSE.) return
 
         if (placeObj%unique .EQV. .FALSE.) then    
             call getNextName(unitName)
         else
-            if (isNameOK(unitName, placeObj) .EQV. .FALSE.) call getNextName(unitName)
+            if (isNameOK(unitName, placeObj, "") .EQV. .FALSE.) call getNextName(unitName)
         end if
 
     end function
@@ -802,8 +851,9 @@ MODULE GameMap
         character(NAME_MAX_LEN)                :: tempName
 
         do num = 1, 999, 1
-           write(tempName, "(A, I3.3)") unitName, num 
-           if (isNameOK(tempName, placeObj)) then
+           write(tempName, "(A, I3.3)") trim(unitName), num 
+
+           if (isNameOK(tempName, placeObj, "")) then
                unitName = tempName
                exit 
            end if  
@@ -811,14 +861,21 @@ MODULE GameMap
 
     end subroutine
 
-    function isNameOK(unitName, objectD) result(r)
-        character(*)            :: unitName
+    function isNameOK(unitName, objectD, currentName) result(r)
+        character(*)            :: unitName, currentName
         logical                 :: r
         type(objectData)        :: objectD    
         integer(8)              :: ind
 
         r = .FALSE.
 
+        if (len_trim(unitName) < 5) return 
+
+        if (currentName == unitName) then
+            r = .TRUE.
+            return
+        end if 
+       
         if (objectD%name         == unitName        .AND. &
            (objectD%unique      .EQV. .FALSE.)      .AND. &
            (objectD%triggerable .EQV. .TRUE. )    ) return
@@ -837,12 +894,12 @@ MODULE GameMap
 
     end function
 
-    subroutine getUnitNameDialog() 
-        TYPE(WIN_MESSAGE)       :: MESSAGE
-        character(NAME_MAX_LEN) :: unitName
+    subroutine getUnitNameDialog(dialogNum) 
+        TYPE(WIN_MESSAGE)                                  :: MESSAGE
+        character(NAME_MAX_LEN)                            :: unitName
+        integer                                            :: dialogNum, num
 
         canKill           = .FALSE.
-
         unitName = selectedUnit%name
 
         do
@@ -850,24 +907,46 @@ MODULE GameMap
           call sleep(1)
         end do 
 
-        CALL WDialogLoad(IDD_UNIT_SETTINGS_NAME_ONLY)
+        CALL WDialogLoad(dialogNum)
         CALL WDialogTitle(getWordInCurrentLang("unitSettings")) 
 
         CALL WDialogPutString(IDF_UNIT_NAME, getWordInCurrentLang("unitName")) 
         CALL WDialogPutString(ID_UnitName  , unitName) 
         CALL WDialogPutString(ID_UNITOK    , getWordInCurrentLang("ok")) 
 
+        select case(dialogNum)
+        case (IDD_UNIT_SETTINGS_P_SPAWNER) 
+              call getUnitNames(playerList, TYPE_PLAYER_MAP, COLLECT_NORMAL) 
+              call wDialogPutMenu(IDF_AUTOSPAWN            , playerList, size(playerList), 0)  
+              CALL WDialogPutString(ID_UNITClear           , getWordInCurrentLang("clear")) 
+              CALL WDialogPutString(IDF_AUTOSPAWN_LABEL    , getWordInCurrentLang("autoSpawn")) 
+
+              if (autoSpawnerName == unitName) then  
+                  do num = 1, size(playerList), 1
+                     if (spawnPlayerName ==  playerList(num)) then
+                         call WDialogPutOption(IDF_AUTOSPAWN, num)
+                         exit   
+                     end if   
+                  end do    
+              end if  
+        end select     
+
         do
-          CALL WDialogSelect(IDD_UNIT_SETTINGS_NAME_ONLY)
+          CALL WDialogSelect(dialogNum)
           CALL WDialogShow(ITYPE=Modal)     
 
-          if (WinfoDialog(CurrentDialog) == IDD_UNIT_SETTINGS_NAME_ONLY) then 
+          if (isItaUnitSettingsDialog()) then 
               SELECT CASE (WinfoDialog(ExitButton))  
                   CASE(ExitField) 
                      CALL WDialogGetString(ID_UnitName, unitName)
-                     if (isNameOK(unitName, selectedUnit%objectD)) EXIT
+                     if (isNameOK(unitName, selectedUnit%objectD, selectedUnit%name)) EXIT
                   CASE(ID_UnitOK)
                      EXIT
+                  CASE(ID_UnitClear)
+                     select case(dialogNum)
+                     case (IDD_UNIT_SETTINGS_P_SPAWNER) 
+                          call WDialogPutOption(IDF_AUTOSPAWN, 0) 
+                     end select     
                   END SELECT
               end if
         end do 
@@ -875,8 +954,31 @@ MODULE GameMap
         CALL WDialogGetString(ID_UnitName, unitName)
         selectedUnit%name = unitName    
 
+        select case(dialogNum)
+        case (IDD_UNIT_SETTINGS_P_SPAWNER) 
+              call WDialogGetMenu(IDF_AUTOSPAWN, num)
+              if (num > 0) then
+                  autoSpawnerName = unitName  
+                  spawnPlayerName = playerList(num)
+              else  
+                  if (autoSpawnerName == unitName) then
+                      autoSpawnerName = ""  
+                      spawnPlayerName = ""                      
+                  end if    
+              end if  
+        end select     
+
         canKill = .TRUE.
     end subroutine
+
+
+    function isItaUnitSettingsDialog() result(r)
+        logical :: r
+
+        r = (WinfoDialog(CurrentDialog) == IDD_UNIT_SETTINGS_NAME_ONLY          .OR. &                  
+             WinfoDialog(CurrentDialog) == IDD_UNIT_SETTINGS_P_SPAWNER )
+   
+    end function    
 
     subroutine getUnitNameDialogLoop()
         character(NAME_MAX_LEN) :: unitName
@@ -884,15 +986,16 @@ MODULE GameMap
         if (canKill .EQV. .TRUE.) then 
             CALL WDialogUnLoad()
             canKill = .FALSE.
-
         else
-            if (WinfoDialog(CurrentDialog) == IDD_UNIT_SETTINGS_NAME_ONLY) then 
+            if (isItaUnitSettingsDialog()) then 
                 CALL WDialogGetString(ID_UnitName, unitName)
 
-                if (isNameOK(unitName, selectedUnit%objectD)) then
-                    call WDialogFieldState(ID_UnitOK, ENABLED)  
-                else
-                    call WDialogFieldState(ID_UnitOK, DISABLED)  
+                if (canKill .EQV. .FALSE. .AND. (associated(selectedUnit))) then
+                    if (isNameOK(unitName, selectedUnit%objectD,  selectedUnit%name)) then
+                        call WDialogFieldState(ID_UnitOK, ENABLED)  
+                    else
+                        call WDialogFieldState(ID_UnitOK, DISABLED)  
+                    end if
                 end if
             end if
 
@@ -1019,7 +1122,6 @@ MODULE GameMap
         integer(2), dimension(3), parameter :: cList = (/ FLY_INIT_GROUND,   &
                                                           FLY_INIT_HOVERING, & 
                                                           FLY_INIT_FYLING    /) 
-
         r = cList(obj%flyType) 
 
     end function 
@@ -1079,7 +1181,7 @@ MODULE GameMap
                    end select 
                end if 
 
-               call putSpritesOnBuffer() 
+               call putSpritesOnBuffer(.TRUE.) 
     
                call WDialogGetMenu(IDF_UNITBOX, selectedUnit) 
 
@@ -1106,7 +1208,6 @@ MODULE GameMap
                    placeObj     => obj
                   
                    call drawSpriteWithRectagle(9, 9, COLOR_GREEN, 1, img, NO_FILTER)
- 
     
                end if  
                call buffer2Real()
@@ -1181,15 +1282,22 @@ MODULE GameMap
 
       end do  
 
+      ! 1 BYTE:  autoSpawnerName Len  
+      ! X BYTES: autoSpawnerName 
+      ! 1 BYTE:  spawnPlayerName Len  
+      ! X BYTES: spawnPlayerName 
+        
+      siz = siz + 1 + len_trim(autoSpawnerName) + 1 + len_trim(spawnPlayerName)  
+         
       allocate(fullD(siz), stat = rc)  
       if (rc /= 0) call displayDebug("Failed to allocate bytes for saving the Map!")  
 
       fullD = 0
       call writeChars2Bin(fullD, MAP_FILE_TYPE, 1, 4)
-      fullD(5) = len_trim(currentMap%name) 
-      call writeChars2Bin(fullD, trim(currentMap%name), 6, len_trim(currentMap%name))
 
-      ind = 6 + len_trim(currentMap%name)  
+      ind = 5  
+      call putName(fullD, ind, trim(currentMap%name))
+ 
       call WriteInt4ToData(fullD, ind, currentMap%width )  
       call WriteInt4ToData(fullD, ind, currentMap%height)  
   
@@ -1203,21 +1311,12 @@ MODULE GameMap
       end if
       ind = ind + 1  
 
-      fullD(ind)    = len_trim(defaultFloor) 
-      ind = ind + 1  
-      call writeChars2Bin(fullD, defaultFloor, ind, len_trim(defaultFloor))
-      ind = ind + len_trim(defaultFloor)
+      call putName(fullD, ind, trim(defaultFloor))
 
       fullD(ind)    = currentMap%defWeather
       ind = ind + 1  
 
-      fullD(ind)    = len_trim(currentMap%defaultMusic) 
-      ind = ind + 1  
-
-      if (len(currentMap%defaultMusic) > 0) then
-          call writeChars2Bin(fullD, currentMap%defaultMusic, ind, len_trim(currentMap%defaultMusic))
-          ind = ind + len_trim(currentMap%defaultMusic)
-      end if
+      call putName(fullD, ind, trim(currentMap%defaultMusic))
 
       call WriteInt4ToData(fullD, ind, numOfUnits)  
 
@@ -1227,24 +1326,16 @@ MODULE GameMap
              (layerBlocks(LAYER_PLAYGROUND)%spriteList(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%ind)%active  .EQV. .FALSE.)  .OR. & 
   (associated(layerBlocks(LAYER_PLAYGROUND)%spriteList(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%ind)%imageF) .EQV. .FALSE.)) cycle  
   
-         fullD(ind)    = len_trim(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%name) 
-         ind = ind + 1  
-         call writeChars2Bin(fullD, layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%name, &
-                      ind, len_trim(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%name))
-
-         ind = ind + len_trim(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%name)
-
-         fullD(ind)    = len_trim(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%objectD%name) 
-         ind = ind + 1  
-         call writeChars2Bin(fullD, layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%objectD%name, &
-                      ind, len_trim(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%objectD%name))
-
-         ind = ind + len_trim(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%objectD%name)
+         call putName(fullD, ind, trim(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%name))
+         call putName(fullD, ind, trim(layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%objectD%name))
 
          call WriteInt4ToData(fullD, ind, layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%x)  
          call WriteInt4ToData(fullD, ind, layerBlocks(LAYER_PLAYGROUND)%pozList(ind2)%y)  
 
       end do  
+
+      call putName(fullD, ind, trim(autoSpawnerName))
+      call putName(fullD, ind, trim(spawnPlayerName))
 
       call writeBin2File(fname, fullD, .TRUE., .TRUE.)
 
@@ -1353,6 +1444,9 @@ MODULE GameMap
             if (dbg) call displayDebugNum(numOfUnits)
             if (numOfUnits == 0) exit
         end do
+
+        call getName(d, offset, nameLen, autoSpawnerName)
+        call getName(d, offset, nameLen, spawnPlayerName)
 
         if (dbg) call displayDebug("Done.")
         r = .TRUE.

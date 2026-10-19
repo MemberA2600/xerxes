@@ -121,12 +121,14 @@ MODULE engineConstants
                                         FILTER_TIME_2       = 6,  &
                                         FILTER_MULTI        = 1 
 
-    integer(1), parameter            :: TYPE_EMPTY            = 0   ,&
-                                        TYPE_FLOOR            = 1   ,&
-                                        TYPE_PLAYER_MAP       = 2   ,&
-                                        TYPE_TREE             = 3   ,&
-                                        TYPE_WEATHER          = 4   ,&
-                                        TYPE_FLOOR_DECORATION = 5   ,& 
+    integer(1), parameter            :: TYPE_EMPTY              = 0   ,&
+                                        TYPE_FLOOR              = 1   ,&
+                                        TYPE_PLAYER_MAP         = 2   ,&
+                                        TYPE_TREE               = 3   ,&
+                                        TYPE_WEATHER            = 4   ,&
+                                        TYPE_FLOOR_DECORATION   = 5   ,& 
+                                        TYPE_PLAYER_SPAWNER     = 6   ,& 
+
                                         TYPE_COMMON_UNIT      = 127  
  
     integer(1), parameter           ::  COLLECT_NORMAL        = 0   ,&
