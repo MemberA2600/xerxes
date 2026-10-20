@@ -232,6 +232,8 @@
               CASE (ID_STARTGAME)
                     editMode        = .FALSE.
                     mapEditorActive = .FALSE.
+                    
+                    call loadMapByNameAndRunIt("Terrain")
 
               CASE (ID_ENGLISH:ID_DEUTSCH)
                     call setLang(MESSAGE%VALUE1 - ID_ENGLISH) 

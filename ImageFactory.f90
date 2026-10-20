@@ -111,6 +111,7 @@ MODULE ImageFactory
 
          do num = 1, size(imageList), 1
             if (imageList(num)%name == name) then
+                call imageList(num)%loadImage()
                 i => imageList(num)
                 return  
             end if  
@@ -129,12 +130,6 @@ MODULE ImageFactory
         nullify(p)
 
          do ind = 1, size(imageList), 1
-
-            !write(test, "(A, '|', I0, '|', A, '|',I0)") &
-            !      trim(imageList(ind)%name), len_trim(imageList(ind)%name), trim(n), len_trim(n)  
-
-            !call displayDebug(test)
-
             if (imageList(ind)%name == n) then
                 p => imageList(ind)
                 foundInd = ind

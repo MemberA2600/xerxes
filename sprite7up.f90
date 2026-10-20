@@ -23,7 +23,8 @@ MODULE sprite7up
                                      setWeather, spritePoz, getOffsetX, getOffsetY, setSize, &
                                      changeSprite, changeSpriteEditor, addPointerToLastSpritePoz, &
                                      checkCollision, addPointerByNameXY, layerBlocks, checkAllCollisions, &
-                                     DROPALLUNITS, reorderPoz, checkForPossibleOverlaps
+                                     DROPALLUNITS, reorderPoz, checkForPossibleOverlaps, addPointerByName, &
+                                     SETPOINTERBYNAME 
 
     type SpriteObj 
          integer(2)               :: w, h, spriteI
@@ -41,7 +42,7 @@ MODULE sprite7up
 
     end type
 
-    type spritePoz
+    type SpritePoz
          character(NAME_MAX_LEN)   :: name
          integer(4)                :: typFlag
          integer(4)                :: x, y, yh, xw, ind, hitBoxW, hitBoxH, hitBoxAlign 
@@ -49,7 +50,7 @@ MODULE sprite7up
          integer(1)                :: bufferNum
          type(objectData), pointer :: objectD
          logical                   :: dontCountMe 
-
+    
          contains        
 
          procedure                :: killMe             => killMe
@@ -58,6 +59,7 @@ MODULE sprite7up
          procedure                :: checkCollision     => checkCollision
          procedure                :: checkAllCollisions => checkAllCollisions 
          procedure                :: changeSpriteEditor => changeSpriteEditor 
+         procedure                :: getHitBoxCenter    => getHitBoxCenter
     end type 
 
     type BlockMap
@@ -87,6 +89,29 @@ MODULE sprite7up
     !       
     !   SpritePoz Things
     !
+
+    subroutine setPointerByName(b, n, p)
+        character(*)                            :: n
+        integer(1)                              :: b
+        type(SpritePoz), pointer, intent(inout) :: p
+        integer(8)                              :: ind        
+        !character(30)                           :: test
+
+        do ind = 1, layerBlocks(b)%NextIndexP, 1
+           !write(test, "(A, L)") layerBlocks(b)%pozList(ind)%name // ": ", layerBlocks(b)%pozList(ind)%objectD%triggerable             
+           !call displayDebug(test)
+ 
+           if (layerBlocks(b)%pozList(ind)%objectD%triggerable .EQV. .FALSE.) cycle 
+
+           if (layerBlocks(b)%pozList(ind)%name == n) then   
+               p => layerBlocks(b)%pozList(ind)
+               return 
+           end if       
+        end do
+
+        call displayDebug("No pointer set on name " // n // "!")
+
+    end subroutine
 
     function checkForPossibleOverlaps(b, x, y, w, h, typ, fly, img) result(r)
         integer(1)               :: b, typ
@@ -147,6 +172,17 @@ MODULE sprite7up
         end do
 
     end function
+
+    subroutine getHitBoxCenter(this, centerX, centerY)  
+        class(SpritePoz)    :: this
+        integer(4)          :: centerX, centerY
+
+        call calculateHBXY(this, centerX, centerY, this%hitBoxW, this%hitBoxH)
+
+        centerX = centerX + (this%hitBoxW / 2)
+        centerY = centerY + (this%hitBoxH / 2)
+
+    end subroutine 
 
     function checkAllCollisions(this) result(colliding)
         class(spritePoz)         :: this
@@ -319,6 +355,23 @@ MODULE sprite7up
            if (n == layerBlocks(b)%pozList(num)%name .AND. & 
                x == layerBlocks(b)%pozList(num)%x    .AND. &  
                y == layerBlocks(b)%pozList(num)%y    ) then
+               p => layerBlocks(b)%pozList(num)
+               return
+           end if  
+        end do
+
+        call displayDebug("No pointer was set for Map Object " // n // " !")
+
+    end subroutine
+
+    subroutine addPointerByName(p, b, n)
+        type(spritePoz), pointer, intent(inout) :: p
+        integer(1)                              :: b  
+        character(*)                            :: n
+        integer(4)                              :: x, y, num      
+
+        do num = 1, layerBlocks(b)%nextIndexP, 1
+           if (n == layerBlocks(b)%pozList(num)%name) then
                p => layerBlocks(b)%pozList(num)
                return
            end if  

@@ -22,7 +22,8 @@ MODULE GameMap
     private
     public   :: openBasicSettingsWindow, mapBasicSettings, initMapTimer, &
                 runGameLogic, doThingsOnMapEditor, closeMapEditor, UnitChooser, UnitAdderCheck, &
-                setSelection, saveMap, loadMap, getUnitNameDialogLoop, isItaUnitSettingsDialog
+                setSelection, saveMap, loadMap, getUnitNameDialogLoop, isItaUnitSettingsDialog, &
+                loadMapByNameAndRunIt
 
     logical  :: canKill = .FALSE.
     character(NAME_MAX_LEN), dimension(:), allocatable :: baseFloorList, floorList, musicList, decoList, &
@@ -80,13 +81,18 @@ MODULE GameMap
             
     end type
 
-    type(spritePoz), pointer                   :: selectedUnit
+    logical                                    :: lockCameraToPlayer = .FALSE.
+    integer(1)                                 :: cameraFollowUnit   = 0
+    integer(4)                                 :: cameraDestX = 0, cameraDestY = 0 
+
+    type(spritePoz), pointer                   :: selectedUnit, playerOnMap
     type(map), target                          :: currentMap
 
     integer(1)                                 :: mapTypeOld, weatherOld, mapTypePrev
     integer(4)                                 :: widthOld, heightOld
     logical                                    :: windOld
-    character(NAME_MAX_LEN)                    :: defaultFloorOld, defaultFloor
+    character(NAME_MAX_LEN)                    :: defaultFloorOld, defaultFloor, prevMap = "", &
+                                                  playerOnMapName = ""
 
     contains
 !
@@ -481,11 +487,55 @@ MODULE GameMap
     end subroutine
 
     subroutine runGameLogic()
+        integer(4)                     :: camXDiff, camYDiff, camXAdd, camYAdd
+       
         if (WinfoDialog(CurrentDialog) == 0) then
+            if (lockCameraToPlayer .EQV. .TRUE.) then
+                call addPointerByName(playerOnMap, LAYER_PLAYGROUND, playerOnMapName) 
+                call getAndcorrectCameraPoz(playerOnMap%x, playerOnMap%y, cameraDestX, cameraDestY)                 
+            end if
+
+            if (cameraDestX /= getOffsetX() .OR. cameraDestY /= getOffsetY()) then
+                if (cameraFollowUnit == 0) then
+                    call setOffSet(cameraDestX, cameraDestY)
+                else
+                    camXDiff = cameraDestX - getOffsetX()
+                    camYDiff = cameraDestY - getOffsetY()
 
 
+                    if (abs(camXDiff) <= cameraFollowUnit .AND. abs(camYDiff) <= cameraFollowUnit) then
+                        call setOffSet(cameraDestX, cameraDestY)                    
+                    else
+                        if (abs(camXDiff) > abs(camYDiff)) then
+                            camXAdd = cameraFollowUnit     
+                            camYAdd = cameraFollowUnit * (abs(camXDiff) / abs(camYDiff))     
+                        else
+                            camYAdd = cameraFollowUnit     
+                            camXAdd = cameraFollowUnit * (abs(camYDiff) / abs(camXDiff))  
+                        end if
+                        if (camXDiff < 0) camXAdd = camXAdd * -1
+                        if (camYDiff < 0) camYAdd = camYAdd * -1
 
+                        call AddToOffSet(camXAdd, camYAdd)                    
+
+                    end if    
+                end if
+            end if
         end if
+    end subroutine
+
+    subroutine getAndcorrectCameraPoz(X, Y, cX, cY)
+        integer(4)                  :: X , Y
+        integer(4), intent(out)     :: cX, cY
+
+        cX = X - (wOfScreenBuffer / 2)
+        cY = Y - (hOfScreenBuffer / 2)
+
+        if (cX < 0) cx = 0
+        if (cY < 0) cy = 0
+
+        if (cX > currentMap%width  - wOfScreenBuffer) cX = currentMap%width  - wOfScreenBuffer
+        if (cY > currentMap%height - hOfScreenBuffer) cY = currentMap%height - hOfScreenBuffer
     end subroutine
 
     subroutine doThingsOnMapEditor()
@@ -1341,11 +1391,80 @@ MODULE GameMap
 
     end subroutine
 
+    subroutine loadMapByNameAndRunIt(n)
+        character(*)                           :: n
+        logical                                :: r    
+
+        r = loadMapFile(n, .TRUE.)
+        if (r .EQV. .FALSE.) then 
+            call displayDebug("Failed to load map " // n // "!")
+            return
+        end if
+        
+        lockCameraToPlayer = .FALSE.
+        cameraFollowUnit   = 0
+        cameraDestX        = 0
+        cameraDestY        = 0
+
+        if (autoSpawnerName /= "" .AND. spawnPlayerName /= "") then
+            call spawnPlayerAtSpawner(autoSpawnerName, spawnPlayerName, .FALSE.)
+            lockCameraToPlayer = .TRUE.
+            cameraFollowUnit   = 0
+        end if
+
+        call playMusic("")
+
+    end subroutine 
+
+    subroutine playMusic(title)
+        character(*)                        :: title
+        character(MAX_PATH_LEN)             :: music
+        
+        if (title == "") then
+            music = currentMap%defaultMusic
+        else    
+            music = title    
+        end if
+
+        if (music /= currentMap%musicPlaying .AND. music /= "") then
+            call playAdlibbyName(music) 
+            currentMap%musicPlaying  = music
+        end if
+
+    end subroutine 
+
+    subroutine spawnPlayerAtSpawner(spawnerName, playerUnit, fighting)
+        character(*)              :: spawnerName, playerUnit
+        logical                   :: fighting
+        type(SpritePoz) , pointer :: spawner
+        type(ObjectData), pointer :: obj
+        type(imageFile) , pointer :: img
+        
+        integer(4)                :: centerX, centerY, spawnX, spawnY
+        
+        call setPointerByName(LAYER_PLAYGROUND, spawnerName, spawner)
+        playerOnMapName          = playerUnit
+
+        call spawner%getHitBoxCenter(centerX, centerY)
+
+        call getGameObjByName(  obj, playerOnMapName)
+        call getImageFileByName(img, obj%getSprite("standS"))
+        
+        spawnX = centerX   - img%img%width  / 2
+        spawnY = centerY   - img%img%height 
+
+        call setUnit(playerOnMapName, spawnX, spawnY, LAYER_PLAYGROUND, obj%name)
+        call addPointerToLastSpritePoz(playerOnMap, LAYER_PLAYGROUND)
+
+    end subroutine
+
     function loadMap() result(r)
         logical                                :: r
         character(MAX_PATH_LEN)                :: fname
         
-        r = .FALSE.
+        r                    = .FALSE.
+        playerOnMapName      = ""
+        nullify(playerOnMap)
 
         fname = FileDialog("map\", .FALSE., "xxm ")    
         if (fname /= "") r = loadMapFile(fname, .FALSE.)

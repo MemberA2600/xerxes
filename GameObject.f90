@@ -86,9 +86,9 @@ MODULE GameObject
             case(TYPE_PLAYER_MAP)
                 if (init .EQV. .TRUE.) then
                     if (wind .EQV. .TRUE.) then
-                        r = "wind"  // directions(randint(1, 8))
+                        r = this%getSprite("wind"  // directions(randint(1, 8)))
                     else
-                        r = "stand" // directions(randint(1, 8))
+                        r = this%getSprite("stand" // directions(randint(1, 8)))
                     end if
                 else
                     if (current(1:4) == "wind") then            
@@ -108,6 +108,8 @@ MODULE GameObject
                     else
                         r = this%getSprite("normal") // directions(num)
                     end if
+                    
+                    
                 end if
             case default
                 r = this%getSprite("default")
