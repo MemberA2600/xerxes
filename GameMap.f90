@@ -192,6 +192,28 @@ MODULE GameMap
 
     end subroutine
 
+    subroutine removeByType(t)
+        integer(1)                            :: t
+        integer(8)                            :: ind
+        integer(1)                            :: b
+        logical                               :: was        
+        
+        do b = 1, layerNum, 1
+           do ind = 1, layerBlocks(b)%nextIndexP, 1 
+              if (layerBlocks(b)%pozList(ind)%typFlag == t.AND. &
+                 (layerBlocks(b)%pozList(ind)%dontCountMe .EQV. .FALSE.)) then 
+
+                  call layerBlocks(b)%pozList(ind)%killMe(.FALSE.)  
+                  was = .TRUE.  
+
+              end if  
+           end do 
+           if (was) call reorderPoz(b) 
+
+        end do
+
+    end subroutine
+
     subroutine removeByObjName(n)
         character(*)                          :: n
         integer(8)                            :: ind
@@ -490,38 +512,73 @@ MODULE GameMap
         integer(4)                     :: camXDiff, camYDiff, camXAdd, camYAdd
        
         if (WinfoDialog(CurrentDialog) == 0) then
+            call addPointerByName(playerOnMap, LAYER_PLAYGROUND, playerOnMapName) 
+
+            call standIdleChange()
+
             if (lockCameraToPlayer .EQV. .TRUE.) then
-                call addPointerByName(playerOnMap, LAYER_PLAYGROUND, playerOnMapName) 
                 call getAndcorrectCameraPoz(playerOnMap%x, playerOnMap%y, cameraDestX, cameraDestY)                 
             end if
 
-            if (cameraDestX /= getOffsetX() .OR. cameraDestY /= getOffsetY()) then
-                if (cameraFollowUnit == 0) then
-                    call setOffSet(cameraDestX, cameraDestY)
-                else
-                    camXDiff = cameraDestX - getOffsetX()
-                    camYDiff = cameraDestY - getOffsetY()
+            select case(currentMap%typ) 
+            case(MAP_WALKING) 
 
+                call movePlayerWalking()
 
-                    if (abs(camXDiff) <= cameraFollowUnit .AND. abs(camYDiff) <= cameraFollowUnit) then
-                        call setOffSet(cameraDestX, cameraDestY)                    
+                if (cameraDestX /= getOffsetX() .OR. cameraDestY /= getOffsetY()) then
+                    if (cameraFollowUnit == 0) then
+                        call setOffSet(cameraDestX, cameraDestY)
                     else
-                        if (abs(camXDiff) > abs(camYDiff)) then
-                            camXAdd = cameraFollowUnit     
-                            camYAdd = cameraFollowUnit * (abs(camXDiff) / abs(camYDiff))     
+                        camXDiff = cameraDestX - getOffsetX()
+                        camYDiff = cameraDestY - getOffsetY()
+    
+                        if (abs(camXDiff) <= cameraFollowUnit .AND. abs(camYDiff) <= cameraFollowUnit) then
+                            call setOffSet(cameraDestX, cameraDestY)                    
                         else
-                            camYAdd = cameraFollowUnit     
-                            camXAdd = cameraFollowUnit * (abs(camYDiff) / abs(camXDiff))  
-                        end if
-                        if (camXDiff < 0) camXAdd = camXAdd * -1
-                        if (camYDiff < 0) camYAdd = camYAdd * -1
-
-                        call AddToOffSet(camXAdd, camYAdd)                    
-
-                    end if    
+                            if (abs(camXDiff) > abs(camYDiff)) then
+                                camXAdd = cameraFollowUnit     
+                                camYAdd = cameraFollowUnit * (abs(camXDiff) / abs(camYDiff))     
+                            else
+                                camYAdd = cameraFollowUnit     
+                                camXAdd = cameraFollowUnit * (abs(camYDiff) / abs(camXDiff))  
+                            end if
+                            if (camXDiff < 0) camXAdd = camXAdd * -1
+                            if (camYDiff < 0) camYAdd = camYAdd * -1
+    
+                            call AddToOffSet(camXAdd, camYAdd)                    
+    
+                        end if    
+                    end if
                 end if
-            end if
+            end select
         end if
+    end subroutine
+
+    subroutine movePlayerWalking()
+        integer(4)      :: lastX, lastY, lastXW, lastYH
+        integer(1)      :: pixelAdd 
+
+        lastX  = playerOnMap%x
+        lastY  = playerOnMap%y
+        lastXW = playerOnMap%xw
+        lastYH = playerOnMap%yh
+
+        pixelAdd = getSpeed() / 10
+
+        if (getInGameControl(PRESS_LEFT )) call playerOnMap%changeXY(- pixelAdd, 0) 
+        if (getInGameControl(PRESS_RIGHT)) call playerOnMap%changeXY(  pixelAdd, 0)  
+        if (getInGameControl(PRESS_UP   )) call playerOnMap%changeXY(0 ,- pixelAdd) 
+        if (getInGameControl(PRESS_DOWN )) call playerOnMap%changeXY(0 ,  pixelAdd) 
+
+        if (playerOnMap%checkAllCollisions(.TRUE.)) then
+            playerOnMap%x  = lastX    
+            playerOnMap%y  = lastY  
+            playerOnMap%xw = lastXW    
+            playerOnMap%yh = lastYH    
+        else
+            call reorderPoz(playerOnMap%bufferNum)
+        end if
+ 
     end subroutine
 
     subroutine getAndcorrectCameraPoz(X, Y, cX, cY)
@@ -538,6 +595,31 @@ MODULE GameMap
         if (cY > currentMap%height - hOfScreenBuffer) cY = currentMap%height - hOfScreenBuffer
     end subroutine
 
+    subroutine standIdleChange()
+        integer(1)              :: b
+        integer(8)              :: ind    
+
+
+        do b = 1, layerNum, 1
+           do ind = 1, layerBlocks(b)%nextIndexP, 1 
+              if (layerBlocks(b)%pozList(ind)%dontCountMe .EQV. .FALSE.) then 
+
+                 if ((layerBlocks(b)%spriteList(layerBlocks(b)%pozList(ind)%ind)%active  .EQV. .FALSE.) .OR. &
+           associated(layerBlocks(b)%spriteList(layerBlocks(b)%pozList(ind)%ind)%imageF) .EQV. .FALSE.) cycle
+
+                 if (stringHas(layerBlocks(b)%spriteList(layerBlocks(b)%pozList(ind)%ind)%imageF%name, "Stand")) then
+                     if (layerBlocks(b)%pozList(ind)%idleCounter%timerEnded()) then 
+                         call layerBlocks(b)%pozList(ind)%idleCounter%timerRestart()   
+                         if (randInt(0, 255) > 248) call layerBlocks(b)%pozList(ind)%changeSpriteEditor(currentMap%wind)
+                     end if
+                 end if
+              end if  
+           end do 
+
+        end do
+
+    end subroutine
+
     subroutine doThingsOnMapEditor()
         real                :: rX, rY
         logical             :: first
@@ -547,6 +629,8 @@ MODULE GameMap
             if (getInGameControl(PRESS_RIGHT)) call addToOffSet(     stepOnMap ,              0 )
             if (getInGameControl(PRESS_UP   )) call addToOffSet( 0             , -1 * stepOnMap )
             if (getInGameControl(PRESS_DOWN )) call addToOffSet( 0             ,      stepOnMap )
+
+            call standIdleChange()
 
             if ((placeActive .EQV. .FALSE.) .AND. selectMode > NO_SELECT) then
                  if (clicked()) then
@@ -1455,6 +1539,7 @@ MODULE GameMap
 
         call setUnit(playerOnMapName, spawnX, spawnY, LAYER_PLAYGROUND, obj%name)
         call addPointerToLastSpritePoz(playerOnMap, LAYER_PLAYGROUND)
+        call removeByType(TYPE_PLAYER_SPAWNER)
 
     end subroutine
 

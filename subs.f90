@@ -22,13 +22,21 @@ MODULE subs
                            getWindowDim, setScreenSize, timer, setSpeed, &
                            randInt, getTime, FileDialog, countCharInString, &
                            getNextPoz, dFile, f2bitsTo1Bit, getNullTermString, &
-                           CWD, setCWD, getScreenSizeId, getSpeed, getDir, getLastOK
+                           CWD, setCWD, getScreenSizeId, getSpeed, getDir, getLastOK, &
+                           stringHas 
 
       CHARACTER(20)     :: msgString
       INTEGER(KIND = 1) :: speed, timer, screenSize
       CHARACTER(MAX_PATH_LEN) :: CWDReal  
 
       CONTAINS  
+
+      function stringHas(full, part) result(r)
+          character(*), intent(in) :: full, part
+          logical                  :: r
+        
+          r = index(trim(full), trim(part)) > 0
+      end function  
 
       function CWD() result(r)
            character(MAX_PATH_LEN) :: r

@@ -12,6 +12,7 @@ MODULE sprite7up
     use colors
     use screen
     use gameobject
+    use inputreader
 
     implicit None
 
@@ -24,7 +25,7 @@ MODULE sprite7up
                                      changeSprite, changeSpriteEditor, addPointerToLastSpritePoz, &
                                      checkCollision, addPointerByNameXY, layerBlocks, checkAllCollisions, &
                                      DROPALLUNITS, reorderPoz, checkForPossibleOverlaps, addPointerByName, &
-                                     SETPOINTERBYNAME 
+                                     SETPOINTERBYNAME, changeXY
 
     type SpriteObj 
          integer(2)               :: w, h, spriteI
@@ -50,6 +51,8 @@ MODULE sprite7up
          integer(1)                :: bufferNum
          type(objectData), pointer :: objectD
          logical                   :: dontCountMe 
+         type(counterTimer)        :: idleCounter
+            
     
          contains        
 
@@ -60,6 +63,7 @@ MODULE sprite7up
          procedure                :: checkAllCollisions => checkAllCollisions 
          procedure                :: changeSpriteEditor => changeSpriteEditor 
          procedure                :: getHitBoxCenter    => getHitBoxCenter
+         procedure                :: changeXY           => changeXY
     end type 
 
     type BlockMap
@@ -89,6 +93,37 @@ MODULE sprite7up
     !       
     !   SpritePoz Things
     !
+
+    subroutine changeXY(this, AddX, AddY)
+        integer(2)          :: addX, addY                
+        class(SpritePoz)    :: this
+        
+        this%x  = this%x  + addX 
+        this%y  = this%y  + addY
+        this%xw = this%xw + addX
+        this%yh = this%yh + addY
+
+        if (this%x < 0) then 
+            this%x   = 0
+            this%xw  = layerBlocks(this%bufferNum)%spriteList(this%ind)%w
+        end if 
+
+        if (this%y < 0) then 
+            this%y   = 0
+            this%yh  = layerBlocks(this%bufferNum)%spriteList(this%ind)%h
+        end if 
+
+        if (this%xw > getOffsetX() + wOfScreenBuffer) then
+            this%xw = getOffsetX() + wOfScreenBuffer
+            this%x  = this%xw - layerBlocks(this%bufferNum)%spriteList(this%ind)%w
+        end if
+
+        if (this%yh > getOffsetY() + hOfScreenBuffer) then
+            this%yh = getOffsetY() + hOfScreenBuffer
+            this%y  = this%yh - layerBlocks(this%bufferNum)%spriteList(this%ind)%h
+        end if
+
+    end subroutine
 
     subroutine setPointerByName(b, n, p)
         character(*)                            :: n
@@ -184,9 +219,10 @@ MODULE sprite7up
 
     end subroutine 
 
-    function checkAllCollisions(this) result(colliding)
-        class(spritePoz)         :: this
+    function checkAllCollisions(this, justCheck) result(colliding)
+        class(spritePoz), target :: this
         type(spritePoz), pointer :: that
+        logical                  :: justCheck
 
         integer(4)       :: ind
         logical          :: colliding
@@ -194,11 +230,15 @@ MODULE sprite7up
         colliding = .FALSE.
 
         do ind = 1, layerBlocks(this%bufferNum)%nextIndexP, 1
-           colliding = this%checkCollision(layerBlocks(this%bufferNum)%pozList(ind))     
-        
+           that      => layerBlocks(this%bufferNum)%pozList(ind)               
+           if (associated(that, this)) cycle          
+
+           colliding =  this%checkCollision(layerBlocks(this%bufferNum)%pozList(ind))     
+
            if (colliding) then
-               that => layerBlocks(this%bufferNum)%pozList(ind) 
-             ! Still don't know how this will work. :D   
+              !call displayDebug(this%name // ' | ' // that%name) 
+               !call displayDebug(this%name // ' | ' // that%name) 
+               if (justCheck) return
            end if 
 
         end do
@@ -208,10 +248,10 @@ MODULE sprite7up
     function checkCollision(this, that) result(r)
         class(spritePoz) :: this
         type(spritePoz)  :: that
-        logical          :: r
-        integer          :: x1 , x2 , y1 , y2 
-    
+        logical          :: r, debug = .FALSE.
+        integer          :: x1 , x2 , y1 , y2    
         type(imageData), pointer :: iD1, iD2
+ 
         r = .FALSE.
     
         if (.NOT. (this%objectD%solid .AND. that%objectD%solid)) return
@@ -236,11 +276,44 @@ MODULE sprite7up
         call calculateHBXY(that , x2, y2, layerblocks(that%bufferNum)%spriteList(that%ind)%w, &
                                           layerblocks(that%bufferNum)%spriteList(that%ind)%h)
     
+
         r = x1 < x2 + that%hitBoxW .AND. &
             x2 < x1 + this%hitBoxW .AND. &
             y1 < y2 + that%hitBoxH .AND. &
             y2 < y1 + this%hitBoxH
     
+        if (isAKeyPressed(8) .AND. (debug)) then
+            call displayDebugNumTxt("x1: ", x1)
+            call displayDebugNumTxt("x2: ", x2)
+            call displayDebugNumTxt("spX1: ", this%x)
+            call displayDebugNumTxt("spX2: ", that%x)
+            call displayDebugNumTxt("spXW1: ", this%xw)
+            call displayDebugNumTxt("spXW2: ", that%xw)
+
+
+            call displayDebugNumTxt("y1: ", y1)
+            call displayDebugNumTxt("y2: ", y2)
+            call displayDebugNumTxt("spY1: ", this%y)
+            call displayDebugNumTxt("spY2: ", that%y)
+            call displayDebugNumTxt("spYH1: ", this%yh)
+            call displayDebugNumTxt("spYH2: ", that%yh)
+
+            call displayDebugNumTxt("spFly1: ", this%fly)
+            call displayDebugNumTxt("spFly2: ", that%fly)
+
+
+            call displayDebugNumTxt("hW1: ", this%hitBoxW)
+            call displayDebugNumTxt("hH1: ", this%hitBoxH)
+            call displayDebugNumTxt("hW2: ", that%hitBoxW)
+            call displayDebugNumTxt("hH2: ", that%hitBoxH)
+
+            call displayDebugNumTxt('x2 < that%hitBoxW', x2 + that%hitBoxW)
+            call displayDebugNumTxt('x1 < this%hitBoxW', x1 + this%hitBoxW)
+            call displayDebugNumTxt('y2 < that%hitBoxH', y2 + that%hitBoxH)
+            call displayDebugNumTxt('y1 < this%hitBoxH', y1 + this%hitBoxH)
+
+        end if
+
         if (r .EQV. .FALSE.) return
 
         iD1 => layerblocks(this%bufferNum)%spriteList(this%ind)%imageF%img
@@ -250,6 +323,7 @@ MODULE sprite7up
                       this%hitBoxW, this%hitBoxH, that%hitBoxW, that%hitBoxH, LAYER_PLAYGROUND, &
                       this%x, this%y, that%x, that%y, this%fly, that%fly)
    
+
     end function
 
     function pixelColl(iD1, iD2, x1, y1, x2, y2, hitBoxW1, hitBoxH1, hitBoxW2, hitBoxH2, bufferNum,&
@@ -384,7 +458,7 @@ MODULE sprite7up
     subroutine changeSpriteEditor(this, wind)
         class(spritePoz), intent(inout) :: this        
         logical                         :: wind
-
+       
         call this%changeSprite(this%objectD%getEditorSprite(wind, .FALSE., &
              layerBlocks(this%bufferNum)%spriteList(this%ind)%imageF%name  ))
 
@@ -575,20 +649,24 @@ MODULE sprite7up
     end subroutine
 
     function getWaitTime(layer, name) result(waitTime)
-        integer(1)          :: layer
+        integer(1)          :: layer 
         integer             :: waitTime
         character(*)        :: name
         integer(1)          :: num
 
         if (len_trim(name) >= 5) then
             if (name(1:5) == "Water") then
-                waitTime = PERFECT_WAIT * 1.5 * getSpeed() 
+                if (name == "WaterWind") then
+                    waitTime = PERFECT_WAIT * getSpeed() 
+                else
+                    waitTime = PERFECT_WAIT * 1.5 * getSpeed() 
+                end if
                 return 
             end if
 
             do num = 1, len_trim(name) - 3, 1
                if (name(num:num + 3) == "Wind") then 
-                   waitTime = PERFECT_WAIT * 2 * getSpeed() 
+                   waitTime = PERFECT_WAIT * 0.75 * getSpeed() 
                    return 
                end if 
             end do 
@@ -941,7 +1019,12 @@ MODULE sprite7up
                         layerBlocks(bufferNum)%spriteList(layerBlocks(bufferNum)%nextIndexS)%h, &
                         layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%objectD%solid)   
 
+         call layerBlocks(bufferNum)%pozList(layerBlocks(bufferNum)%nextIndexP)%idleCounter%timerStart(&
+              (PERFECT_WAIT * getSpeed())) 
+
+
          if (layerBlocks(bufferNum)%nextIndexP > 1) call reorderPoz(bufferNum)
+
 
          !call displayDebugNumTxt("Poz:    ", layerBlocks(bufferNum)%NextIndexP) 
          !call displayDebugNumTxt("Sprite: ", layerBlocks(bufferNum)%NextIndexS) 
@@ -1246,12 +1329,13 @@ MODULE sprite7up
  
          integer                      :: from, to, sInd, smallest, smallestYh, smallestInd, last 
          integer(1)                   :: rc, filter    
-         integer(1)                   :: n
+         integer(1)                   :: n, nCopy
          !character(40)                :: test    
          integer(4)                   :: yhf 
 
          type(spritePoz)              :: tempPoz   
 
+         nCopy = n
 
          allocate(temp(layerBlocks(n)%nextIndexP), stat = rc)
          if (rc /= 0) call displayDebug("Failed to allocate temp SpritePoz list!")
@@ -1268,37 +1352,38 @@ MODULE sprite7up
                  last     = to
             end if
          end do
-   
+ 
+  
          layerBlocks(n)%nextIndexP = to
-         call move_alloc(temp, layerBlocks(n)%pozList)  
+         call move_alloc(temp, layerBlocks(nCopy)%pozList)  
 
          last        = 0
-         do to = 1, layerBlocks(n)%nextIndexP-1, 1
+         do to = 1, layerBlocks(nCopy)%nextIndexP-1, 1
              smallest    = 0
              smallestYh  = 2147483647
              smallestInd = 2147483647
 
-             do from = to, layerBlocks(n)%nextIndexP, 1
-                yhf = layerBlocks(n)%pozList(from)%yh 
+             do from = to, layerBlocks(nCopy)%nextIndexP, 1
+                yhf = layerBlocks(nCopy)%pozList(from)%yh 
               !
               ! Decorations should never go behind the floor texture.
               !   
-                if (layerBlocks(n)%pozList(from)%typFlag == TYPE_FLOOR_DECORATION) yhf = yhf + 1   
+                if (layerBlocks(nCopy)%pozList(from)%typFlag == TYPE_FLOOR_DECORATION) yhf = yhf + 1   
 
                 if ((yhf  < smallestYh)                               .OR. &
                     (yhf == smallestYh                               .AND. &
-                     layerBlocks(n)%pozList(from)%ind < smallestInd)) then
+                     layerBlocks(nCopy)%pozList(from)%ind < smallestInd)) then
                      smallest    = from
                      smallestYh  = yhf
-                     smallestInd = layerBlocks(n)%pozList(from)%ind 
+                     smallestInd = layerBlocks(nCopy)%pozList(from)%ind 
                 end if
             end do
 
             if (smallest == 0) exit   
 
-            tempPoz                          = layerBlocks(n)%pozList(smallest)
-            layerBlocks(n)%pozList(smallest) = layerBlocks(n)%pozList(to)
-            layerBlocks(n)%pozList(to)       = tempPoz
+            tempPoz                              = layerBlocks(nCopy)%pozList(smallest)
+            layerBlocks(nCopy)%pozList(smallest) = layerBlocks(nCopy)%pozList(to)
+            layerBlocks(nCopy)%pozList(to)       = tempPoz
 
              !write(test, "(A, ' ', I0, ' ', I0)") & 
              !      layerBlocks(n)%pozList(smallest)%name, smallestYh, smallestInd 

@@ -67,6 +67,7 @@ MODULE GameObject
         character(*)                   :: current
         integer(1)                     :: num
         character(7)                   :: temp
+        integer(2)                     :: standPoz, windPoz, firstPoz
 
         select case(this%name)
         case("Water")    
@@ -91,24 +92,33 @@ MODULE GameObject
                         r = this%getSprite("stand" // directions(randint(1, 8)))
                     end if
                 else
-                    if (current(1:4) == "wind") then            
-                        temp(2:7) = current
-                    else
-                        temp      = current
+
+                    standPoz = index(trim(current), "Stand")
+                    windPoz  = index(trim(current), "Wind")
+                    if (standPoz == 0 .AND. windPoz == 0) then
+                        r = current                        
+                        return
                     end if
-    
-                    read(temp(6:7), "(I2)") num
-    
+
+                    if (standPoz > 0) then
+                        firstPoz = standPoz + 5
+                    else
+                        firstPoz = windPoz  + 4
+                    end if
+                    
+                    do num = 1, size(directions), 1
+                       if (current(firstPoz:len_trim(current)) == directions(num)) exit
+                    end do
+
                     num = num + randint(0, 2) - 1
                     if (num < 1) num = 8
                     if (num > 8) num = 1
     
                     if (wind) then 
-                        r = this%getSprite("wind")   // directions(num)
+                        r = this%getSprite("wind"   // directions(num))
                     else
-                        r = this%getSprite("normal") // directions(num)
+                        r = this%getSprite("stand"  // directions(num))
                     end if
-                    
                     
                 end if
             case default
