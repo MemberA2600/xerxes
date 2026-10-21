@@ -462,8 +462,6 @@ MODULE sprite7up
         call this%changeSprite(this%objectD%getEditorSprite(wind, .FALSE., &
              layerBlocks(this%bufferNum)%spriteList(this%ind)%imageF%name  ))
 
-        this%ind = layerBlocks(this%bufferNum)%nextIndexS       
-
     end subroutine
 
     subroutine changeSprite(this, imageName)
@@ -479,6 +477,9 @@ MODULE sprite7up
 
         call AddSpriteThing(this%name, imageName, this%bufferNum, this%x, this%y, & 
                             filter, this%fly, unique, this%objectD%name, .TRUE.)
+
+        this%ind = layerBlocks(this%bufferNum)%nextIndexS       
+
 
     end subroutine
 

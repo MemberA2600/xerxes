@@ -47,6 +47,8 @@ MODULE GameMap
     character(NAME_MAX_LEN), dimension(:), allocatable :: typeNamesTrans
     integer(1)            :: selectedType
 
+    character(2)                                       :: lastDir
+
     integer(1), parameter                              :: stepOnMap = 10
     integer(2), parameter                              :: COLOR_GREEN = 253, COLOR_RED = 241
     integer(1)                                         :: lastNum
@@ -555,29 +557,75 @@ MODULE GameMap
     end subroutine
 
     subroutine movePlayerWalking()
-        integer(4)      :: lastX, lastY, lastXW, lastYH
-        integer(1)      :: pixelAdd 
+        integer(4)              :: lastX, lastY, lastXW, lastYH
+        integer(2)              :: pixelAdd 
+        character(2)            :: dir
+        character(NAME_MAX_LEN) :: spriteBaseName, currentSpriteBaseName , n
 
         lastX  = playerOnMap%x
         lastY  = playerOnMap%y
         lastXW = playerOnMap%xw
         lastYH = playerOnMap%yh
 
-        pixelAdd = getSpeed() / 10
+        pixelAdd = getSpeed() / 7
 
+        dir            = ""
+        spriteBaseName = ""
+
+        n = layerBlocks(playerOnMap%bufferNum)%spriteList(playerOnMap%ind)%imageF%name
+
+        if      (stringHas(n, "Stand")) then 
+                 currentSpriteBaseName = "stand" 
+        else if (stringHas(n, "Wind") ) then 
+                 currentSpriteBaseName = "wind" 
+        else                               
+                 currentSpriteBaseName = "walk" 
+        end if
+
+        if      (getInGameControl(PRESS_UP   )) then 
+                 dir = "N"
+        else if (getInGameControl(PRESS_DOWN )) then 
+                 dir = "S"
+        end if    
+        
+        if      (getInGameControl(PRESS_LEFT )) then 
+                 dir = trim(dir) // "E"
+        else if (getInGameControl(PRESS_RIGHT)) then 
+                 dir = trim(dir) // "W"
+        end if
+            
         if (getInGameControl(PRESS_LEFT )) call playerOnMap%changeXY(- pixelAdd, 0) 
         if (getInGameControl(PRESS_RIGHT)) call playerOnMap%changeXY(  pixelAdd, 0)  
         if (getInGameControl(PRESS_UP   )) call playerOnMap%changeXY(0 ,- pixelAdd) 
         if (getInGameControl(PRESS_DOWN )) call playerOnMap%changeXY(0 ,  pixelAdd) 
 
-        if (playerOnMap%checkAllCollisions(.TRUE.)) then
-            playerOnMap%x  = lastX    
-            playerOnMap%y  = lastY  
-            playerOnMap%xw = lastXW    
-            playerOnMap%yh = lastYH    
+        if (dir /= "") then
+            if (playerOnMap%checkAllCollisions(.TRUE.)) then
+                playerOnMap%x  = lastX    
+                playerOnMap%y  = lastY  
+                playerOnMap%xw = lastXW    
+                playerOnMap%yh = lastYH    
+    
+                if (currentMap%wind) then
+                    spriteBaseName = "wind"
+                else
+                    spriteBaseName = "stand"    
+                end if
+            else
+                spriteBaseName = "walk"    
+            end if
         else
-            call reorderPoz(playerOnMap%bufferNum)
+            spriteBaseName = "stand" 
+            dir = lastDir   
         end if
+
+        if ((spriteBaseName /= "" .AND. spriteBaseName /= currentSpriteBaseName) .OR. dir /= lastDir) then
+            lastDir = dir
+            call playerOnMap%changeSprite(playerOnMap%objectD%getSprite(trim(spriteBaseName)  // trim(dir)))
+            call playerOnMap%idleCounter%timerRestart()
+        end if
+        call reorderPoz(playerOnMap%bufferNum)
+        call addPointerByName(playerOnMap, LAYER_PLAYGROUND, playerOnMapName)             
  
     end subroutine
 
