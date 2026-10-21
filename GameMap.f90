@@ -63,7 +63,7 @@ MODULE GameMap
     integer(1)                                         :: selectMode = NO_SELECT
     character(NAME_MAX_LEN)                            :: autoSpawnerName, spawnPlayerName
 
-    type(counterTimer)                                 :: timerC
+    type(counterTimer)                                 :: timerC, movementIdle
 
     logical                                            :: placeActive     = .FALSE., allowed
     character(NAME_MAX_LEN)                            :: placeObjName
@@ -518,14 +518,23 @@ MODULE GameMap
 
             call standIdleChange()
 
-            if (lockCameraToPlayer .EQV. .TRUE.) then
-                call getAndcorrectCameraPoz(playerOnMap%x, playerOnMap%y, cameraDestX, cameraDestY)                 
-            end if
-
             select case(currentMap%typ) 
             case(MAP_WALKING) 
 
-                call movePlayerWalking()
+                !if (movementIdle%timerEnded()) then
+                !    call movePlayerWalking()
+                !    call movementIdle%timerRestart()
+                !end if
+
+                do while (movementIdle%timerEnded())
+                    call movePlayerWalking()
+                    movementIdle%started = (movementIdle%started + &
+                                            movementIdle%diffCheck ) 
+                end do
+
+                if (lockCameraToPlayer .EQV. .TRUE.) then
+                    call getAndcorrectCameraPoz(playerOnMap%x, playerOnMap%y, cameraDestX, cameraDestY)                 
+                end if
 
                 if (cameraDestX /= getOffsetX() .OR. cameraDestY /= getOffsetY()) then
                     if (cameraFollowUnit == 0) then
@@ -538,12 +547,15 @@ MODULE GameMap
                             call setOffSet(cameraDestX, cameraDestY)                    
                         else
                             if (abs(camXDiff) > abs(camYDiff)) then
-                                camXAdd = cameraFollowUnit     
-                                camYAdd = cameraFollowUnit * (abs(camXDiff) / abs(camYDiff))     
+                                camXAdd = cameraFollowUnit
+                                camYAdd = nint(real(cameraFollowUnit) * &
+                                              real(abs(camYDiff)) / real(abs(camXDiff)))
                             else
-                                camYAdd = cameraFollowUnit     
-                                camXAdd = cameraFollowUnit * (abs(camYDiff) / abs(camXDiff))  
+                                camYAdd = cameraFollowUnit
+                                camXAdd = nint(real(cameraFollowUnit) * &
+                                              real(abs(camXDiff)) / real(abs(camYDiff)))
                             end if
+
                             if (camXDiff < 0) camXAdd = camXAdd * -1
                             if (camYDiff < 0) camYAdd = camYAdd * -1
     
@@ -552,6 +564,7 @@ MODULE GameMap
                         end if    
                     end if
                 end if
+
             end select
         end if
     end subroutine
@@ -593,6 +606,8 @@ MODULE GameMap
         else if (getInGameControl(PRESS_RIGHT)) then 
                  dir = trim(dir) // "W"
         end if
+
+        if (len_trim(dir) == 2) pixelAdd = pixelAdd * 3 / 4
             
         if (getInGameControl(PRESS_LEFT )) call playerOnMap%changeXY(- pixelAdd, 0) 
         if (getInGameControl(PRESS_RIGHT)) call playerOnMap%changeXY(  pixelAdd, 0)  
@@ -626,6 +641,9 @@ MODULE GameMap
         end if
         call reorderPoz(playerOnMap%bufferNum)
         call addPointerByName(playerOnMap, LAYER_PLAYGROUND, playerOnMapName)             
+        
+        !call appendDebug(abs(playerOnMap%x - LastX))            
+        !call appendDebug(abs(playerOnMap%y - LastY))            
  
     end subroutine
 
@@ -1545,6 +1563,7 @@ MODULE GameMap
         end if
 
         call playMusic("")
+        call movementIdle%timerStart(PERFECT_WAIT * 6)
 
     end subroutine 
 
