@@ -602,9 +602,9 @@ MODULE GameMap
         end if    
         
         if      (getInGameControl(PRESS_LEFT )) then 
-                 dir = trim(dir) // "E"
-        else if (getInGameControl(PRESS_RIGHT)) then 
                  dir = trim(dir) // "W"
+        else if (getInGameControl(PRESS_RIGHT)) then 
+                 dir = trim(dir) // "E"
         end if
 
         if (len_trim(dir) == 2) pixelAdd = pixelAdd * 3 / 4
@@ -630,7 +630,11 @@ MODULE GameMap
                 spriteBaseName = "walk"    
             end if
         else
-            spriteBaseName = "stand" 
+            if (currentMap%wind) then
+                spriteBaseName = "wind"
+            else
+                spriteBaseName = "stand"    
+            end if
             dir = lastDir   
         end if
 

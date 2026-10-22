@@ -303,8 +303,8 @@ MODULE screen
           do pixelIndex    =  1, screenSize(1), 1 
                 
              !if (screenSize(1) <= wOfScreenBuffer) then
-             srcPixelIndex = (pixelIndex * wOfScreenBuffer) / screenSize(1) 
-             srcLineIndex  = (lineIndex  * hOfScreenBuffer) / screenSize(2) 
+             srcPixelIndex = (pixelIndex * wOfScreenBuffer - 1) / screenSize(1) + 1
+             srcLineIndex  = (lineIndex  * hOfScreenBuffer - 1) / screenSize(2) + 1
              !else
     
              !end if

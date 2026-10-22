@@ -92,7 +92,6 @@ MODULE GameObject
                         r = this%getSprite("stand" // directions(randint(1, 8)))
                     end if
                 else
-
                     standPoz = index(trim(current), "Stand")
                     windPoz  = index(trim(current), "Wind")
                     if (standPoz == 0 .AND. windPoz == 0) then
@@ -105,7 +104,7 @@ MODULE GameObject
                     else
                         firstPoz = windPoz  + 4
                     end if
-                    
+
                     do num = 1, size(directions), 1
                        if (current(firstPoz:len_trim(current)) == directions(num)) exit
                     end do
@@ -143,7 +142,7 @@ MODULE GameObject
            end if 
         end do
 
-        call displayDebug("Did not find " // w // " sprite for " // this%name // "!")
+        call displayDebug("Did not find " // trim(w) // " sprite for " // trim(this%name) // "!")
 
     end function    
 !
