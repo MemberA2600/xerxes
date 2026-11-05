@@ -159,3 +159,4 @@ unitSettings => Egység Beállítások
 unitName => Egység Neve:
 playerSpawner => Játékos Kezdõpontja
 autoSpawn => Automatikus Megjelenés:
+followerMap => Követõ a Térképen

@@ -159,3 +159,4 @@ unitSettings => Einheiteneinstellungen
 unitName => Einheitenname
 playerSpawner => Spielerstartpunkt
 autoSpawn => Automatisch-Erzeug:
+followerMap => Begleiter auf der Übersichtkarte

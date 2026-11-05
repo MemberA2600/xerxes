@@ -159,3 +159,4 @@ unitSettings => Unit Settings
 unitName => Unit Name:
 playerSpawner => Player Spawner
 autoSpawn => Auto Spawn
+followerMap => Follower on Map

@@ -128,6 +128,7 @@ MODULE engineConstants
                                         TYPE_WEATHER            = 4   ,&
                                         TYPE_FLOOR_DECORATION   = 5   ,& 
                                         TYPE_PLAYER_SPAWNER     = 6   ,& 
+                                        TYPE_FOLLOWER_MAP       = 7   ,& 
 
                                         TYPE_COMMON_UNIT      = 127  
  

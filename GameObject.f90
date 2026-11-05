@@ -21,10 +21,10 @@ MODULE GameObject
     logical               :: canKill, bullshit
     integer(1)            :: changedPage = 0
 
-    integer(2), parameter :: typeNum = 6, flyTypeNum = 3
+    integer(2), parameter :: typeNum = 7, flyTypeNum = 3
 
     character(NAME_MAX_LEN), dimension(typeNum ), parameter :: typeNames =  &
-                           (/ "floor", "playerMap", "tree", "weather", "floorDecoration", "playerSpawner" /)
+                           (/ "floor", "playerMap", "tree", "weather", "floorDecoration", "playerSpawner", "followerMap" /)
 
     character(NAME_MAX_LEN), dimension(flyTypeNum), parameter :: flyTypeNames =  &
                            (/ "ground", "hovering", "flying" /)
@@ -198,6 +198,8 @@ MODULE GameObject
         do num = 1, typeNum, 1
            select case(num) 
            case(TYPE_PLAYER_MAP) 
+                spriteNameListPointers(num)%spriteNameList => mapCharacterSpriteList 
+           case(TYPE_FOLLOWER_MAP) 
                 spriteNameListPointers(num)%spriteNameList => mapCharacterSpriteList 
            case(TYPE_TREE) 
                 spriteNameListPointers(num)%spriteNameList => twoSpriteList       
