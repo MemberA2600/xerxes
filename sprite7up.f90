@@ -125,11 +125,12 @@ MODULE sprite7up
 
     end subroutine
 
-    subroutine setPointerByName(b, n, p)
+    subroutine setPointerByName(b, n, p, cry)
         character(*)                            :: n
         integer(1)                              :: b
         type(SpritePoz), pointer, intent(inout) :: p
-        integer(8)                              :: ind        
+        integer(8)                              :: ind   
+        logical                                 :: cry     
         !character(30)                           :: test
 
         do ind = 1, layerBlocks(b)%NextIndexP, 1
@@ -144,7 +145,7 @@ MODULE sprite7up
            end if       
         end do
 
-        call displayDebug("No pointer set on name " // n // "!")
+        if (cry) call displayDebug("No pointer set on name " // n // "!")
 
     end subroutine
 
@@ -434,7 +435,7 @@ MODULE sprite7up
            end if  
         end do
 
-        call displayDebug("No pointer was set for Map Object " // n // " !")
+        call displayDebug("No pointer was set for Map Object " // trim(n) // " ! #1")
 
     end subroutine
 
@@ -451,7 +452,7 @@ MODULE sprite7up
            end if  
         end do
 
-        call displayDebug("No pointer was set for Map Object " // n // " !")
+        call displayDebug("No pointer was set for Map Object " // trim(n) // " ! #2")
 
     end subroutine
 

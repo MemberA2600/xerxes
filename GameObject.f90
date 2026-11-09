@@ -16,7 +16,7 @@ MODULE GameObject
     private
     public   :: objManagerWindow, objectWindowThings, initSpriteNameListPointers, &
                 loadObjFile, initObjList, dropObjList, getGameObjByName, ObjectData, &
-                getEditorSprite, getSprite, getUnitNames       
+                getEditorSprite, getSprite, getUnitNames, getDirFromName       
 
     logical               :: canKill, bullshit
     integer(1)            :: changedPage = 0
@@ -66,8 +66,7 @@ MODULE GameObject
         character(NAME_MAX_LEN)        :: r
         character(*)                   :: current
         integer(1)                     :: num
-        character(7)                   :: temp
-        integer(2)                     :: standPoz, windPoz, firstPoz
+        character(7)                   :: temp, dir 
 
         select case(this%name)
         case("Water")    
@@ -85,28 +84,17 @@ MODULE GameObject
                     r = this%getSprite("normal") 
                 end if
             case(TYPE_PLAYER_MAP)
-                if (init .EQV. .TRUE.) then
+9966            if (init .EQV. .TRUE.) then
                     if (wind .EQV. .TRUE.) then
                         r = this%getSprite("wind"  // directions(randint(1, 8)))
                     else
                         r = this%getSprite("stand" // directions(randint(1, 8)))
                     end if
                 else
-                    standPoz = index(trim(current), "Stand")
-                    windPoz  = index(trim(current), "Wind")
-                    if (standPoz == 0 .AND. windPoz == 0) then
-                        r = current                        
-                        return
-                    end if
-
-                    if (standPoz > 0) then
-                        firstPoz = standPoz + 5
-                    else
-                        firstPoz = windPoz  + 4
-                    end if
+                    dir = getDirFromName(current)
 
                     do num = 1, size(directions), 1
-                       if (current(firstPoz:len_trim(current)) == directions(num)) exit
+                       if (dir == directions(num)) exit
                     end do
 
                     num = num + randint(0, 2) - 1
@@ -120,12 +108,35 @@ MODULE GameObject
                     end if
                     
                 end if
+            case(TYPE_FOLLOWER_MAP)
+                goto 9966
             case default
                 r = this%getSprite("default")
             end select
         end select
 
     end function    
+
+    function getDirFromName(n) result(r)
+        integer(1)              :: num, l
+        character(2)            :: r
+        character(*)            :: n
+
+        r = ""
+
+        do l = 2, 1, -1
+            do num = 1, size(directions), 1
+               if (len_trim(directions(num)) /= l)          cycle 
+               if (len_trim(directions(num)) > len_trim(n)) cycle 
+    
+               if (n(len_trim(n) + 1 - len_trim(directions(num)): len_trim(n)) == directions(num)) then
+                   r = directions(num) 
+                   return 
+               end if 
+            end do
+        end do
+
+    end function
 
     function getSprite(this, w) result(r)
         class(objectData)              :: this

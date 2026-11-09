@@ -45,7 +45,10 @@ MODULE GameMap
                            (/ "floor" /)
 
     character(NAME_MAX_LEN), dimension(:), allocatable :: typeNamesTrans
-    integer(1)            :: selectedType
+
+    integer(1)                                           :: selectedType
+    integer(4),              dimension(:,:), allocatable :: playerSteps
+    character(NAME_MAX_LEN), dimension(:)  , allocatable :: followers
 
     character(2)                                       :: lastDir
 
@@ -530,6 +533,7 @@ MODULE GameMap
                     call movePlayerWalking()
                     movementIdle%started = (movementIdle%started + &
                                             movementIdle%diffCheck ) 
+                    if (size(followers) > 0) call followersFollow()
                 end do
 
                 if (lockCameraToPlayer .EQV. .TRUE.) then
@@ -569,11 +573,100 @@ MODULE GameMap
         end if
     end subroutine
 
+    subroutine followersFollow()
+        integer(1)                :: ind
+        type(SpritePoz), pointer  :: follower
+        integer(4)                :: destX, destY
+        integer(2)                :: pixelAdd1, pixelAdd2, pixelAdd  
+        character(2)              :: dir, prevDir
+        character(NAME_MAX_LEN)   :: spriteBaseName, currentSpriteBaseName, n 
+
+        pixelAdd1 = 0
+        pixelAdd2 = 0
+
+        do ind = 1, size(followers), 1
+           if (followers(ind) == "") cycle 
+           call addPointerByName(follower, LAYER_PLAYGROUND, followers(ind))             
+ 
+           pixelAdd = getSpeed() / 7
+
+           dir            = ""
+           spriteBaseName = ""            
+
+           destX          = playersteps(ind * FOLLOWER_STEP, 1) 
+           destY          = playersteps(ind * FOLLOWER_STEP, 2) 
+
+           !call displayDebugNumTxt("I: ", ind) 
+           !call displayDebugNumTxt("X: ", destX) 
+           !call displayDebugNumTxt("Y: ", destY) 
+
+           n = layerBlocks(follower%bufferNum)%spriteList(follower%ind)%imageF%name
+    
+           if      (stringHas(n, "Stand")) then 
+                    currentSpriteBaseName = "stand" 
+           else if (stringHas(n, "Wind") ) then 
+                     currentSpriteBaseName = "wind" 
+           else                               
+                     currentSpriteBaseName = "walk" 
+           end if
+
+           if (destX /= -1 .AND. (destX /= follower%x .OR. destY /= follower%y)) then
+               if      (destY > follower%y) then 
+                        dir = "S"
+                        pixelAdd2 =   pixelAdd
+               else if (destY < follower%y) then 
+                        dir = "N"
+                        pixelAdd2 = - pixelAdd
+               end if 
+
+               if      (destX > follower%x) then 
+                        dir = trim(dir) // "E" 
+                        pixelAdd1 =   pixelAdd
+               else if (destX < follower%x) then 
+                        dir = trim(dir) // "W" 
+                        pixelAdd1 = - pixelAdd
+               end if 
+
+           end if 
+
+           if (len_trim(dir) == 2) then 
+               pixelAdd1 = pixelAdd1 * 3 / 4
+               pixelAdd2 = pixelAdd2 * 3 / 4
+           end if 
+
+
+           call follower%changeXY(pixelAdd1, pixelAdd2) 
+    
+           if (dir /= "") then
+               spriteBaseName     = "walk"  
+           else
+               if (currentMap%wind) then
+                   spriteBaseName = "wind"
+               else
+                   spriteBaseName = "stand"    
+               end if
+           end if
+
+           prevDir            = getDirFromName(n) 
+           if (dir == "") dir = prevDir
+    
+           if ((spriteBaseName /= "" .AND. (spriteBaseName /= currentSpriteBaseName) .OR. dir /= prevDir)) then
+               call writeOutDebug(trim(prevDir) // " "  // trim(dir) // " " // spriteBaseName )
+               call follower%changeSprite(follower%objectD%getSprite(trim(spriteBaseName)  // trim(dir)))
+               call follower%idleCounter%timerRestart()
+           end if
+           call reorderPoz(follower%bufferNum)
+           call addPointerByName(playerOnMap, LAYER_PLAYGROUND, playerOnMapName)  
+
+        end do
+
+    end subroutine
+
     subroutine movePlayerWalking()
         integer(4)              :: lastX, lastY, lastXW, lastYH
         integer(2)              :: pixelAdd 
         character(2)            :: dir
-        character(NAME_MAX_LEN) :: spriteBaseName, currentSpriteBaseName , n
+        character(NAME_MAX_LEN) :: spriteBaseName, currentSpriteBaseName, n 
 
         lastX  = playerOnMap%x
         lastY  = playerOnMap%y
@@ -594,7 +687,7 @@ MODULE GameMap
         else                               
                  currentSpriteBaseName = "walk" 
         end if
-
+ 
         if      (getInGameControl(PRESS_UP   )) then 
                  dir = "N"
         else if (getInGameControl(PRESS_DOWN )) then 
@@ -627,7 +720,9 @@ MODULE GameMap
                     spriteBaseName = "stand"    
                 end if
             else
-                spriteBaseName = "walk"    
+                spriteBaseName = "walk"  
+                if (allocated(playerSteps)) call shiftPlayerPozArray()
+  
             end if
         else
             if (currentMap%wind) then
@@ -649,6 +744,21 @@ MODULE GameMap
         !call appendDebug(abs(playerOnMap%x - LastX))            
         !call appendDebug(abs(playerOnMap%y - LastY))            
  
+    end subroutine
+
+    subroutine shiftPlayerPozArray()
+        integer(2)              :: num
+
+        do num = size(playerSteps, 1), 2, -1
+           playerSteps(num, 1) = playerSteps(num - 1, 1)
+           playerSteps(num, 2) = playerSteps(num - 1, 2)
+
+        end do
+
+        call addPointerByName(playerOnMap, LAYER_PLAYGROUND, playerOnMapName)             
+        playerSteps(1, 1) = playerOnMap%x
+        playerSteps(1, 2) = playerOnMap%y
+
     end subroutine
 
     subroutine getAndcorrectCameraPoz(X, Y, cX, cY)
@@ -677,7 +787,11 @@ MODULE GameMap
                  if ((layerBlocks(b)%spriteList(layerBlocks(b)%pozList(ind)%ind)%active  .EQV. .FALSE.) .OR. &
            associated(layerBlocks(b)%spriteList(layerBlocks(b)%pozList(ind)%ind)%imageF) .EQV. .FALSE.) cycle
 
-                 if (stringHas(layerBlocks(b)%spriteList(layerBlocks(b)%pozList(ind)%ind)%imageF%name, "Stand")) then
+                 if (layerBlocks(b)%pozList(ind)%typFlag /= TYPE_PLAYER_MAP    .AND. &
+                     layerBlocks(b)%pozList(ind)%typFlag /= TYPE_FOLLOWER_MAP) cycle
+
+                 if (stringHas(layerBlocks(b)%spriteList(layerBlocks(b)%pozList(ind)%ind)%imageF%name, "Stand") .OR. &
+                     stringHas(layerBlocks(b)%spriteList(layerBlocks(b)%pozList(ind)%ind)%imageF%name, "Wind")) then
                      if (layerBlocks(b)%pozList(ind)%idleCounter%timerEnded()) then 
                          call layerBlocks(b)%pozList(ind)%idleCounter%timerRestart()   
                          if (randInt(0, 255) > 248) call layerBlocks(b)%pozList(ind)%changeSpriteEditor(currentMap%wind)
@@ -1545,25 +1659,161 @@ MODULE GameMap
 
     end subroutine
 
+    subroutine resetMapSettings()
+        integer(1)         :: rc
+
+        lockCameraToPlayer = .FALSE.
+        cameraFollowUnit   = 0
+        cameraDestX        = 0
+        cameraDestY        = 0
+        playerOnMapName    = ""
+        autoSpawnerName    = ""
+        spawnPlayerName    = ""
+
+        nullify(playerOnMap)
+
+        if (allocated(playerSteps)) then
+            deallocate(playerSteps, stat = rc)
+            if (rc /= 0) call displayDebug("Failed to deallocate playerSteps!")
+
+            deallocate(followers, stat = rc)
+            if (rc /= 0) call displayDebug("Failed to deallocate followers!")
+
+        end if 
+    end subroutine 
+
+    subroutine addToFollowers(n)
+        character(*)                                       :: n
+        character(NAME_MAX_LEN), dimension(:), allocatable :: temp
+        integer(1)                                         :: rc, num, insertNum        
+        integer(4), dimension(:,:), allocatable            :: tempSteps
+        integer(2)                                         :: num2, startNum
+        type(SpritePoz), pointer                           :: p
+
+        insertNum = 0
+
+        if (size(followers) > 0) then
+            do num = 1, size(followers), 1
+               if (followers(num) == "") then
+                   insertNum = num                                
+                   exit
+               end if  
+            end do
+
+            if (insertNum == 0) then 
+                allocate(temp(size(followers) + 1), stat = rc)
+                if (rc /= 0) call displayDebug("Failed to allocate temp for Followers!")            
+
+                temp(1:size(followers)) = followers
+
+                call move_alloc(temp, followers)
+                insertNum = size(followers)
+            end if
+        else
+            allocate(followers(1), stat = rc)
+            if (rc /= 0) call displayDebug("Failed to allocate Followers!")
+
+            insertNum = 1
+        end if
+
+        followers(insertNum) = n
+        startNum             = 0
+
+        if (size(followers) * FOLLOWER_STEP > size(playerSteps)) then
+            if (size(playerSteps) > 0) then
+                allocate(tempsteps(size(playerSteps, 1) + FOLLOWER_STEP, 2), stat = rc)
+                if (rc /= 0) call displayDebug("Failed to allocate tempSteps!")            
+            
+                do num2 = 1, size(playerSteps), 1
+                   tempSteps(num2, 1) = playerSteps(num2, 1)  
+                   tempSteps(num2, 2) = playerSteps(num2, 2)  
+                end do
+
+                startNum = size(playerSteps, 1) + 1
+                call move_alloc(tempSteps, playerSteps)
+
+            else
+               startNum = 1 
+               allocate(playerSteps(size(followers) * FOLLOWER_STEP, 2), stat = rc) 
+               if (rc /= 0) call displayDebug("Failed to allocate PlayerSteps!")
+            end if
+        else
+
+        end if 
+
+        if (startNum > 0) then
+            do num2 = startNum, size(playerSteps, 1), 1
+               playerSteps(num2, 1) = -1
+               playerSteps(num2, 2) = -1
+            end do
+        end if
+
+        nullify(p)
+        call setPointerByName(LAYER_PLAYGROUND, n, p, .FALSE.)
+
+        if (associated(p) .EQV. .FALSE.) then
+
+            if (playerSteps(insertNum * FOLLOWER_STEP, 1) > -1) then             
+                call setUnit(n, playerSteps(insertNum * FOLLOWER_STEP, 1), &
+                                playerSteps(insertNum * FOLLOWER_STEP, 2), LAYER_PLAYGROUND, "")
+            else
+                do num = 1, size(followers) + 1, 1
+                   if (num > size(followers)) then
+                       call addPointerByName(playerOnMap, LAYER_PLAYGROUND, playerOnMapName)  
+                       call setUnit(n, playerOnMap%x, playerOnMap%y, LAYER_PLAYGROUND, "")  
+
+                       !call displayDebugNumTxt("X: ", playerOnMap%x) 
+                       !call displayDebugNumTxt("Y: ", playerOnMap%y) 
+
+                   else   
+                       if (playerSteps(insertNum * FOLLOWER_STEP, 1) > -1) then             
+                           call setUnit(n, playerSteps(num * FOLLOWER_STEP, 1), &
+                                           playerSteps(num * FOLLOWER_STEP, 2), LAYER_PLAYGROUND, "") 
+                           exit
+                       end if 
+                   end if 
+                end do
+            end if
+        end if 
+
+    end subroutine
+
+    subroutine removeFromFollowers(n)
+        character(*)               :: n
+        integer(2)                 :: num
+        type(SpritePoz), pointer   :: p
+
+        nullify(p)
+
+        do num = 1, size(followers), 1
+           call setPointerByName(LAYER_PLAYGROUND, n, p, .TRUE.)
+           if (associated(p)) then
+               followers(num:size(followers)-1) = followers(num+1:size(followers))  
+               followers(size(followers))       = "" 
+
+               return 
+           end if 
+        end do
+
+    end subroutine
+
     subroutine loadMapByNameAndRunIt(n)
         character(*)                           :: n
         logical                                :: r    
 
+        call resetMapSettings()
         r = loadMapFile(n, .TRUE.)
+
         if (r .EQV. .FALSE.) then 
             call displayDebug("Failed to load map " // n // "!")
             return
         end if
         
-        lockCameraToPlayer = .FALSE.
-        cameraFollowUnit   = 0
-        cameraDestX        = 0
-        cameraDestY        = 0
-
         if (autoSpawnerName /= "" .AND. spawnPlayerName /= "") then
             call spawnPlayerAtSpawner(autoSpawnerName, spawnPlayerName, .FALSE.)
             lockCameraToPlayer = .TRUE.
             cameraFollowUnit   = 0
+            !call addToFollowers("ChiakiNormMapF")
         end if
 
         call playMusic("")
@@ -1597,7 +1847,7 @@ MODULE GameMap
         
         integer(4)                :: centerX, centerY, spawnX, spawnY
         
-        call setPointerByName(LAYER_PLAYGROUND, spawnerName, spawner)
+        call setPointerByName(LAYER_PLAYGROUND, spawnerName, spawner, .TRUE.)
         playerOnMapName          = playerUnit
 
         call spawner%getHitBoxCenter(centerX, centerY)
@@ -1618,13 +1868,14 @@ MODULE GameMap
         logical                                :: r
         character(MAX_PATH_LEN)                :: fname
         
-        r                    = .FALSE.
-        playerOnMapName      = ""
-        nullify(playerOnMap)
+        r = .FALSE.
 
         fname = FileDialog("map\", .FALSE., "xxm ")    
-        if (fname /= "") r = loadMapFile(fname, .FALSE.)
-    
+        if (fname /= "") then
+            call resetMapSettings()
+            r = loadMapFile(fname, .FALSE.)
+        end if    
+
     end function 
 
     function loadMapFile(fname, addCwD) result(r)
