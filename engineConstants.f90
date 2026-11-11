@@ -31,8 +31,11 @@ MODULE engineConstants
     INTEGER(kind=2)               :: wOfScreenBuffer        = 640, &
                                      hOfScreenBuffer        = 480  
     INTEGER(KIND = 1), PARAMETER  :: MFPS = 120             ! Maximum frames per second
-    INTEGER, PARAMETER            :: MAX_PATH_LEN = 255
-    integer, parameter            :: NAME_MAX_LEN = 25
+    INTEGER(2), PARAMETER         :: MAX_PATH_LEN  = 255, &
+                                     NAME_MAX_LEN  = 25 , &
+                                     MAX_PARAM_LEN = 1024
+
+    character(2), parameter       :: delimiter = "||"    
 
     real(8), parameter            :: pi = 3.141592653589793238462643383279502884197
     integer(4), parameter         :: chunkSize = 32767

@@ -34,6 +34,7 @@
       USE dict  
       USE gameObject  
       USE gameMap  
+      USE triggerAction  
 
       IMPLICIT NONE
 !

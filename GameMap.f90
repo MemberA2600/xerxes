@@ -16,7 +16,8 @@ MODULE GameMap
     USE winapis
     USE KERNEL32, WinSleep => Sleep
     USE adlib
-
+    USE TriggerAction
+    
     implicit none
 
     private
@@ -97,7 +98,7 @@ MODULE GameMap
     integer(4)                                 :: widthOld, heightOld
     logical                                    :: windOld
     character(NAME_MAX_LEN)                    :: defaultFloorOld, defaultFloor, prevMap = "", &
-                                                  playerOnMapName = ""
+                                                  playerOnMapName = "" 
 
     contains
 !
@@ -457,12 +458,13 @@ MODULE GameMap
                currentMap%defaultMusic = ""
            end if 
 
+           call removeTriggersAndActions() 
        else 
            if ((load) .AND. (nope .EQV. .FALSE.)) then
                if (loadMap()) success = 1
            end if 
        end if 
-
+         
        canKill = .TRUE.        
 
     end function
@@ -1680,6 +1682,9 @@ MODULE GameMap
             if (rc /= 0) call displayDebug("Failed to deallocate followers!")
 
         end if 
+
+        call removeTriggersAndActions()
+
     end subroutine 
 
     subroutine addToFollowers(n)
