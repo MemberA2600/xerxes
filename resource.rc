@@ -8,20 +8,20 @@
 //
 // Winteracter resource script
 //
-// Modified : 05/nov./2026 05:41:04
+// Modified : 20/nov./2026 06:11:33
 //
 ///////////////////////////////////////////////////
 //
 // Number of resources
 //
 //*WN* NMENU       1
-//*WN* NITEM       38
-//*WN* NDIALOG     12
-//*WN* NFIELD      176
+//*WN* NITEM       40
+//*WN* NDIALOG     13
+//*WN* NFIELD      203
 //*WN* NTOOLBAR    0
 //*WN* NTOOLTIP    0
 //*WN* NIMAGE      1
-//*WN* NIDENTIFIER 234
+//*WN* NIDENTIFIER 264
 //*WN* NINCLUDE    0
 //*WN* NOPTROW     0
 ///////////////////////////////////////////////////
@@ -258,6 +258,36 @@
 #define IDD_UNIT_SETTINGS_P_SPAWNER       113
 #define IDF_AUTOSPAWN                    1172
 #define ID_UnitClear                     1173
+#define ID_TRIGGERS                     40039
+#define ID_ACTIONS                      40040
+#define IDF_TRIGGERCHOOSER               1177
+#define ID_TriggerOK                     1174
+#define ID_TriggerAddGroup               1175
+#define IDD_TRIGGERS                      114
+#define IDF_TriggerChooser_L             1178
+#define IDF_TriggeName_L                 1179
+#define ID_TriggerName                   1180
+#define IDF_TriggerList_L                1181
+#define IDF_TriggerList3                 1195
+#define ID_TriggerAdd                    1176
+#define ID_TriggerUpdateGroup            1184
+#define ID_TriggerDeleteGroup            1185
+#define ID_TriggerDelete                 1187
+#define ID_TriggerMoveUp                 1186
+#define ID_TriggerMoveDown               1188
+#define IDF_TriggerDetails_F             1189
+#define IDF_TriggerType_F                1190
+#define IDF_TriggerType                  1191
+#define IDF_CallAction_L                 1192
+#define IDF_CallAction                   1193
+#define IDF_TriggerText                  1182
+#define ID_MoveButtonsLeft               1194
+#define ID_MoveButtonsRight              1196
+#define ID_TriggerOption1                1197
+#define ID_TriggerOption2                1198
+#define ID_TriggerOption3                1199
+#define IDF_TRIGGEROR                    1200
+#define ID_TriggerChange                 1201
 
 ///////////////////////////////////////////////////
 //
@@ -649,6 +679,54 @@ BEGIN
 ,0
 END
 
+IDD_TRIGGERS DIALOG 0,0,345,351
+STYLE WS_POPUP | WS_BORDER | WS_DLGFRAME | WS_SYSMENU | DS_3DLOOK | DS_MODALFRAME
+FONT 8, "MS Shell Dlg"
+CAPTION "Manage Triggers"
+BEGIN
+  CONTROL "Close",ID_TriggerOK,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,90,327,65,14
+  CONTROL "Terror Trigger",ID_TriggerName,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_TABSTOP | ES_LEFT,12,59,250,14
+  CONTROL "",IDF_TRIGGERCHOOSER,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWN | CBS_HASSTRINGS,12,23,250,20
+  CONTROL "Trigger Group Chooser:",IDF_TriggerChooser_L,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,10,12,182,8
+  CONTROL "Trigger Group Name:",IDF_TriggeName_L,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,10,47,182,8
+  CONTROL "Add",ID_TriggerAddGroup,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,268,49,69,14
+  CONTROL "Trigger List:",IDF_TriggerList_L,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,10,91,182,8
+  CONTROL "Add",ID_TriggerAdd,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,255,194,69,14
+  CONTROL "Update",ID_TriggerUpdateGroup,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,268,66,69,14
+  CONTROL "Delete",ID_TriggerDeleteGroup,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,268,22,69,14
+  CONTROL "Delete",ID_TriggerDelete,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,268,104,69,14
+  CONTROL "Move Up",ID_TriggerMoveUp,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,268,122,69,14
+  CONTROL "Move Down",ID_TriggerMoveDown,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,268,140,69,14
+  CONTROL "Trigger Details",IDF_TriggerDetails_F,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | BS_GROUPBOX | BS_TEXT | BS_LEFT,6,184,330,100
+  CONTROL "Trigger Type:",IDF_TriggerType_F,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,13,197,103,8
+  CONTROL "",IDF_TriggerType,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWN | CBS_HASSTRINGS,13,211,313,20
+  CONTROL "Call Action:",IDF_CallAction_L,"STATIC",WS_CHILD | WS_VISIBLE | WS_GROUP | SS_LEFT,13,291,313,8
+  CONTROL "",IDF_CallAction,"COMBOBOX",WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_GROUP | WS_TABSTOP | CBS_DROPDOWN | CBS_HASSTRINGS,13,303,313,20
+  CONTROL "",IDF_TriggerList3,"LISTBOX",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_VSCROLL | WS_TABSTOP | LBS_NOTIFY | LBS_HASSTRINGS | LBS_USETABSTOPS,12,104,250,68
+  CONTROL "",IDF_TriggerText,"EDIT",WS_CHILD | WS_VISIBLE | WS_BORDER | WS_GROUP | WS_TABSTOP | ES_LEFT | ES_MULTILINE | ES_AUTOHSCROLL | ES_READONLY,13,226,313,31
+  CONTROL "<<",ID_MoveButtonsLeft,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER | BS_TOP | BS_BOTTOM | BS_VCENTER,13,262,33,14
+  CONTROL ">>",ID_MoveButtonsRight,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT | BS_LEFT | BS_RIGHT | BS_CENTER | BS_TOP | BS_BOTTOM | BS_VCENTER,293,262,33,14
+  CONTROL "Set Option 1",ID_TriggerOption1,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,55,262,69,14
+  CONTROL "Set Option 2",ID_TriggerOption2,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,135,262,69,14
+  CONTROL "Set Option 3",ID_TriggerOption3,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,214,262,69,14
+  CONTROL "OR",IDF_TRIGGEROR,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_AUTOCHECKBOX | BS_TEXT,218,194,33,14
+  CONTROL "Change to Actions",ID_TriggerChange,"BUTTON",WS_CHILD | WS_VISIBLE | WS_GROUP | WS_TABSTOP | BS_PUSHBUTTON | BS_TEXT,162,327,102,14
+END
+
+IDD_TRIGGERS RCDATA
+BEGIN
+"[Checks] \n"
+"1200 0 \n"
+"[Menus] \n"
+"[Lengths] \n"
+"1180 25 \n"
+"1177 25 \n"
+"1191 25 \n"
+"1193 25 \n"
+"1182 25 \n"
+,0
+END
+
 ///////////////////////////////////////////////////
 //
 // Menus
@@ -701,6 +779,8 @@ BEGIN
       MENUITEM "Select Unit",ID_SELECT_UNIT
     END
     MENUITEM "Add Unit",ID_ADD_UNIT
+    MENUITEM "Manage Triggers",ID_TRIGGERS
+    MENUITEM "Manage Actions",ID_ACTIONS
     MENUITEM "Load Map",ID_LoadMap
     MENUITEM "Save Map",ID_SaveMap
     MENUITEM "Exit Map Editor",ID_ExitMapEditor
@@ -740,4 +820,4 @@ icon1 ICON DISCARDABLE "program.ico"
 //*WI* FILENAME    resid.f90
 //*WI* FMODNAME    RESID
 //*WI* LASTTYPE    2
-//*WI* LASTRES     8
+//*WI* LASTRES     13

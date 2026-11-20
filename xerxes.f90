@@ -244,6 +244,13 @@
               CASE (ID_SELECT_NONE:ID_SELECT_UNIT)
                     call setSelection(MESSAGE%VALUE1 - ID_SELECT_NONE)
 
+              CASE (ID_TRIGGERS)
+                    call triggerActionWindow(TRIGGER_MODE)
+
+              CASE (ID_ACTIONS)
+                    call triggerActionWindow(ACTION_MODE)
+
+
           END SELECT 
 
           CASE (CloseRequest)            ! Close window (e.g. Alt/F4)
@@ -310,6 +317,8 @@
             call WMenuSetString(ID_SELECT_DECORATION, trim(getWordInCurrentLang( "selectDecoration"   )))
             call WMenuSetString(ID_LOADMAP          , trim(getWordInCurrentLang( "mapLoad   "         )))
             call WMenuSetString(ID_SAVEMAP          , trim(getWordInCurrentLang( "mapSave"            )))
+            call WMenuSetString(ID_TRIGGERS         , trim(getWordInCurrentLang( "manageTriggers"     )))
+            call WMenuSetString(ID_ACTIONS          , trim(getWordInCurrentLang( "manageActions"      )))
 
       end subroutine  
 
@@ -427,6 +436,8 @@
                 call mapBasicSettings()
             case(IDD_ADD_UNIT)
                 call UnitAdderCheck()
+            case(IDD_TRIGGERS)
+                call triggerActionLoop()
             case default
                 if (isItaUnitSettingsDialog()) call getUnitNameDialogLoop()
             end select

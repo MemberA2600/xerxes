@@ -18,6 +18,8 @@ MODULE engineConstants
     integer                       :: PERFECT_WAIT = 5000
     integer(1)                    :: speedUpConst = 30   
 
+    integer(1), parameter         :: TRIGGER_MODE = 0, ACTION_MODE = 1
+
     integer(1), parameter         :: layerNum          = 6, &      
                                      LAYER_BACKGROUND  = 1, & 
                                      LAYER_PLAYGROUND  = 2, &
@@ -33,10 +35,11 @@ MODULE engineConstants
     INTEGER(KIND = 1), PARAMETER  :: MFPS = 120             ! Maximum frames per second
     INTEGER(2), PARAMETER         :: MAX_PATH_LEN  = 255, &
                                      NAME_MAX_LEN  = 25 , &
-                                     MAX_PARAM_LEN = 1024
+                                     MAX_PARAM_LEN = 512
 
-    character(2), parameter       :: delimiter = "||"    
-
+    character(1), parameter       :: wildcard  = "!" 
+    character(2), parameter       :: delimiter = "||" , placeholder = "{" // wildcard // "}"
+ 
     real(8), parameter            :: pi = 3.141592653589793238462643383279502884197
     integer(4), parameter         :: chunkSize = 32767
     character(4), parameter       :: OPL2_FILE_TYPE   = 'OPL2', &
@@ -157,11 +160,13 @@ MODULE engineConstants
                                         FLY_INIT_HOVERING = 10,  &
                                         FLY_INIT_FYLING   = 96
 
-    character(NAME_MAX_LEN), parameter :: tia_default  = "Puking Ears              ", &
-                                          opl2_default = "Original Plastic Lobotomy", &      
-                                          img_default  = "Sexy Sprite              ", &
-                                          obj_default  = "Old Ogre Object          ", &
-                                          map_default  = "Memorable Map            ", &
+    character(NAME_MAX_LEN), parameter :: tia_default     = "Puking Ears              ", &
+                                          opl2_default    = "Original Plastic Lobotomy", &      
+                                          img_default     = "Sexy Sprite              ", &
+                                          obj_default     = "Old Ogre Object          ", &
+                                          map_default     = "Memorable Map            ", &
+                                          trigger_default = "Terror Trigger           ", &
+                                          action_default  = "Agressive Action         ", &
                                           EMPTY_NAME   = "                         "
        
      
