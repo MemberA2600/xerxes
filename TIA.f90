@@ -28,7 +28,7 @@ MODULE TIA
 
     real               :: TIAVolChanger = 1.0
 
-    integer, parameter :: text_len = 1500
+    !integer, parameter :: text_len = 1500
     
     integer, parameter :: infrequency = 31440 ! NTSC TIA
     integer, parameter :: outfrequency= 44100 ! wav
@@ -610,12 +610,17 @@ MODULE TIA
     END SUBROUTINE
 
     subroutine TIAchangeSavePlay()
-        character(text_len)       :: text
+        character(:), allocatable :: text
         character(NAME_MAX_LEN)   :: name
+        integer                   :: L
+        integer(1)                :: rc
+
+        call WDialogGetStringLength(ID_TIAInput,L)
+        allocate(character(len=L) :: text, stat = rc)
+        if (rc /= 0) call displayDebug("Failed to allocate text buffer!")
 
         call WDialogGetString(ID_TIAInput, text)
         call WDialogGetString(ID_TIAName,  name)
-
 
         if (len_trim(text) == 0) then
             CALL WDialogFieldState(ID_TIASave, DISABLED) 
@@ -635,6 +640,8 @@ MODULE TIA
             canKill = .FALSE.
         end if
 
+        deallocate(text)
+
     end subroutine
 
     subroutine TiaLoad()
@@ -643,7 +650,7 @@ MODULE TIA
         integer(8)                             :: siz
         integer(2)                             :: ind, V, C, F, L, stat
         type(TIAHeader)                        :: header
-        character(text_len)                    :: txt
+        character(:), allocatable              :: txt
         character(80)                          :: line
 
         character(40)                          :: test 
@@ -705,9 +712,9 @@ MODULE TIA
     end subroutine
 
     subroutine inputBox2Data(d)
-        character(text_len)                                  :: text
+        character(:), allocatable                            :: text
         integer(2), dimension(:), allocatable, intent(inout) :: d
-        integer                                              :: stat, fromPoz, toPoz, ind, length, ind2    
+        integer                                              :: stat, fromPoz, toPoz, ind, length, ind2, L    
         character                                            :: ch   
         character(10)                                        :: segment     
 
@@ -715,6 +722,10 @@ MODULE TIA
             deallocate(d, stat = stat)
             if (stat /= 0) call displayDebug("Failed to deallocate temp for grabbing text to data!")
         end if
+
+        call WDialogGetStringLength(ID_TIAInput,L)
+        allocate(character(len=L) :: text, stat = stat)
+        if (stat /= 0) call displayDebug("Failed to allocate text buffer!")
 
         call WDialogGetString(ID_TIAInput, text)
             
@@ -753,6 +764,8 @@ MODULE TIA
            fromPoz = toPoz + 2 
            if (ind == 4) fromPoz = fromPoz + 1   
         end do 
+
+        deallocate(text)
 
     end subroutine
 
