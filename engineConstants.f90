@@ -140,7 +140,6 @@ MODULE engineConstants
                                         COLLECT_BASEFLOOR     = 1   ,&
                                         COLLECT_LEFTOVERS     = 2
     
-
     integer(1), parameter            :: WEATHER_DAY_NORM    = 1,  &
                                         WEATHER_NIGHT_NORM  = 2,  &
                                         WEATHER_DAY_RAIN    = 3,  &
@@ -186,7 +185,7 @@ MODULE engineConstants
     integer(1),   parameter :: FALSE = 0, TRUE = 1
     integer(1),   parameter :: VAR_NULL = 0, VAR_INT = 1, VAR_CHAR = 2
 
-    character(1), parameter :: comment = "*", closeTrigger = "?", closeAction = "!", delimiterNorm = ",", &
-                               delimiterOr = "|", paramsOpen = "(", paramsClose = ")" 
+    character(1), parameter :: commentChar = "#", closeTriggerChar = "?", closeActionChar = "!", delimiterNormChar = ",", &
+                               delimiterOrChar = "|", paramsOpenChar = "(", paramsCloseChar = ")", escapeChar = "\" 
 
 END MODULE engineConstants

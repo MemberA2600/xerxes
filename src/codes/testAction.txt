@@ -1,0 +1,8 @@
+#                 #
+#  Testing Action #
+#                 #
+  name(testAction),
+  spawnPlayer(XerxesHealerMap,PlayerSpawner001),
+  addFollower(ChiakiNormMapF)!
+
+ 

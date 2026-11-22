@@ -18,7 +18,7 @@ MODULE TriggerAction
                                        triggerActionWindow, triggerActionLoop, var, loadSyntax, &
                                        actionText, triggerText     
 
-    character(:), allocatable                  :: actionText, triggerText
+    character(:), allocatable, target          :: actionText, triggerText
 
     type command
          character(NAME_MAX_LEN)               :: name
@@ -298,9 +298,15 @@ MODULE TriggerAction
 
        canKill         = .FALSE.
 
-       CALL WDialogLoad(IDD_Triggers)
+       CALL WDialogLoad(IDD_Triggers) 
 
 88996  call SetTheFieldNames() 
+
+       if (actionOrTrigger == TRIGGER_MODE) then  
+           call WDialogPutString(IDF_Code, triggerText) 
+       else 
+           call WDialogPutString(IDF_Code, actionText) 
+       end if
 
        do
           change   = .FALSE.
@@ -325,6 +331,12 @@ MODULE TriggerAction
                   END SELECT
               end if
        end do 
+
+       if (actionOrTrigger == TRIGGER_MODE) then  
+           call WDialogGetStringA(IDF_Code, triggerText) 
+       else 
+           call WDialogGetStringA(IDF_Code, actionText) 
+       end if
 
        if (change) then 
            actionOrTrigger = 1 - actionOrTrigger 
@@ -430,7 +442,48 @@ MODULE TriggerAction
     end subroutine
 
     subroutine compile(validate)
-        logical        :: validate
+        logical                   :: validate
+        type(triggerGroup)        :: tempTriggerGroup
+        type(actionGroup)         :: tempActionGroup
+        character(:), allocatable :: txt, group, noComments
+
+        integer(8)                :: startInd, endInd, ind
+        logical                   :: insideComment, escaped
+
+        if (validate) then
+            call WDialogGetStringA(IDF_Code, txt)
+        else
+            if (actionOrTrigger == TRIGGER_MODE) then
+                txt = triggerText
+            else
+                txt = actionText
+            end if
+        end if
+
+        startInd      = 1
+        insideComment = .FALSE.
+        
+        do ind = 1, len_trim(txt), 1
+            if (txt(ind:ind) /= commentChar) cycle
+        
+            if (ind > 1) then
+                if (txt(ind-1:ind-1) == escapeChar) cycle
+            end if
+        
+            if (insideComment) then
+                startInd = ind + 1
+            else
+                noComments = noComments // txt(startInd:ind-1)
+            end if
+        
+            insideComment = .not. insideComment
+        end do
+        
+        if (.not. insideComment) then
+            noComments = noComments // txt(startInd:len_trim(txt))
+        end if
+
+        call WDialogPutString(IDF_Errors, noComments)
 
     end subroutine
 

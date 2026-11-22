@@ -1,0 +1,6 @@
+#                   #
+#  Testing Trigger  #
+#                   #
+
+ startMap?
+ call(testAction)!
