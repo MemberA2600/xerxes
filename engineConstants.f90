@@ -34,11 +34,7 @@ MODULE engineConstants
                                      hOfScreenBuffer        = 480  
     INTEGER(KIND = 1), PARAMETER  :: MFPS = 120             ! Maximum frames per second
     INTEGER(2), PARAMETER         :: MAX_PATH_LEN  = 255, &
-                                     NAME_MAX_LEN  = 25 , &
-                                     MAX_PARAM_LEN = 512
-
-    character(1), parameter       :: wildcard  = "!" 
-    character(2), parameter       :: delimiter = "||" , placeholder = "{" // wildcard // "}"
+                                     NAME_MAX_LEN  = 25   
  
     real(8), parameter            :: pi = 3.141592653589793238462643383279502884197
     integer(4), parameter         :: chunkSize = 32767
@@ -136,7 +132,9 @@ MODULE engineConstants
                                         TYPE_PLAYER_SPAWNER     = 6   ,& 
                                         TYPE_FOLLOWER_MAP       = 7   ,& 
 
-                                        TYPE_COMMON_UNIT      = 127  
+                                        TYPE_COMMON_UNIT      = -128  ,&
+                                        TYPE_BOOL             = -128  ,&
+                                        TYPE_ACTION           = -127  
  
     integer(1), parameter           ::  COLLECT_NORMAL        = 0   ,&
                                         COLLECT_BASEFLOOR     = 1   ,&
@@ -184,5 +182,11 @@ MODULE engineConstants
 
     integer(1), parameter :: ALIGN_CENTER  = 1, ALIGN_BOTTOM = 2
     integer(1), parameter :: FOLLOWER_STEP = 12
+
+    integer(1),   parameter :: FALSE = 0, TRUE = 1
+    integer(1),   parameter :: VAR_NULL = 0, VAR_INT = 1, VAR_CHAR = 2
+
+    character(1), parameter :: comment = "*", closeTrigger = "?", closeAction = "!", delimiterNorm = ",", &
+                               delimiterOr = "|", paramsOpen = "(", paramsClose = ")" 
 
 END MODULE engineConstants

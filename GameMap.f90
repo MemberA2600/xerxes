@@ -97,7 +97,7 @@ MODULE GameMap
     integer(1)                                 :: mapTypeOld, weatherOld, mapTypePrev
     integer(4)                                 :: widthOld, heightOld
     logical                                    :: windOld
-    character(NAME_MAX_LEN)                    :: defaultFloorOld, defaultFloor, prevMap = "", &
+    character(NAME_MAX_LEN)                    :: defaultFloorOld, defaultFloor, &
                                                   playerOnMapName = "" 
 
     contains

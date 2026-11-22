@@ -52,6 +52,7 @@
 
       !INTEGER(2), dimension(:), allocatable :: tiaTestData  
       !TYPE(TIASfx)                          :: tester  
+      !TYPE(var)                      ::  var1, var2  
 !
 ! Initialise Winteracter
 !
@@ -100,6 +101,7 @@
 
       call openIODLL() 
       call openJoyDLL()   
+      call loadSyntax()  
 !
 !     Call config inits  
 !
@@ -118,6 +120,12 @@
 !
 !    Put tests here!  
 !
+
+      !call var1%setAsInt (69)
+      !call var2%setAsChar("Pacal:")
+          
+      !call displayDebugNumTxt(trim(var2%getAsChar()), &
+      !                        var1%getAsInt())
 
       !call displayDebugNum(getScreenSizeId())  
       !call openVGM()  

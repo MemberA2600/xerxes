@@ -15,19 +15,49 @@ MODULE TriggerAction
     private
     public                          :: triggerGroup, actionGroup, trigger, action, &
                                        removeTriggersAndActions, triggers, actions, &
-                                       triggerActionWindow, triggerActionLoop   
+                                       triggerActionWindow, triggerActionLoop, var, loadSyntax, &
+                                       actionText, triggerText     
 
-    type trigger
-         integer(kind=1)            :: typ
-         logical                    :: or
-         character(MAX_PARAM_LEN)   :: paramList   
+    character(:), allocatable                  :: actionText, triggerText
+
+    type command
+         character(NAME_MAX_LEN)               :: name
+         integer(1)                            :: allowedMode 
+         logical, dimension(3)                 :: allowedMapType  
+         integer(1), dimension(:), allocatable :: paramTypes, paramDetails   
+    end type
+
+    type(command), dimension(:), allocatable   :: commandList
+
+    type var
+         integer(1)                            :: typ
+         integer(2), dimension(:), allocatable :: bytes
 
          contains
+
+         procedure :: erase                    => erase
+         procedure :: setAsChar                => setAsChar
+         procedure :: setAsInt                 => setAsInt
+         procedure :: getAsChar                => getAsChar
+         procedure :: getAsInt                 => getAsInt
+
+    end type
+
+    type mapVar
+         character(NAME_MAX_LEN)                  :: name
+         logical                                  :: oneMapOnly = .TRUE.    
+         type(var)                                :: var   
+    end  type
+
+    type trigger
+         integer(kind=1)                      :: typ
+         logical                              :: or
+         type(var), dimension(:), allocatable :: paramList   
 
     end type
 
     type triggerGroup
-        character(NAME_MAX_LEN)                  :: name, actionName  
+        character(NAME_MAX_LEN)                  :: action 
         type(trigger), dimension(:), allocatable :: triggerList
         contains
         
@@ -40,13 +70,12 @@ MODULE TriggerAction
     logical                         :: canKill    
 
     type action
-         integer(kind=1)            :: typ
-         character(MAX_PARAM_LEN)   :: paramList  
-
+         integer(kind=1)                      :: typ
+         type(var), dimension(:), allocatable :: paramList   
     end type
 
     type actionGroup
-        character(NAME_MAX_LEN)                 :: name
+        character(NAME_MAX_LEN)                 :: name, nextAction
         type(action), dimension(:), allocatable :: actionList
 
         contains
@@ -60,6 +89,66 @@ MODULE TriggerAction
     type( actionGroup), dimension(:), allocatable :: actions    
 
     contains
+
+    subroutine erase(this)
+           class(var), intent(inout) :: this
+           integer(1)                :: rc 
+
+           this%typ                  = VAR_NULL
+
+           if (allocated(this%bytes)) then
+               deallocate(this%bytes, stat = rc) 
+               if (rc /= 0) call displayDebug("Failed to deallocate var!") 
+           end if   
+    end subroutine
+
+    subroutine setAsChar(this, c)
+           class(var), intent(inout) :: this
+           integer(1)                :: rc  
+           character(*)              :: c 
+
+           call this%erase()
+           this%typ = VAR_CHAR
+           
+           allocate(this%bytes(NAME_MAX_LEN), stat = rc)     
+           if (rc /= 0) call displayDebug("Failed to allocate var as char!") 
+            
+           this%bytes = 0 
+           call writeChars2Bin(this%bytes, c, 1, len_trim(c))
+
+           if (len_trim(c) /= NAME_MAX_LEN) this%bytes(len_trim(c) + 1 : NAME_MAX_LEN) = Z'20'  
+
+    end subroutine
+
+    subroutine setAsInt(this, i)
+           class(var), intent(inout) :: this
+           integer(1)                :: rc  
+           integer(2)                :: i 
+
+           call this%erase()
+           this%typ = VAR_INT
+           
+           allocate(this%bytes(1), stat = rc)     
+           if (rc /= 0) call displayDebug("Failed to allocate var as int!") 
+            
+           this%bytes(1) = i
+
+    end subroutine
+
+    function getAsChar(this) result(r)
+           class(var), intent(inout) :: this
+           character(NAME_MAX_LEN)   :: r 
+                 
+           call bin2Char(r, this%bytes, NAME_MAX_LEN, .FALSE.) 
+
+    end function    
+
+    function getAsInt(this) result(r)
+           class(var), intent(inout) :: this
+           integer(2)                :: r 
+
+           r = this%bytes(1)
+    end function
 
     subroutine dropTriggerList(this)    
            class(triggerGroup), intent(inout) :: this 
@@ -198,7 +287,7 @@ MODULE TriggerAction
        INTEGER                                            :: ITYPE, rc
        Integer(1)                                         :: at
        TYPE(WIN_MESSAGE)                                  :: MESSAGE
-       logical                                            :: change 
+       logical                                            :: change
 
        actionOrTrigger = at
 
@@ -214,7 +303,7 @@ MODULE TriggerAction
 88996  call SetTheFieldNames() 
 
        do
-          change = .FALSE.
+          change   = .FALSE.
           CALL WDialogSelect(IDD_Triggers)
           CALL WDialogShow(ITYPE=Modal)     
 
@@ -227,6 +316,8 @@ MODULE TriggerAction
                   CASE(ID_TriggerChange)
                      change = .TRUE.
                      EXIT   
+                  case(ID_TriggerValidate)      
+                     call compile(.TRUE.)   
                   CASE(ID_TriggerImport)
                      call importText()
                   CASE(ID_TriggerExport)
@@ -320,15 +411,8 @@ MODULE TriggerAction
     
         fname = FileDialog("", .TRUE., "txt ")
         if (fname == "") return
-    
-        call WDialogGetStringLength(IDF_Code, L)
-        allocate(character(len=L) :: text, stat=rc)
-        if (rc /= 0) then
-            call displayDebug("Failed to allocate text buffer!")
-            return
-        end if
-    
-        if (L > 0) call WDialogGetString(IDF_Code, text)
+       
+        if (L > 0) call WDialogGetStringA(IDF_Code, text)
     
         open(newunit=unit, file=fname, status='replace', action='write', &
              access='stream', form='unformatted', iostat=rc)
@@ -343,6 +427,132 @@ MODULE TriggerAction
         if (rc /= 0 .or. closeRc /= 0) then
             call displayDebug("Failed to export text file!")
         end if
+    end subroutine
+
+    subroutine compile(validate)
+        logical        :: validate
+
+    end subroutine
+
+    subroutine loadSyntax()
+        integer(2), dimension(:), allocatable           :: bytes
+        character(:), allocatable                       :: c
+        integer(8)                                      :: L, ind, startInd, endInd, CR, insertNum, ind2, iii         
+        integer(1)                                      :: rc
+
+        character(NAME_MAX_LEN)                         :: name
+        integer(1)                                      :: flags, whereToUse
+        character(NAME_MAX_LEN), dimension(5)           :: paramStr
+        logical                                         :: header
+
+        call loadBinary("syntax.xxs", bytes, L, .TRUE.)
+
+        allocate(character(len = L) :: c, stat = RC)
+        if (rc /= 0) call displayDebug("Failed to allocate character for syntax bytes!")
+
+        do ind = 1, L, 1
+           c(ind:ind) = achar(bytes(ind))
+        end do
+
+        insertNum = 0        
+        do ind = 1, L, 1
+           if (c(ind:ind) == achar(10) .OR. ind == L) then 
+               insertNum = insertNum + 1 
+           end if 
+        end do
+
+        allocate(commandList(insertNum), stat = rc)
+        if (rc /= 0) call displayDebug("Failed to allocate CommandList!")
+
+        endInd    = 0
+        insertNum = 0        
+        header    = .TRUE.
+
+        do 
+            if (endInd == L) exit
+            CR         = 0 
+            do ind = endInd + 1, L, 1
+               if (c(ind:ind) == achar(13)) CR = ind 
+               if (c(ind:ind) == achar(10) .OR. ind == L) then
+                   if (CR == 0) CR = ind 
+                   startInd        = endInd + 1 
+                   endInd          = ind  
+                
+                   if (startInd == endInd) exit 
+                   if (header) then
+                       header = .FALSE.
+                   else     
+                       read(c(startInd : CR), DECIMAL="COMMA", fmt=*, iostat = rc ) & 
+                            name, flags, whereToUse, paramStr(1), paramStr(2), paramStr(3), paramStr(4), paramStr(5)      
+                        
+                       insertNum = insertNum + 1
+                       if (rc /= 0) call displayDebug("Failed to read Syntax! " // c(startInd : CR))     
+                    
+                       commandList(insertNum)%name = name
+                       do ind2 = 1, 3, 1
+                          if (btest(flags, ind2 - 1)) then  
+                             commandList(insertNum)%allowedMapType(ind2) = .TRUE.   
+                          else
+                             commandList(insertNum)%allowedMapType(ind2) = .FALSE.               
+                          end if    
+                       end do  
+
+                       commandList(insertNum)%allowedMode = whereToUse
+
+                       iii = 0
+
+                       do ind2 = 1, size(paramStr), 1 
+                          if (paramStr(ind2) /= "null") then   
+                              iii = iii + 1  
+                          else
+                              exit  
+                          end if  
+                       end do 
+                        
+                       if (iii > 0) then
+                           allocate(commandList(insertNum)%paramTypes(iii), stat = rc)  
+                           if (rc /= 0) call displayDebug("Failed to allocate Paramtypes!")
+
+                           allocate(commandList(insertNum)%paramDetails(iii), stat = rc)  
+                           if (rc /= 0) call displayDebug("Failed to allocate Paramtypes!")  
+
+                           do ind2 = 1, iii, 1
+                              select case(paramStr(ind2))          
+                              case("int")
+                                    commandList(insertNum)%paramTypes(ind2)   = VAR_INT  
+                                    commandList(insertNum)%paramDetails(ind2) = TYPE_EMPTY 
+                              case("bool")
+                                    commandList(insertNum)%paramTypes(ind2)   = VAR_INT  
+                                    commandList(insertNum)%paramDetails(ind2) = TYPE_BOOL  
+                              case("char")
+                                    commandList(insertNum)%paramTypes(ind2)   = VAR_CHAR  
+                                    commandList(insertNum)%paramDetails(ind2) = TYPE_EMPTY  
+                              case("action")
+                                    commandList(insertNum)%paramTypes(ind2)   = VAR_CHAR  
+                                    commandList(insertNum)%paramDetails(ind2) = TYPE_ACTION
+                              case("player")
+                                    commandList(insertNum)%paramTypes(ind2)   = VAR_CHAR  
+                                    commandList(insertNum)%paramDetails(ind2) = TYPE_PLAYER_MAP
+                              case("spawner")
+                                    commandList(insertNum)%paramTypes(ind2)   = VAR_CHAR  
+                                    commandList(insertNum)%paramDetails(ind2) = TYPE_PLAYER_SPAWNER
+                              case("follower")
+                                    commandList(insertNum)%paramTypes(ind2)   = VAR_CHAR  
+                                    commandList(insertNum)%paramDetails(ind2) = TYPE_FOLLOWER_MAP
+                              case default
+                                    call displayDebug("Invalid paramtype " // paramStr(ind2) // "!")
+                              end select  
+                           end do  
+                         
+                       end if  
+                   end if 
+               end if      
+            end do
+        end do
+
+        deallocate(c, stat = rc)
+        if (rc /= 0) call displayDebug("Failed to deallocate character for syntax bytes!")
+
     end subroutine
 
 END MODULE TriggerAction

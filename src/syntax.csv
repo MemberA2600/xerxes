@@ -1,0 +1,7 @@
+Command;MapType;Trigger/Action;Param1;Param2;Param3;Param4;Param5
+startMap;7;0;null;null;null;null;null
+call;7;0;action;null;null;null;null
+next;7;1;action;null;null;null;null
+name;7;1;char;null;null;null;null
+spawnPlayer;1;1;player;spawner;null;null;null
+addFollower;1;1;follower;null;null;null;null

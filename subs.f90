@@ -23,13 +23,32 @@ MODULE subs
                            randInt, getTime, FileDialog, countCharInString, &
                            getNextPoz, dFile, f2bitsTo1Bit, getNullTermString, &
                            CWD, setCWD, getScreenSizeId, getSpeed, getDir, getLastOK, &
-                           stringHas 
+                           stringHas, WDialogGetStringA 
 
       CHARACTER(20)     :: msgString
       INTEGER(KIND = 1) :: speed, timer, screenSize
       CHARACTER(MAX_PATH_LEN) :: CWDReal  
 
       CONTAINS  
+
+      subroutine WDialogGetStringA(i, d)
+           integer                                  :: i, L
+           character(:), allocatable, intent(inout) :: d
+           integer(1)                               :: rc 
+
+           if (allocated(d)) then 
+               deallocate(d, stat = rc) 
+               if (rc /= 0 ) call displayDebug("Failed to deallocate text buffer!")
+           end if
+
+           call WDialogGetStringLength(i,L)
+
+           allocate(character(len=L) :: d, stat = rc)
+           if (rc /= 0) call displayDebug("Failed to allocate text buffer!")
+
+           call WDialogGetString(i, d)             
+
+      end subroutine  
 
       function stringHas(full, part) result(r)
           character(*), intent(in) :: full, part

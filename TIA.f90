@@ -615,11 +615,7 @@ MODULE TIA
         integer                   :: L
         integer(1)                :: rc
 
-        call WDialogGetStringLength(ID_TIAInput,L)
-        allocate(character(len=L) :: text, stat = rc)
-        if (rc /= 0) call displayDebug("Failed to allocate text buffer!")
-
-        call WDialogGetString(ID_TIAInput, text)
+        call WDialogGetStringA(ID_TIAInput, text)
         call WDialogGetString(ID_TIAName,  name)
 
         if (len_trim(text) == 0) then
@@ -723,11 +719,7 @@ MODULE TIA
             if (stat /= 0) call displayDebug("Failed to deallocate temp for grabbing text to data!")
         end if
 
-        call WDialogGetStringLength(ID_TIAInput,L)
-        allocate(character(len=L) :: text, stat = stat)
-        if (stat /= 0) call displayDebug("Failed to allocate text buffer!")
-
-        call WDialogGetString(ID_TIAInput, text)
+        call WDialogGetStringA(ID_TIAInput, text)
             
         length = countCharInString(text, ",") + countCharInString(text, char(10)) + 1
 

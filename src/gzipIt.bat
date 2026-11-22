@@ -1,0 +1,1 @@
+gzip.exe -c syntax.csv > syntax.xxs
