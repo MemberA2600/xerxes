@@ -171,3 +171,5 @@ validate => Prüfen
 errors => Fehlern:
 textFiles => TextDateien
 textFile => Textdatei
+noTriggerCloserFound => Keine Auslösungschließer gefunden
+tooManyTriggerClosersFound => Zu viele Auslösungschließer gefunden

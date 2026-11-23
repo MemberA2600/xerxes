@@ -458,7 +458,7 @@ MODULE GameMap
                currentMap%defaultMusic = ""
            end if 
 
-           call removeTriggersAndActions() 
+           call removeTriggersAndActions(ALL_MODE) 
        else 
            if ((load) .AND. (nope .EQV. .FALSE.)) then
                if (loadMap()) success = 1
@@ -1683,7 +1683,7 @@ MODULE GameMap
 
         end if 
 
-        call removeTriggersAndActions()
+        call removeTriggersAndActions(ALL_MODE)
 
     end subroutine 
 

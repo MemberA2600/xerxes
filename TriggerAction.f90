@@ -219,11 +219,11 @@ MODULE TriggerAction
  
     end subroutine
 
-    subroutine removeTriggersAndActions()
-        integer(1)           :: rc
+    subroutine removeTriggersAndActions(mode)
+        integer(1)           :: rc, mode
         integer              :: num
 
-        if (allocated(triggers)) then
+        if (allocated(triggers) .AND. mode /= ACTION_MODE) then
             do num = 1, size(triggers)
                 call triggers(num)%dropTriggerList()
             end do
@@ -232,7 +232,7 @@ MODULE TriggerAction
             if (rc /= 0) call displayDebug("Failed to deallocate triggers!")
         end if
     
-        if (allocated(actions)) then
+        if (allocated(actions)  .AND. mode /= TRIGGER_MODE) then
             do num = 1, size(actions)
                 call actions(num)%dropActionList()
             end do
@@ -445,12 +445,15 @@ MODULE TriggerAction
         logical                   :: validate
         type(triggerGroup)        :: tempTriggerGroup
         type(actionGroup)         :: tempActionGroup
-        character(:), allocatable :: txt, group, noComments
+        character(:), allocatable :: txt, group, noComments, errorText
 
         integer(8)                :: startInd, endInd, ind
-        logical                   :: insideComment, escaped
+        logical                   :: insideComment
+        integer(2)                :: bracketLevel, groupNum
+        integer(1)                :: rc
 
         if (validate) then
+            call WDialogPutString(IDF_Errors, "")
             call WDialogGetStringA(IDF_Code, txt)
         else
             if (actionOrTrigger == TRIGGER_MODE) then
@@ -458,34 +461,209 @@ MODULE TriggerAction
             else
                 txt = actionText
             end if
+            call removeTriggersAndActions(actionOrTrigger )
         end if
 
-        startInd      = 1
-        insideComment = .FALSE.
-        
+        startInd       = 1
+        insideComment  = .FALSE.
+        bracketLevel   = 0
+        noComments     = ""
+        errorText      = ""
+
         do ind = 1, len_trim(txt), 1
-            if (txt(ind:ind) /= commentChar) cycle
-        
-            if (ind > 1) then
-                if (txt(ind-1:ind-1) == escapeChar) cycle
+            if (insideComment .EQV. .FALSE.) then
+               if (escaped(txt, bracketLevel, ind, paramsOpenChar, paramsCloseChar)) cycle 
+               call changeBL(txt, bracketLevel, ind) 
             end if
-        
-            if (insideComment) then
-                startInd = ind + 1
-            else
-                noComments = noComments // txt(startInd:ind-1)
+
+            if (bracketLevel == 0) then
+                if (txt(ind:ind) /= commentChar) cycle
+            
+                if (ind > 1) then
+                    if (txt(ind-1:ind-1) == escapeChar) cycle
+                end if
+            
+                if (insideComment) then
+                    startInd = ind + 1
+                else
+                    noComments = noComments // txt(startInd:ind-1)
+                end if
+            
+                insideComment = .not. insideComment
             end if
-        
-            insideComment = .not. insideComment
         end do
         
         if (.not. insideComment) then
             noComments = noComments // txt(startInd:len_trim(txt))
         end if
 
-        call WDialogPutString(IDF_Errors, noComments)
+        bracketLevel = 0
+        startInd     = 1
+        groupNum     = 0
+
+        do ind = 1, len_trim(noComments), 1
+ 
+           if (escaped(noComments, bracketLevel, ind, paramsOpenChar, paramsCloseChar)) cycle 
+           call changeBL(noComments, bracketLevel, ind) 
+
+           if (bracketLevel /= 0) cycle
+    
+           if (noComments(ind:ind) == closeActionChar) then
+               group    = noComments(startInd:ind)  
+               groupNum = groupNum + 1         
+
+               if (actionOrTrigger == TRIGGER_MODE) then 
+                   call processGroupT(group, errorText, validate, groupNum) 
+               else
+                   call processGroupA(group, errorText, validate, groupNum) 
+               end if 
+                
+               startInd = ind + 1 
+           end if
+
+        end do
+
+        if (validate) then
+            call WDialogPutString(IDF_Errors, errorText)
+        else
+            if (errorText /= "") then
+                call displayDebug("Errors during compilation! Check log.")
+                call writeOutDebug(errorText)
+            else
+
+            end if
+        end if
+
+        deallocate(txt       , stat = rc)  
+        if (rc /= 0) call displayDebug("Failed to deallocate txt!") 
+
+        deallocate(noComments, stat = rc)  
+        if (rc /= 0) call displayDebug("Failed to deallocate noComments!") 
+
+        deallocate(group     , stat = rc)  
+        if (rc /= 0) call displayDebug("Failed to deallocate group!") 
+
+        deallocate(errorText , stat = rc)  
+        if (rc /= 0) call displayDebug("Failed to deallocate errorText!") 
 
     end subroutine
+
+    subroutine changeBL(txt, bl, i)
+        character(*)              :: txt
+        integer(8)                :: i
+        integer(2), intent(inout) :: bl 
+
+        if (txt(i:i) == paramsOpenChar ) bl = bl + 1 
+        if (txt(i:i) == paramsCloseChar) bl = bl - 1 
+
+    end subroutine
+
+    function escaped(txt, bl, i, op1, op2) result(r)
+        character(*)                :: txt, op1, op2
+        logical                     :: r
+        integer(2)                  :: bl
+        integer(8)                  :: i
+
+        r = .FALSE.
+
+        if (txt(i:i) == op1 .OR. txt(i:i) == op2) then 
+            if (bl > 1 .AND. i > 1) then
+                if (txt(i-1 :i-1) == escapeChar) then
+                    r = .TRUE.          
+                    return
+                end if
+            end if 
+        end if 
+
+    end function
+
+    subroutine processGroupT(txt, errorText, validate, groupNum)
+        logical                                  :: validate
+        character(:), allocatable, intent(in)    :: txt
+        character(:), allocatable, intent(inout) :: errorText
+        type(triggerGroup)                       :: tempTriggerGroup
+        integer(2), intent(in)                   :: groupNum 
+        integer(8)                               :: ind, startInd
+        integer(2)                               :: statementNum, countTriggerCloser, bracketLevel 
+
+        statementNum = 0
+
+        tempTriggerGroup%action    = ""
+        countTriggerCloser         = 0 
+
+        bracketLevel               = 0
+
+        do ind = 1, len_trim(txt), 1
+           if (txt(ind:ind) == closeTriggerChar) then 
+               if (escaped(txt, bracketLevel, ind, paramsOpenChar, paramsCloseChar)) cycle  
+               call changeBL(txt, bracketLevel, ind)
+    
+               if (bracketLevel /= 0) cycle
+      
+               if (escaped(txt, bracketLevel, ind, closeTriggerChar, closeTriggerChar) .EQV. .FALSE.) &
+                   countTriggerCloser = countTriggerCloser + 1  
+    
+               if (countTriggerCloser > 1) exit     
+           end if     
+        end do     
+
+        select case(countTriggerCloser)
+        case(0)
+            call buildError(errorText, groupNum, 0, "noTriggerCloserFound", closeTriggerChar)
+            return
+        case(2)
+            call buildError(errorText, groupNum, 0, "tooManyTriggerClosersFound", closeTriggerChar)
+            return
+        end select
+
+    end subroutine
+
+    subroutine buildError(errorText, groupNum, actionNum, key, extra)
+        character(:), allocatable, intent(inout) :: errorText
+        integer(2), intent(in)                   :: groupNum, actionNum 
+        character(:), allocatable                :: eText
+        character(*)                             :: extra, key
+        character(4)                             :: groupSrt, actionSrt
+        
+        eText = trim(getWordInCurrentLang(key))
+
+        write(groupSrt, "(I4.4)") groupNum
+
+        eText = trim(eText) // ": " // groupSrt 
+
+        if (actionNum > 0) then
+            write(actionSrt, "(I4.4)") actionNum
+            eText = trim(eText) // "|" // actionSrt
+        end if
+
+        if (extra /= "") eText = trim(eText) // "|" // extra
+
+        if (errorText == "") then
+            errorText = trim(eText)
+        else
+            errorText = trim(errorText) // achar(13) // achar(10) // eText
+        end if
+
+        deallocate(eText)
+
+    end subroutine
+
+    subroutine processGroupA(txt, errorText, validate, groupNum)
+        logical                                  :: validate
+        character(:), allocatable, intent(in)    :: txt
+        character(:), allocatable, intent(inout) :: errorText
+        type(actionGroup)                        :: tempActionGroup
+        integer(2), intent(in)                   :: groupNum 
+        integer(2)                               :: statementNum 
+        integer(8)                               :: ind, startInd, bracketLevel 
+
+        statementNum = 0
+
+        tempActionGroup%name       = ""
+        tempActionGroup%nextACtion = ""
+
+    end subroutine
+
 
     subroutine loadSyntax()
         integer(2), dimension(:), allocatable           :: bytes

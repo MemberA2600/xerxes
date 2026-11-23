@@ -171,3 +171,5 @@ validate => Ellenõrzés
 errors => Hibák:
 textFiles => Szövegfájlok
 textFile => Szövegfájl
+noTriggerCloserFound => Nem található Feltételzáró
+tooManyTriggerClosersFound => Túl sok Feltételzáró található

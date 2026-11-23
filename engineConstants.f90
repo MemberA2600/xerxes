@@ -18,7 +18,7 @@ MODULE engineConstants
     integer                       :: PERFECT_WAIT = 5000
     integer(1)                    :: speedUpConst = 30   
 
-    integer(1), parameter         :: TRIGGER_MODE = 0, ACTION_MODE = 1
+    integer(1), parameter         :: TRIGGER_MODE = 0, ACTION_MODE = 1, ALL_MODE = -1
 
     integer(1), parameter         :: layerNum          = 6, &      
                                      LAYER_BACKGROUND  = 1, & 

@@ -171,3 +171,5 @@ validate => Validate
 errors => Errors:
 textFiles => Text Files
 textFile => Text File
+noTriggerCloserFound => No Trigger Closer Found
+tooManyTriggerClosersFound => Too Many Trigger Closers Found
